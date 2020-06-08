@@ -5,8 +5,8 @@ import tkinter.ttk as ttk
 from time import sleep
 import threading
 
-keywords = ['if','elif','else','def','class','while']
-sumn = ['import','from','in','and','self']
+keywords = ['if','elif','else','def ','class ','while']
+sumn = ['import','from','in ','and ','self']
 var_types = ['int','float','string','str']
 special_chars = ['"',"'","#","@","(",")","[","]","{","}"]
 other_chars = ["_"]
@@ -14,7 +14,7 @@ operators = ['<','>',"+","-","*","/","="]
 nums = ['0','1','2','3','4','5','6','7','8','9']
 modules = []
 modules2 = []
-all_key = [keywords,sumn,var_types]
+all_key = [keywords,sumn,var_types, modules]
 all_key = list(chain.from_iterable(all_key))
 print(all_key)
 
@@ -107,19 +107,27 @@ class win():
 
             try:
                 for index, line in enumerate(self.info.split('\n'), start=1):
-                    for keyword in all_key:
-                        print(keyword)
+
+                    #if (re.search(keyword, line)):
+                    for i in range(len(re.findall(r"[_.][0-9]", line, re.X))):
+                        num = re.search(r"[_.][0-9]", line, re.X)
+                        num = [ str(num.span()[0]), str(num.span()[1]) ]
+                        print(num[1])
+                        #print(num)
+                        self.txt.tag_add("operators", f"{index}.{num[0]}", f"{index}.{num[1]}")
+
+                    for indx, keyword in enumerate(all_key):
+                        #print(keyword, indx)
                         if (re.search(keyword, line)):
-                            x = re.search(keyword, line)
-                            print(line, index)
-                            self.txt.tag_add("sumn", f"{index}.{str(x.span()[0])}", f"{index}.{str(x.span()[1])}")
-                            print(x, x.span(), f"{index}.{str(x.span()[0])}", f"{index}.{str(x.span()[1])}")
+                            found = re.search(r"\s*[_]*"+keyword, line)
+                            found_index = [ str(found.span()[0]), str(found.span()[1]) ]
+                            #if (keyword == "import" and keyword == found.group()):
+                            #    modules.append(line.split()[1])
+                            #print(line, index)
+                            self.txt.tag_add("sumn", f"{index}.{found_index[0]}", f"{index}.{found_index[1]}")
+                            #print(x, x.span(), f"{index}.{str(x.span()[0])}", f"{index}.{str(x.span()[1])}")
                             #self.checked.append(index)
-                        else:
-                            pass
-                                                                            #x = re.search('import', self.info)
-                                                                            #self.txt.tag_add("sumn", "1"+"."+str(x.span()[0]), "1"+"."+str(x.span()[1]))
-                                                                            #print(x, x.span(), "1"+"."+str(x.span()[0]))
+            
             except AttributeError:
                 pass
 
