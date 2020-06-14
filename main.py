@@ -1,16 +1,20 @@
 import tkinter
+from tkinter import ttk
 from tkinter import font
 import keyboard
 import re
 import threading
 import os
+import tqdm
 from itertools import chain
 from time import sleep
 from tkinter import filedialog
 
 
+
+
 keywords = ['if','elif','else','def ','class ','while']
-sumn = ['import','from','in ','and ','self']
+sumn = ['import ','from ','in ','and ','self.']
 var_types = ['int','float','string','str']
 special_chars = ['"',"'","#","@","(",")","[","]","{","}"]
 other_chars = ["_"]
@@ -22,19 +26,87 @@ all_key = [keywords,sumn,var_types, modules, nums]
 all_key = list(chain.from_iterable(all_key))
 print(all_key)
 
+#print(chr(9619))
+
+for i in tqdm.tqdm(range(10)):
+    sleep(0.05)
+
+class CustomText(tkinter.Text):
+    '''A text widget with a new method, highlight_pattern()
+
+    example:
+
+    text = CustomText()
+    text.tag_configure("red", foreground="#ff0000")
+    text.highlight_pattern("this should be red", "red")
+
+    The highlight_pattern method is a simplified python
+    version of the tcl code at http://wiki.tcl.tk/3246
+    '''
+    def __init__(self, *args, **kwargs):
+        tkinter.Text.__init__(self, *args, **kwargs)
+
+    def highlight_pattern(self, pattern, tag, start="1.0", end="end",
+                          regexp=False):
+        '''Apply the given tag to all text that matches the given pattern
+
+        If 'regexp' is set to True, pattern will be treated as a regular
+        expression according to Tcl's regular expression syntax.
+        '''
+
+        start = self.index(start)
+        end = self.index(end)
+        self.mark_set("matchStart", start)
+        self.mark_set("matchEnd", start)
+        self.mark_set("searchLimit", end)
+
+        count = tkinter.IntVar()
+        while True:
+            index = self.search(pattern, "matchEnd","searchLimit",
+                                count=count, regexp=regexp)
+            if index == "": break
+            if count.get() == 0: break # degenerate pattern which matches zero-length strings
+            self.mark_set("matchStart", index)
+            self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
+            self.tag_add(tag, "matchStart", "matchEnd")
+
+
+class p_bar(tkinter.Label):
+    def __init__(self, root):
+        self.char = chr(9608)
+        #self.char = "|"
+        self.bbar = super().__init__(root,font=root.smaller_font,text=f"  0/100%{self.char*25}", anchor="w",
+        bg="#111111",fg="#FFFFFF", justify=tkinter.LEFT)
+    
+    def update(self):
+        self.wbar = super().__init__(root,font=root.font,text=f"{self.char*5}",bg="#FFFFFF",fg="#FFFFFF", justify=tkinter.LEFT)
+
+
 
 
 class win():
     def __init__(self, root):
         
-        self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
+        self.command_definition = {
+            "l" : "-get: gets last line number || -[LINE_NUMBER(.CHARACTER)]: puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)",
+            "highlighting" : "-on: turns highlighting on -off: turns highlighting off"
+        }
 
+        self.command_input_history = []
+        self.command_input_history_index = 0
+
+        self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
+        
+        self.line_count = None
+        
         self.highlighting = False # turned off by default because it's not working properly (fucking regex)
 
         #configuring main window
+        #root.overrideredirect(True)
         root.resizable(True,True)
         root.config(bg="black")
         root.geometry("1200x600")
+        self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
         root.title(f"N Editor: <None>") #{os.path.basename(self.current_file.name)}
         root.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
         root.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
@@ -52,23 +124,46 @@ class win():
         #filediaolog pretty much self-explanatory
         self.filename = filedialog
 
+
         #text widget configuration
-        self.txt = tkinter.Text()
-        self.txt.grid(row=0, column=0 ,sticky="nsew")
-        self.txt.configure(font=self.font,bg = 'black',fg='#cccccc', undo=True, wrap='word', spacing1=5,
-            insertwidth=8, insertofftime=500, insertbackground="#fb2e01", 
+        self.txt = CustomText()
+
+        #self.txt.grid(row=0, column=0 ,sticky="nsew")
+        self.txt.place(relx=0,rely=0.0,relwidth=0.985,relheight=0.95)
+        self.txt.configure(font=self.font,bg = 'black',fg='#cccccc', undo=True, spacing1=5,
+            insertwidth=8, insertofftime=500, insertbackground="#A2000A", selectbackground="#0A00A2",
             borderwidth=0, relief="sunken", tabs=('1c'))
             
         #scrollbar configuration
-        self.scrollb = tkinter.Scrollbar(root, command=self.txt.yview)
-        self.scrollb.grid(row=0,column=2,sticky="nsew")
-        self.txt['yscrollcommand'] = self.scrollb.set
+        # self.scrollb = tkinter.Scrollbar(root, command=self.txt.yview, relief="flat") #self.scrollb.grid(row=0,column=2,sticky="nsew")
+        # self.scrollb.place(relx=0.985, rely=0.0, relwidth=0.15, relheight=.95)
+        # self.txt['yscrollcommand'] = self.scrollb.set
 
         #line and column number label
-        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = 'black',fg='#cccccc'); self.line_no.grid(row=1,column=1)
+        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = 'black',fg='#cccccc') #self.line_no.grid(row=1,column=2)
+        self.line_no.place(relx=0.70,rely=0.96, relwidth=0.3, relheight=0.05)
+
         
         #command line entry
-        self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,bg = 'black',fg='#cccccc', insertwidth=8, insertofftime=500, insertbackground="#fb2e01"); self.command_entry.grid(row=1,column=0,ipady=3)
+        self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
+        bg = '#111111',fg='#cccccc', insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
+        #self.command_entry.grid(row=1,column=0,ipady=3);
+        self.command_entry.place(relx=0.005,rely=0.97, relwidth=0.25, relheight=0.0275)
+
+
+        #command output
+        self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg="#000000", fg="#00df00",
+         justify=tkinter.CENTER, anchor="w")
+        self.command_out.place(relx=0.28,rely=0.97, relwidth=0.25, relheight=0.0275)
+
+        #progressbar
+        #self.progress_bar = p_bar(root) #.grid(row=1,column=1)
+        #self.style=ttk.Style()
+        #self.style.theme_use("clam")
+        #self.style.configure("color.Horizontal.TProgressbar", foreground="white", background="white")
+        #self.progress_bar = ttk.Progressbar(orient=tkinter.HORIZONTAL, style="color.Horizontal.TProgressbar",
+        # length=100, mode='determinate')
+        #self.progress_bar.place(relx=0.35,rely=0.975,relwidth=0.3,relheight=0.025)
 
         #right click pop-up menu
         self.right_click_menu = tkinter.Menu(tearoff=0, font=self.smaller_font, bg="#000000", fg="#ffffff")
@@ -107,6 +202,7 @@ class win():
 
         #command binding
         self.command_entry.bind("<Return>", self.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
+        self.command_entry.bind("<Up>", self.command_history) # lets you scroll through commands you have already used
         self.txt.bind("<Button-3>", self.popup) #right click pop-up window
         #self.txt.bind("<Tab>", self.cmmand)
         #self.txt.bind("<Control_L><k>", self.cmmand)
@@ -133,21 +229,49 @@ class win():
 
 
     #error window
+
+
+    def get_line_count(self):
+        self.info = self.txt.get("1.0", "end-1c")
+        return sum(1 for line in self.info.split("\n"))
+
     def error_win(self, e):
         error_win = tkinter.Tk("aaa")
         error_win.configure(bg="#000000", bd=2)
         #error_win.geometry("600x200")"C:\Users\Admin\Desktop\instagram data\sx.bugy_20200512_part_1\messages.json"
-        error_win.title(f"Error Win")
+        error_win.title(f"Error Window")
         error_label = tkinter.Label(error_win, text=f"Error: {e}", justify=tkinter.CENTER, bg="#000000", fg="#ffffff"); error_label.pack()
         error_button = tkinter.Button(error_win, text="OK", command=error_win.destroy, bg="#000000", fg="#ffffff"); error_button.pack()
         #error_label.place(relx=0.0, rely=0.10, relwidth=1, relheight=0.20)
         #error_button.place(relx=0.25, rely=0.25, relwidth=0.35, relheight=0.26)
+
+    def help_win(self, command=None):
+        help_win = tkinter.Tk("aaa")
+        help_win.configure(bg="#000000")
+        help_win.title(f"Help Window")
+        if (command == None):
+            help_label = tkinter.Label(help_win, text=f"Commands: \n l -options: get || [ LINE_NUMBER(.CHARACTER) ] (eg. 120 or 120.5)  \n highlighting -options: on || off \n", bg="#000000", fg="#ffffff", justify=tkinter.LEFT).pack()
+        elif (command != None):
+            help_label = tkinter.Label(help_win, text=f"{command}: {self.command_definition[command]}", bg="#000000", fg="#ffffff", justify=tkinter.LEFT).pack()
+        #-puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)
 
     #binded functions
     def popup(self, arg):
         """ gets x, y position of mouse click """
         self.right_click_menu.tk_popup(arg.x_root+50, arg.y_root, 0)
         self.right_click_menu.grab_release()
+
+    def command_history(self, arg):
+        try:
+            self.command_entry.delete(0, "end")
+            self.command_input_history_index += 1
+            last_command = self.command_input_history[-self.command_input_history_index]
+            self.command_entry.insert(0, last_command)
+        except Exception:
+            self.command_input_history_index -= 2
+
+    def command_O(self, arg):
+        self.command_out.configure(text=str(arg))
 
     def cmmand(self, arg):
         """ parses command(case insensitive) from command line and executes it"""
@@ -157,27 +281,44 @@ class win():
 
         #help command
         if (command[0] == "help"):
-            print("l: line number --puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)")
-        
+            try:
+                if (command[1] != None):
+                    self.help_win(command[1])
+            except IndexError:
+                print("l: line number -options: get, [line_number.character] -puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)")
+                print("highlighting -options: on, off")
+                self.help_win()
+
         #highlighting command
         if (command[0] == "highlighting"):
             #print("aaa")
             if (command[1] == "on"):
-                #print("turn on")
+                self.command_O("highlighting on")
                 self.highlighting = True
             elif (command[1] == "off"):
-                #print("turn off")
+                self.command_O("highlighting off")
                 self.highlighting = False
 
         #line/ line and column command        
         if (command[0][0] == "l"):
-            #print(float(command[0][2:]))
-            self.txt.mark_set("insert", float(command[0][2:]))
+            argument = command[0][2:]
+            if (re.search("[0-9]", argument)):
+                self.command_O(f"moved to: {float(argument)}")
+                self.txt.mark_set("insert", float(argument))
+
+            elif (re.search("get", argument)):
+                self.command_O(f"total lines: {self.get_line_count()}")
         
+        #append command to command history
+        self.command_input_history.append(command)
+        print(self.command_input_history)
+
         #sets focus back to text widget
         self.txt.focus_set()
         keyboard.press_and_release("enter+backspace")
         self.command_entry.delete(0, "end") #deletes command line input
+
+        self.command_input_history_index = 0
 
     #menubar functions
     def new_file(self):
@@ -212,18 +353,35 @@ class win():
             path.close()
 
         except Exception as e:
+            print(e)
             self.error_win(e)
 
     def load_file(self):
-        if (self.current_file.read()==""):
-            self.current_file.close()
-            os.remove(f"{os.getcwd()}/untitled.txt")
+        try:
+            if (self.current_file.read()==""):
+                self.get_line_count()
+                self.current_file.close()
+                os.remove(f"{os.getcwd()}/untitled.txt")
+        except Exception as e:
+            self.error_win(e)
+
         path = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
         try:
             self.current_file = open(path, "r+")
+            content = self.current_file.read()
             root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
-            self.txt.insert("1.0",self.current_file.read())
+            self.txt.insert("1.0", content)
             self.current_file.close()
+            self.command_O(f"total lines: {self.get_line_count()}")
+
+            # content_len = len(content)
+            # chunksize = int(content_len/1000)
+            # chunk0 = 0
+            # chunk1 = chunksize
+            # for i in range(int(content_len/1000)):
+            #     self.txt.insert("end-1c", content[chunk0:chunk1])
+            #     chunk0 += chunksize
+            #     chunk1 += chunksize
 
         except Exception as e:
             self.error_win(e)
@@ -256,7 +414,6 @@ class win():
         self.info = self.txt.get("1.0", 'end-1c')
         try:
             for index, line in enumerate(self.info.split('\n'), start=1):
-
         #         #if (re.search(r"[.,_]*[0-9]+", line)):
         #         for i in range(len(re.findall(r"\s*[.,_]*[0-9]+", line, re.X))):
         #             split_line = ''.join(line.split())
@@ -270,17 +427,15 @@ class win():
         #             #print(num)
         #             self.txt.tag_add("operators", f"{index}.{num[0]}", f"{index}.{num[1]}")
 
-                for indx, keyword in enumerate(all_key):
+                for keyword in all_key:
+                    self.txt.highlight_pattern(keyword, "sumn")
                     #print(keyword, indx)
-                    if (re.search(keyword, line)):
-                        found = re.search(r"\s*[_]*"+keyword, line)
-                        found_index = [ str(found.span()[0]), str(found.span()[1]) ]
-                        #if (keyword == "import" and keyword == found.group()):
-                        #    modules.append(line.split()[1])
-                        #print(line, index)
-                        self.txt.tag_add("sumn", f"{index}.{found_index[0]}", f"{index}.{found_index[1]}")
-                        #print(x, x.span(), f"{index}.{str(x.span()[0])}", f"{index}.{str(x.span()[1])}")
-                        #self.checked.append(index)
+                    # split_line = line.split("\n")
+                    # for indx, word in enumerate(split_line):
+                    #     if (re.search(keyword, word)):
+                    #         found = re.search(r"\s*[_]*"+keyword, word)
+                    #         found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
+                    #         self.txt.tag_add("sumn", f"{index}.{found_index[0]}", f"{index}.{found_index[1]}")
 
         except AttributeError:
             pass
