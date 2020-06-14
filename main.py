@@ -4,7 +4,7 @@ from tkinter import font
 import keyboard
 import re
 import threading
-import os
+import os, sys
 import tqdm
 from itertools import chain
 from time import sleep
@@ -85,7 +85,7 @@ class p_bar(tkinter.Label):
 
 
 class win():
-    def __init__(self, root):
+    def __init__(self, root, file=None):
         
         self.command_definition = {
             "l" : "-get: gets last line number || -[LINE_NUMBER(.CHARACTER)]: puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)",
@@ -96,7 +96,8 @@ class win():
         self.command_input_history_index = 0
 
         self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
-        
+        self.current_file_name = None
+
         self.line_count = None
         
         self.highlighting = False # turned off by default because it's not working properly (fucking regex)
@@ -228,14 +229,14 @@ class win():
     #    pass
 
 
-    #error window
-
 
     def get_line_count(self):
+        """ returns total amount of lines in opened text """
         self.info = self.txt.get("1.0", "end-1c")
         return sum(1 for line in self.info.split("\n"))
 
     def error_win(self, e):
+        """ set up error window """
         error_win = tkinter.Tk("aaa")
         error_win.configure(bg="#000000", bd=2)
         #error_win.geometry("600x200")"C:\Users\Admin\Desktop\instagram data\sx.bugy_20200512_part_1\messages.json"
@@ -246,6 +247,7 @@ class win():
         #error_button.place(relx=0.25, rely=0.25, relwidth=0.35, relheight=0.26)
 
     def help_win(self, command=None):
+        """ set up help window """
         help_win = tkinter.Tk("aaa")
         help_win.configure(bg="#000000")
         help_win.title(f"Help Window")
@@ -262,6 +264,7 @@ class win():
         self.right_click_menu.grab_release()
 
     def command_history(self, arg):
+        """ scroll through used commands with Up and Down arrows(?) """
         try:
             self.command_entry.delete(0, "end")
             self.command_input_history_index += 1
@@ -271,6 +274,8 @@ class win():
             self.command_input_history_index -= 2
 
     def command_O(self, arg):
+        """ sets the text in command output"""
+        #(I have no idea why past me made this into a function when it doesn't really have to be a function)
         self.command_out.configure(text=str(arg))
 
     def cmmand(self, arg):
@@ -323,22 +328,25 @@ class win():
     #menubar functions
     def new_file(self):
         try:
-            self.current_file = open(f"{os.getcwd()}/untitled.txt", "w+")
+            self.current_file_name = f"{os.getcwd()}/untitled.txt"
+            self.current_file = open(self.current_file_name, "w+")
             root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
         except Exception as e:
             self.current_file.close()
             self.error_win(e)
 
     def save_file(self):
+        """ saves current text into opened file """
         content = str(self.txt.get("1.0", "end-1c"))
         
-        try:
-            self.current_file = open(f"{os.getcwd()}/untitled.txt", "w+")
-            root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
-        except:
-            pass
+        # try:
+        #     self.current_file = open(f"{os.getcwd()}/untitled.txt", "w+")
+        #     root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
+        # except:
+        #     pass
         
         try:
+            self.current_file = open(self.current_file_name, "w")
             self.current_file.write(content)
             self.current_file.close()
         except Exception as e:
@@ -346,17 +354,20 @@ class win():
             self.error_win(e)
 
     def save_file_as(self):
-        path = self.filename.asksaveasfile(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
+        """ saves current text into a new file """
+        self.current_file = self.filename.asksaveasfile(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
+        self.current_file_name = self.current_file.name
         try:
             content = self.txt.get("1.0", "end-1c")
-            path.write(content)
-            path.close()
+            self.current_file.write(content)
+            self.current_file.close()
 
         except Exception as e:
             print(e)
             self.error_win(e)
 
     def load_file(self):
+        """ opens a file and loads it's content into the text widget """
         try:
             if (self.current_file.read()==""):
                 self.get_line_count()
@@ -365,15 +376,17 @@ class win():
         except Exception as e:
             self.error_win(e)
 
-        path = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
+        self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
         try:
-            self.current_file = open(path, "r+")
+            self.current_file = open(self.current_file_name, "r+")
             content = self.current_file.read()
             root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
+            self.txt.delete("1.0", "end-1c")
             self.txt.insert("1.0", content)
             self.current_file.close()
             self.command_O(f"total lines: {self.get_line_count()}")
 
+            # a bug I thought I could fix with loading the file in chunks but it seems to be a problem of tkinter.Text wrapping
             # content_len = len(content)
             # chunksize = int(content_len/1000)
             # chunk0 = 0
@@ -388,29 +401,34 @@ class win():
 
 
     def init(self):
+        """ a completely useless initialize function """
         self.update_win()
 
-
     def update_win(self):
+        """ updates window """
         root.update()
         root.update_idletasks()
 
 
-    def update_syntax(self, x=''):
+    def update_text(self, x=''):
+        """ updates the text and sets current position of the insert cursor"""
+        #basically the main function
         while 1:
             self.update_win()
             #print(self.current_file)
             #print(self.txt.index(tkinter.INSERT))
             #self.txt.after(0, self.update_line_numbers)
-            cursor_index = self.txt.index(tkinter.INSERT).split(".")
+            cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
             #print(cursor_index)
-            self.line_no.configure(text=f"line: {cursor_index[0]}   column: {cursor_index[1]}")
-            if (self.highlighting):
+            self.line_no.configure(text=f"line: {cursor_index[0]}   column: {cursor_index[1]}") # sets the cursor position into line number label
+            
+            if (self.highlighting): # if the highlighting option is on then turn on highlighting
                 self.highlight()
             else:
                 pass
 
     def highlight(self):
+        """ the highlight function """
         self.info = self.txt.get("1.0", 'end-1c')
         try:
             for index, line in enumerate(self.info.split('\n'), start=1):
@@ -449,4 +467,4 @@ root = tkinter.Tk()
 main_win = win(root)
 
 if __name__ == '__main__':
-    main_win.update_syntax()
+    main_win.update_text()
