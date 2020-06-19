@@ -359,8 +359,10 @@ class win():
         self.current_file_name = self.current_file.name
         try:
             content = self.txt.get("1.0", "end-1c")
+            root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
             self.current_file.write(content)
             self.current_file.close()
+            self.command_O(f"total lines: {self.get_line_count()}")
 
         except Exception as e:
             print(e)
@@ -368,13 +370,14 @@ class win():
 
     def load_file(self):
         """ opens a file and loads it's content into the text widget """
-        try:
-            if (self.current_file.read()==""):
-                self.get_line_count()
-                self.current_file.close()
-                os.remove(f"{os.getcwd()}/untitled.txt")
-        except Exception as e:
-            self.error_win(e)
+        # try:
+        #     if (self.current_file.read()==""):
+        #         self.current_file.close()
+        #         os.remove(f"{os.getcwd()}/untitled.txt")
+
+        # except Exception as e:
+        #     self.error_win(e)
+            
 
         self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
         try:
@@ -398,7 +401,6 @@ class win():
 
         except Exception as e:
             self.error_win(e)
-
 
     def init(self):
         """ a completely useless initialize function """
