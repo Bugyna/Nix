@@ -1,6 +1,7 @@
 import tkinter
 from tkinter import ttk
 from tkinter import font
+import random
 import keyboard
 import re
 import threading
@@ -14,7 +15,7 @@ from tkinter import filedialog
 
 
 keywords = ['if','elif','else','def ','class ','while']
-sumn = ['import ','from ','in ','and ','self.']
+sumn = ['import ','from ',' in ',' and ','self.']
 var_types = ['int','float','string','str']
 special_chars = ['"',"'","#","@","(",")","[","]","{","}"]
 other_chars = ["_"]
@@ -29,7 +30,7 @@ print(all_key)
 #print(chr(9619))
 
 for i in tqdm.tqdm(range(10)):
-    sleep(0.05)
+    sleep(0.025)
 
 class CustomText(tkinter.Text):
     '''A text widget with a new method, highlight_pattern()
@@ -83,10 +84,8 @@ class p_bar(tkinter.Label):
 
 
 
-
 class win():
     def __init__(self, root, file=None):
-        
         self.command_definition = {
             "l" : "-get: gets last line number || -[LINE_NUMBER(.CHARACTER)]: puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)",
             "highlighting" : "-on: turns highlighting on -off: turns highlighting off"
@@ -101,6 +100,7 @@ class win():
         self.line_count = None
         
         self.highlighting = False # turned off by default because it's not working properly (fucking regex)
+        self.run = True
 
         #configuring main window
         #root.overrideredirect(True)
@@ -111,7 +111,7 @@ class win():
         root.title(f"N Editor: <None>") #{os.path.basename(self.current_file.name)}
         root.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
         root.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
-
+        #root.overrideredirect(True)
 
         #prints all fonts you have installed
         #fonts = list(font.families())
@@ -199,11 +199,12 @@ class win():
         self.txt.tag_configure("modules", foreground="#f75f00")
         self.txt.tag_configure("default", foreground="#302387")
 
-
+        self.tags = ["other_chars", "sumn", "special_chars", "var_types", "operators", "keywords", "modules"]
 
         #command binding
         self.command_entry.bind("<Return>", self.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
         self.command_entry.bind("<Up>", self.command_history) # lets you scroll through commands you have already used
+        self.command_entry.bind("<Down>", self.command_history)
         self.txt.bind("<Button-3>", self.popup) #right click pop-up window
         #self.txt.bind("<Tab>", self.cmmand)
         #self.txt.bind("<Control_L><k>", self.cmmand)
@@ -265,13 +266,28 @@ class win():
 
     def command_history(self, arg):
         """ scroll through used commands with Up and Down arrows(?) """
+        self.command_entry.delete(0, "end")
         try:
-            self.command_entry.delete(0, "end")
-            self.command_input_history_index += 1
+            if (arg.keysym == "Up"):
+                self.command_input_history_index += 1
+            else:
+                self.command_input_history_index -= 1
+            
+            if (self.command_input_history_index <= 0):
+                self.command_input_history_index = len(self.command_input_history)+1
+
+            elif (self.command_input_history_index > len(self.command_input_history)):
+                self.command_input_history_index = len(self.command_input_history)
+
             last_command = self.command_input_history[-self.command_input_history_index]
             self.command_entry.insert(0, last_command)
-        except Exception:
-            self.command_input_history_index -= 2
+
+            print(self.command_input_history_index)
+
+        except IndexError:
+            print(self.command_input_history_index)
+            self.command_input_history_index = 0
+            self.command_entry.delete(0, "end")
 
     def command_O(self, arg):
         """ sets the text in command output"""
@@ -280,7 +296,7 @@ class win():
 
     def cmmand(self, arg):
         """ parses command(case insensitive) from command line and executes it"""
-
+        self.command_input_history_index = 0
         command = self.command_entry.get().lower().split()#turns command into a list and turns it all into lowercase chars
         #print(command[0])
 
@@ -295,17 +311,18 @@ class win():
                 self.help_win()
 
         #highlighting command
-        if (command[0] == "highlighting"):
+        elif (command[0] == "highlighting"):
             #print("aaa")
             if (command[1] == "on"):
                 self.command_O("highlighting on")
+                self.highlight_all()
                 self.highlighting = True
             elif (command[1] == "off"):
                 self.command_O("highlighting off")
                 self.highlighting = False
 
         #line/ line and column command        
-        if (command[0][0] == "l"):
+        elif (command[0][0] == "l"):
             argument = command[0][2:]
             if (re.search("[0-9]", argument)):
                 self.command_O(f"moved to: {float(argument)}")
@@ -313,7 +330,17 @@ class win():
 
             elif (re.search("get", argument)):
                 self.command_O(f"total lines: {self.get_line_count()}")
-        
+
+        elif (command[0] == "quit"):
+            self.run = False
+
+        elif (command[0] == "save"):
+            self.save_file()
+            self.command_O(f"file saved")
+
+        #elif (command[0][0] == "open"):
+
+
         #append command to command history
         self.command_input_history.append(command)
         print(self.command_input_history)
@@ -350,8 +377,7 @@ class win():
             self.current_file.write(content)
             self.current_file.close()
         except Exception as e:
-            self.current_file.close()
-            self.error_win(e)
+            self.error_win(f"{e}\n aka you probably didn't open any file yet")
 
     def save_file_as(self):
         """ saves current text into a new file """
@@ -415,50 +441,66 @@ class win():
     def update_text(self, x=''):
         """ updates the text and sets current position of the insert cursor"""
         #basically the main function
-        while 1:
+        while self.run:
             self.update_win()
             #print(self.current_file)
             #print(self.txt.index(tkinter.INSERT))
             #self.txt.after(0, self.update_line_numbers)
-            cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
+            self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
             #print(cursor_index)
-            self.line_no.configure(text=f"line: {cursor_index[0]}   column: {cursor_index[1]}") # sets the cursor position into line number label
+            self.line_no.configure(text=f"line: {self.cursor_index[0]}   column: {self.cursor_index[1]}") # sets the cursor position into line number label
             
             if (self.highlighting): # if the highlighting option is on then turn on highlighting
                 self.highlight()
             else:
                 pass
-
+    
     def highlight(self):
+        line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
+        for word in line:
+            for keyword in all_key:
+                if (re.search(keyword, word)):
+                    found = re.search(r"\s*[_]*"+keyword, word)
+                    found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
+                    self.txt.tag_add("sumn", f"{self.cursor_index[0]}.{found_index[0]}", f"{self.cursor_index[0]}.{found_index[1]}")
+
+    def highlight_all(self):
         """ the highlight function """
         self.info = self.txt.get("1.0", 'end-1c')
-        try:
-            for index, line in enumerate(self.info.split('\n'), start=1):
-        #         #if (re.search(r"[.,_]*[0-9]+", line)):
-        #         for i in range(len(re.findall(r"\s*[.,_]*[0-9]+", line, re.X))):
-        #             split_line = ''.join(line.split())
-        #             offset = re.search(r"\s*", line[1:])
-        #             #print(offset)
-        #             num = re.search(r"[[0-9]+]*", split_line) #r"$[^,]*^[^(]*^[^)]*[0-9]+"
-        #             #print(num)
-        #             #offset = len(line) - len(split_line)
-        #             num = [ num.span()[0], num.span()[1] ]
-        #             #print(num[1])
-        #             #print(num)
-        #             self.txt.tag_add("operators", f"{index}.{num[0]}", f"{index}.{num[1]}")
-
+        for line in self.info.split("\n"):
+            for word in line:
                 for keyword in all_key:
-                    self.txt.highlight_pattern(keyword, "sumn")
-                    #print(keyword, indx)
-                    # split_line = line.split("\n")
-                    # for indx, word in enumerate(split_line):
-                    #     if (re.search(keyword, word)):
-                    #         found = re.search(r"\s*[_]*"+keyword, word)
-                    #         found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
-                    #         self.txt.tag_add("sumn", f"{index}.{found_index[0]}", f"{index}.{found_index[1]}")
+                    if (re.search(keyword, word)):
+                        found = re.search(r"\s*[_]*"+keyword, word)
+                        found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
+                        self.txt.tag_add("sumn", f"{self.cursor_index[0]}.{found_index[0]}", f"{self.cursor_index[0]}.{found_index[1]}")
+        # try:
+        #     for index, line in enumerate(self.info.split('\n'), start=1):
+        # #         #if (re.search(r"[.,_]*[0-9]+", line)):
+        # #         for i in range(len(re.findall(r"\s*[.,_]*[0-9]+", line, re.X))):
+        # #             split_line = ''.join(line.split())
+        # #             offset = re.search(r"\s*", line[1:])
+        # #             #print(offset)
+        # #             num = re.search(r"[[0-9]+]*", split_line) #r"$[^,]*^[^(]*^[^)]*[0-9]+"
+        # #             #print(num)
+        # #             #offset = len(line) - len(split_line)
+        # #             num = [ num.span()[0], num.span()[1] ]
+        # #             #print(num[1])
+        # #             #print(num)
+        # #             self.txt.tag_add("operators", f"{index}.{num[0]}", f"{index}.{num[1]}")
 
-        except AttributeError:
-            pass
+        #         for keyword in all_key:
+        #             self.txt.highlight_pattern(keyword, "sumn")
+        #             #print(keyword, indx)
+        #             # split_line = line.split("\n")
+        #             # for indx, word in enumerate(split_line):
+        #             #     if (re.search(keyword, word)):
+        #             #         found = re.search(r"\s*[_]*"+keyword, word)
+        #             #         found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
+        #             #         self.txt.tag_add("sumn", f"{index}.{found_index[0]}", f"{index}.{found_index[1]}")
+
+        # except AttributeError:
+        #     pass
 
         def unhighlight(self):
             pass
