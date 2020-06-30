@@ -86,6 +86,9 @@ class p_bar(tkinter.Label):
 
 class win():
     def __init__(self, root, file=None):
+
+        self.background_color = "#000000"
+
         self.command_definition = {
             "l" : "-get: gets last line number || -[LINE_NUMBER(.CHARACTER)]: puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)",
             "highlighting" : "-on: turns highlighting on -off: turns highlighting off"
@@ -105,7 +108,7 @@ class win():
         #configuring main window
         #root.overrideredirect(True)
         root.resizable(True,True)
-        root.config(bg="black")
+        root.config(bg=self.background_color)
         root.geometry("1200x600")
         self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
         root.title(f"N Editor: <None>") #{os.path.basename(self.current_file.name)}
@@ -131,7 +134,7 @@ class win():
 
         #self.txt.grid(row=0, column=0 ,sticky="nsew")
         self.txt.place(relx=0,rely=0.0,relwidth=0.985,relheight=0.95)
-        self.txt.configure(font=self.font,bg = 'black',fg='#cccccc', undo=True, spacing1=5,
+        self.txt.configure(font=self.font,bg = self.background_color,fg='#cccccc', undo=True, spacing1=5,
             insertwidth=8, insertofftime=500, insertbackground="#A2000A", selectbackground="#0A00A2",
             borderwidth=0, relief="sunken", tabs=('1c'))
             
@@ -141,7 +144,7 @@ class win():
         # self.txt['yscrollcommand'] = self.scrollb.set
 
         #line and column number label
-        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = 'black',fg='#cccccc') #self.line_no.grid(row=1,column=2)
+        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.background_color,fg='#cccccc') #self.line_no.grid(row=1,column=2)
         self.line_no.place(relx=0.70,rely=0.96, relwidth=0.3, relheight=0.05)
 
         
@@ -153,7 +156,7 @@ class win():
 
 
         #command output
-        self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg="#000000", fg="#00df00",
+        self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.background_color, fg="#00df00",
          justify=tkinter.CENTER, anchor="w")
         self.command_out.place(relx=0.28,rely=0.97, relwidth=0.25, relheight=0.0275)
 
@@ -167,7 +170,7 @@ class win():
         #self.progress_bar.place(relx=0.35,rely=0.975,relwidth=0.3,relheight=0.025)
 
         #right click pop-up menu
-        self.right_click_menu = tkinter.Menu(tearoff=0, font=self.smaller_font, bg="#000000", fg="#ffffff")
+        self.right_click_menu = tkinter.Menu(tearoff=0, font=self.smaller_font, bg=self.background_color, fg="#ffffff")
         self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
         self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
         self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
@@ -178,7 +181,7 @@ class win():
         self.menubar.configure(font=self.font, bg="black") #configure font and background
 
         #dropdown for menubar
-        self.file_dropdown = tkinter.Menu(self.menubar, font=self.font, tearoff=False,fg="#FFFFFF", bg="black") #declare dropdown
+        self.file_dropdown = tkinter.Menu(self.menubar, font=self.font, tearoff=False,fg="#FFFFFF", bg=self.background_color) #declare dropdown
         self.file_dropdown.add_command(label="New file",command=self.new_file) #add commands
         self.file_dropdown.add_command(label="Open file",command=self.load_file)
         self.file_dropdown.add_command(label="Save file",command=self.save_file)
@@ -336,7 +339,13 @@ class win():
 
         elif (command[0] == "save"):
             self.save_file()
-            self.command_O(f"file saved")
+            text = ""
+            for i in range(25):
+                text += chr(9608)
+                self.command_out.configure(text=text)
+                sleep(0.2)
+            #self.command_O(f"file saved")
+
 
         #elif (command[0][0] == "open"):
 
@@ -391,7 +400,6 @@ class win():
             self.command_O(f"total lines: {self.get_line_count()}")
 
         except Exception as e:
-            print(e)
             self.error_win(e)
 
     def load_file(self):
