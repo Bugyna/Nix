@@ -15,15 +15,14 @@ from tkinter import filedialog
 
 
 keywords = ['if','elif','else','def ','class ','while']
-sumn = ['import ','from ',' in ',' and ','self.']
+sumn = ['import ','from ',' in ',' and ','self']
 var_types = ['int','float','string','str']
-special_chars = ['"',"'","#","@","(",")","[","]","{","}"]
-other_chars = ["_"]
-operators = ['<','>',"+","-","*","/","="]
+special_chars = ['"',"'","#","@",")","(","[","]","{","}","_"]
+operators = ["<",'>',"+","-","*","=","/"]
 nums = ['0','1','2','3','4','5','6','7','8','9']
 modules = []
 modules2 = []
-all_key = [keywords, sumn, var_types, modules, nums]
+all_key = [keywords, sumn, var_types, modules, nums, operators, special_chars]
 all_key = list(chain.from_iterable(all_key))
 print(all_key)
 
@@ -88,7 +87,7 @@ class win():
     def __init__(self, root, file=None):
 
         self.background_color = "#000000"
-        self.foreground_color = "#11FF11"
+        self.foreground_color = "#9F005F"
         self.theme = "darkred"
 
         self.command_definition = {
@@ -104,20 +103,21 @@ class win():
 
         self.line_count = None
         
-        self.highlighting = False # turned off by default because it's not working properly (fucking regex)
+        self.highlighting = True # turned off by default because it's not working properly (fucking regex)
         self.run = True
 
         #configuring main window
         #root.overrideredirect(True)
         root.resizable(True,True)
         root.config(bg=self.background_color)
-        root.geometry("1200x600")
+        root.geometry("600x400")
+        #root.minsize(width=200, height=200)
         self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
         root.title(f"N Editor: <None>") #{os.path.basename(self.current_file.name)}
         root.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
         root.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
         #root.overrideredirect(True)
-
+        root.resizable(1, 1)
         #prints all fonts you have installed
         #fonts = list(font.families())
         #for item in fonts:
@@ -135,10 +135,10 @@ class win():
         self.txt = CustomText()
 
         #self.txt.grid(row=0, column=0 ,sticky="nsew")
-        self.txt.place(relx=0,rely=0.0275,relwidth=0.985,relheight=0.925)
         self.txt.configure(font=self.font,bg = self.background_color,fg=self.foreground_color, undo=True, spacing1=5,
             insertwidth=8, insertofftime=500, insertbackground="#A2000A", selectbackground="#0A00A2",
-            borderwidth=0, relief="sunken", tabs=('1c'))
+            borderwidth=0, relief="sunken", tabs=("1c"))
+        self.txt.place(x=0,y=20,relwidth=0.985, relheight=0.9, anchor="nw")
             
         #scrollbar configuration
         # self.scrollb = tkinter.Scrollbar(root, command=self.txt.yview, relief="flat") #self.scrollb.grid(row=0,column=2,sticky="nsew")
@@ -146,21 +146,21 @@ class win():
         # self.txt['yscrollcommand'] = self.scrollb.set
 
         #line and column number label
-        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.background_color,fg='#cccccc') #self.line_no.grid(row=1,column=2)
-        self.line_no.place(relx=0.70,rely=0.96, relwidth=0.3, relheight=0.05)
-
+        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.background_color,fg="#999999") #self.line_no.grid(row=1,column=2)
+        self.line_no.place(relx=0.75, rely=0.99, height=15, anchor="sw")
+        
         
         #command line entry
         self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
-        bg = self.background_color,fg='#cccccc', insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
+        bg = self.background_color,fg="#999999", insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
         #self.command_entry.grid(row=1,column=0,ipady=3);
-        self.command_entry.place(relx=0.0,rely=0.97, relwidth=0.25, relheight=0.0275)
+        self.command_entry.place(x=0.0,rely=0.99, relwidth=0.2, height=15, anchor="sw")
 
 
         #command output
         self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.background_color, fg="#00df00",
          justify=tkinter.CENTER, anchor="w")
-        self.command_out.place(relx=0.28,rely=0.97, relwidth=0.25, relheight=0.0275)
+        self.command_out.place(relx=0.28,rely=0.99, relwidth=0.25, height=15, anchor="sw")
 
         #progressbar
         #self.progress_bar = p_bar(root) #.grid(row=1,column=1)
@@ -184,10 +184,10 @@ class win():
 
         #self.menubar_button = tkinter.Button(root, text="File" ,font=self.font, bg=self.background_color, fg=self.foreground_color, command=self.popup).place(relx=0,rely=0,relwidth=0.05)
 
-        self.menubar_label = tkinter.Label(root, text="File" ,font=self.font, bg=self.background_color, fg="#FFFFFF")
-        self.separator_label = tkinter.Label(root, text="-------" ,font=self.font, bg=self.background_color, fg="#FFFFFF").place(relx=0,rely=0.0275, relwidth=0.05, relheight=0.005)
+        self.menubar_label = tkinter.Label(root, text="File" ,font=self.font, bg=self.background_color, fg="#999999")
+        self.separator_label = tkinter.Label(root, text="----" ,font=self.font, bg=self.background_color, fg="#999999").place(x=0, y=15, height=2, anchor="nw")
         self.menubar_label.bind("<Button-1>", self.file_menu_popup)
-        self.menubar_label.place(relx=0,rely=0.001,relwidth=0.05)
+        self.menubar_label.place(x=0, y=0, anchor="nw")
 
         #dropdown for menubar
         self.file_dropdown = tkinter.Menu(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.background_color) #declare dropdown
@@ -225,9 +225,7 @@ class win():
         #self.keys = [] #no idea 
 
         #grid configuration
-        root.grid_columnconfigure(0, weight=1)
-        root.grid_columnconfigure(1, weight=0)
-        root.grid_rowconfigure(0,weight=1)
+        self.a=""
 
     #def indent(self, arg):
     #    self.txt.insert(tkinter.INSERT, " "*4)
@@ -240,7 +238,16 @@ class win():
     #def cmmand(self, event):
     #    pass
 
+        # self.research_label_background = tkinter.Label(root, bg="#999999", fg="#FFFFFF")
+        # self.research_label_background.place(relx=0.5,rely=0.8, relwidth=0.205 ,relheight=0.015)
+        # self.research_label = tkinter.Label(root, text="aaaaa", bg=self.background_color, fg="#FFFFFF")
+        # self.research_label.place(relx=0.5,rely=0.8, relheight=0.015)
 
+    def research(self):
+        if len(self.a) < 20:
+            sleep(0.2)
+            self.a += chr(9608)
+            self.research_label.configure(text=self.a)
 
     def get_line_count(self):
         """ returns total amount of lines in opened text """
@@ -251,7 +258,7 @@ class win():
         """ set up error window """
         error_win = tkinter.Tk("aaa")
         error_win.configure(bg="#000000", bd=2)
-        #error_win.geometry("600x200")"C:\Users\Admin\Desktop\instagram data\sx.bugy_20200512_part_1\messages.json"
+        #error_win.geometry("600x200")
         error_win.title(f"Error Window")
         error_label = tkinter.Label(error_win, text=f"Error: {e}", justify=tkinter.CENTER, bg="#000000", fg="#ffffff"); error_label.pack()
         error_button = tkinter.Button(error_win, text="OK", command=error_win.destroy, bg="#000000", fg="#ffffff"); error_button.pack()
@@ -469,20 +476,24 @@ class win():
             self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
             #print(cursor_index)
             self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
-            
+            #t = threading.Thread(target=self.research()).start()
+
             if (self.highlighting): # if the highlighting option is on then turn on highlighting
                 self.highlight()
             else:
                 pass
     
     def highlight(self):
-        line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
-        for word in line:
-            for keyword in all_key:
-                if (re.search(keyword, word)):
-                    found = re.search(r"\s*[_]*"+keyword, word)
-                    found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
-                    self.txt.tag_add("sumn", f"{self.cursor_index[0]}.{found_index[0]}", f"{self.cursor_index[0]}.{found_index[1]}")
+        for word in all_key:
+            self.txt.highlight_pattern(word, "other_chars")
+
+        # line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
+        # for word in line:
+        #     for keyword in all_key:
+        #         if (re.search("%r"%keyword, word)):
+        #             found = re.search(r"\s*[_]*"+"%r"%keyword, word)
+        #             found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
+        #             self.txt.tag_add("other_chars", f"{self.cursor_index[0]}.{found_index[0]}", f"{self.cursor_index[0]}.{found_index[1]}")
 
     def highlight_all(self):
         """ the highlight function """
@@ -529,6 +540,7 @@ class win():
 
 root = tkinter.Tk()
 main_win = win(root)
+
 
 if __name__ == '__main__':
     main_win.update_text()
