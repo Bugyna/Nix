@@ -23,14 +23,14 @@ operators = ['<','>',"+","-","*","/","="]
 nums = ['0','1','2','3','4','5','6','7','8','9']
 modules = []
 modules2 = []
-all_key = [keywords,sumn,var_types, modules, nums]
+all_key = [keywords, sumn, var_types, modules, nums]
 all_key = list(chain.from_iterable(all_key))
 print(all_key)
 
 #print(chr(9619))
 
 for i in tqdm.tqdm(range(10)):
-    sleep(0.025)
+    sleep(0.01)
 
 class CustomText(tkinter.Text):
     '''A text widget with a new method, highlight_pattern()
@@ -88,6 +88,8 @@ class win():
     def __init__(self, root, file=None):
 
         self.background_color = "#000000"
+        self.foreground_color = "#11FF11"
+        self.theme = "darkred"
 
         self.command_definition = {
             "l" : "-get: gets last line number || -[LINE_NUMBER(.CHARACTER)]: puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)",
@@ -133,8 +135,8 @@ class win():
         self.txt = CustomText()
 
         #self.txt.grid(row=0, column=0 ,sticky="nsew")
-        self.txt.place(relx=0,rely=0.0,relwidth=0.985,relheight=0.95)
-        self.txt.configure(font=self.font,bg = self.background_color,fg='#cccccc', undo=True, spacing1=5,
+        self.txt.place(relx=0,rely=0.0275,relwidth=0.985,relheight=0.925)
+        self.txt.configure(font=self.font,bg = self.background_color,fg=self.foreground_color, undo=True, spacing1=5,
             insertwidth=8, insertofftime=500, insertbackground="#A2000A", selectbackground="#0A00A2",
             borderwidth=0, relief="sunken", tabs=('1c'))
             
@@ -150,9 +152,9 @@ class win():
         
         #command line entry
         self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
-        bg = '#111111',fg='#cccccc', insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
+        bg = self.background_color,fg='#cccccc', insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
         #self.command_entry.grid(row=1,column=0,ipady=3);
-        self.command_entry.place(relx=0.005,rely=0.97, relwidth=0.25, relheight=0.0275)
+        self.command_entry.place(relx=0.0,rely=0.97, relwidth=0.25, relheight=0.0275)
 
 
         #command output
@@ -177,20 +179,27 @@ class win():
         self.right_click_menu.add_separator()
 
         #menubar
-        self.menubar = tkinter.Menu(root, font=self.font, bg="black") #declare menubar
-        self.menubar.configure(font=self.font, bg="black") #configure font and background
+        #self.menubar = tkinter.Menu(root, font=self.font, bg="black") #declare menubar
+        #self.menubar.configure(font=self.font, bg="black") #configure font and background
+
+        #self.menubar_button = tkinter.Button(root, text="File" ,font=self.font, bg=self.background_color, fg=self.foreground_color, command=self.popup).place(relx=0,rely=0,relwidth=0.05)
+
+        self.menubar_label = tkinter.Label(root, text="File" ,font=self.font, bg=self.background_color, fg="#FFFFFF")
+        self.separator_label = tkinter.Label(root, text="-------" ,font=self.font, bg=self.background_color, fg="#FFFFFF").place(relx=0,rely=0.0275, relwidth=0.05, relheight=0.005)
+        self.menubar_label.bind("<Button-1>", self.file_menu_popup)
+        self.menubar_label.place(relx=0,rely=0.001,relwidth=0.05)
 
         #dropdown for menubar
-        self.file_dropdown = tkinter.Menu(self.menubar, font=self.font, tearoff=False,fg="#FFFFFF", bg=self.background_color) #declare dropdown
+        self.file_dropdown = tkinter.Menu(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.background_color) #declare dropdown
         self.file_dropdown.add_command(label="New file",command=self.new_file) #add commands
         self.file_dropdown.add_command(label="Open file",command=self.load_file)
         self.file_dropdown.add_command(label="Save file",command=self.save_file)
         self.file_dropdown.add_command(label="Save file as",command=self.save_file_as)
-        self.menubar.add_cascade(label="File",menu=self.file_dropdown) #add dropdown to menubar
+        #self.menubar.add_cascade(label="File",menu=self.file_dropdown) #add dropdown to menubar
         #self.file_dropdown.add_separator()
         #self.file_dropdown.add_command(label="EXIT")
 
-        root.config(menu=self.menubar)#adds menubar to main window
+        #root.config(menu=self.menubar)#adds menubar to main window
 
         #tags for highlighting
         self.txt.tag_configure("other_chars", foreground="#302387")
@@ -214,7 +223,6 @@ class win():
 
         #self.checked = [] #checked lines (for syntax highlighting optimization not yet added)
         #self.keys = [] #no idea 
-
 
         #grid configuration
         root.grid_columnconfigure(0, weight=1)
@@ -264,7 +272,11 @@ class win():
     #binded functions
     def popup(self, arg):
         """ gets x, y position of mouse click """
-        self.right_click_menu.tk_popup(arg.x_root+50, arg.y_root, 0)
+        self.right_click_menu.tk_popup(arg.x_root+50, arg.y_root-50, 0)
+        self.right_click_menu.grab_release()
+
+    def file_menu_popup(self, arg):
+        self.file_dropdown.tk_popup(arg.x_root+75, arg.y_root+25, 0)
         self.right_click_menu.grab_release()
 
     def command_history(self, arg):
@@ -456,7 +468,7 @@ class win():
             #self.txt.after(0, self.update_line_numbers)
             self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
             #print(cursor_index)
-            self.line_no.configure(text=f"line: {self.cursor_index[0]}   column: {self.cursor_index[1]}") # sets the cursor position into line number label
+            self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
             
             if (self.highlighting): # if the highlighting option is on then turn on highlighting
                 self.highlight()
