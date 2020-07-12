@@ -407,22 +407,21 @@ class win():
             self.current_file = open(self.current_file_name, "w")
             self.current_file.write(content)
             self.current_file.close()
+            self.command_O(f"total of {self.get_line_count()} lines saved")
         except Exception as e:
             self.error_win(f"{e}\n aka you probably didn't open any file yet")
 
     def save_file_as(self):
         """ saves current text into a new file """
-        self.current_file = self.filename.asksaveasfile(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
-        self.current_file_name = self.current_file.name
-        try:
-            content = self.txt.get("1.0", "end-1c")
-            root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
-            self.current_file.write(content)
-            self.current_file.close()
-            self.command_O(f"total lines: {self.get_line_count()}")
+        if (self.current_file_name != None):
+            tmp = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
+            os.rename(self.current_file_name, tmp)
+            self.current_file_name = tmp
+        else:
+            self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
 
-        except Exception as e:
-            self.error_win(e)
+        root.title(f"N Editor: <{os.path.basename(self.current_file_name)}>")
+        self.save_file()
 
     def load_file(self):
         try:
