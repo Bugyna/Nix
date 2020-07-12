@@ -17,19 +17,20 @@ from tkinter import filedialog
 keywords = ['if','elif','else','def ','class ','while']
 sumn = ['import ','from ',' in ',' and ','self']
 var_types = ['int','float','string','str']
-special_chars = ['"',"'","#","@",")","(","[","]","{","}","_"]
-operators = ["<",'>',"+","-","*","=","/"]
+other_chars = ["$","#","@","&","|","^","_",r"\ ".split()]
+special_chars = ['"',"'",")","(","[","]","{","}"]
+operators = ["<",'>',"+","-","*","=","/","%"]
 nums = ['0','1','2','3','4','5','6','7','8','9']
 modules = []
 modules2 = []
-all_key = [keywords, sumn, var_types, modules, nums, operators, special_chars]
+all_key = [keywords, sumn, var_types, modules, operators, other_chars]
 all_key = list(chain.from_iterable(all_key))
-print(all_key)
+#print(all_key)
 
 #print(chr(9619))
 
 for i in tqdm.tqdm(range(10)):
-    sleep(0.01)
+   sleep(0.01)
 
 class CustomText(tkinter.Text):
     '''A text widget with a new method, highlight_pattern()
@@ -71,16 +72,6 @@ class CustomText(tkinter.Text):
             self.tag_add(tag, "matchStart", "matchEnd")
 
 
-class p_bar(tkinter.Label):
-    def __init__(self, root):
-        self.char = chr(9608)
-        #self.char = "|"
-        self.bbar = super().__init__(root,font=root.smaller_font,text=f"  0/100%{self.char*25}", anchor="w",
-        bg="#111111",fg="#FFFFFF", justify=tkinter.LEFT)
-    
-    def update(self):
-        self.wbar = super().__init__(root,font=root.font,text=f"{self.char*5}",bg="#FFFFFF",fg="#FFFFFF", justify=tkinter.LEFT)
-
 
 
 class win():
@@ -100,10 +91,15 @@ class win():
 
         self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
         self.current_file_name = None
+        try:
+            self.current_file_name = sys.argv[1]
+        except IndexError:
+            pass
 
         self.line_count = None
         
         self.highlighting = True # turned off by default because it's not working properly (fucking regex)
+        self.fullscreen = False
         self.run = True
 
         #configuring main window
@@ -126,10 +122,11 @@ class win():
         #configuring fonts
         self.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
         self.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
+        # self.font = font.Font(family="Comic Sans", size=9, weight="bold")
+        # self.smaller_font = font.Font(family="Comic Sans", size=7, weight="bold")
 
         #filediaolog pretty much self-explanatory
         self.filename = filedialog
-
 
         #text widget configuration
         self.txt = CustomText()
@@ -137,7 +134,7 @@ class win():
         #self.txt.grid(row=0, column=0 ,sticky="nsew")
         self.txt.configure(font=self.font,bg = self.background_color,fg=self.foreground_color, undo=True, spacing1=5,
             insertwidth=8, insertofftime=500, insertbackground="#A2000A", selectbackground="#0A00A2",
-            borderwidth=0, relief="sunken", tabs=("1c"))
+            borderwidth=0, relief="sunken", tabs=("1c"), wrap="word")
         self.txt.place(x=0,y=20,relwidth=0.985, relheight=0.9, anchor="nw")
             
         #scrollbar configuration
@@ -192,7 +189,7 @@ class win():
         #dropdown for menubar
         self.file_dropdown = tkinter.Menu(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.background_color) #declare dropdown
         self.file_dropdown.add_command(label="New file",command=self.new_file) #add commands
-        self.file_dropdown.add_command(label="Open file",command=self.load_file)
+        self.file_dropdown.add_command(label="Open file",command=self.open_file)
         self.file_dropdown.add_command(label="Save file",command=self.save_file)
         self.file_dropdown.add_command(label="Save file as",command=self.save_file_as)
         #self.menubar.add_cascade(label="File",menu=self.file_dropdown) #add dropdown to menubar
@@ -202,7 +199,6 @@ class win():
         #root.config(menu=self.menubar)#adds menubar to main window
 
         #tags for highlighting
-        self.txt.tag_configure("other_chars", foreground="#302387")
         self.txt.tag_configure("sumn", foreground="#74091D")
         self.txt.tag_configure("special_chars",foreground="#ff00bb")
         self.txt.tag_configure("var_types",foreground="#01cdfe")
@@ -210,14 +206,14 @@ class win():
         self.txt.tag_configure("keywords", foreground="#ff5500")
         self.txt.tag_configure("modules", foreground="#f75f00")
         self.txt.tag_configure("default", foreground="#302387")
-
-        self.tags = ["other_chars", "sumn", "special_chars", "var_types", "operators", "keywords", "modules"]
+        self.txt.tag_configure("other_chars", foreground="#302387")
 
         #command binding
         self.command_entry.bind("<Return>", self.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
         self.command_entry.bind("<Up>", self.command_history) # lets you scroll through commands you have already used
         self.command_entry.bind("<Down>", self.command_history)
         self.txt.bind("<Button-3>", self.popup) #right click pop-up window
+        root.bind("<F11>", self.set_fullscreen)
         #self.txt.bind("<Tab>", self.cmmand)
         #self.txt.bind("<Control_L><k>", self.cmmand)
 
@@ -226,6 +222,8 @@ class win():
 
         #grid configuration
         self.a=""
+        if self.current_file_name:
+            self.load_file()
 
     #def indent(self, arg):
     #    self.txt.insert(tkinter.INSERT, " "*4)
@@ -277,6 +275,11 @@ class win():
         #-puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)
 
     #binded functions
+
+    def set_fullscreen(self, arg):
+        self.fullscreen = not self.fullscreen
+        root.attributes("-fullscreen", self.fullscreen)
+
     def popup(self, arg):
         """ gets x, y position of mouse click """
         self.right_click_menu.tk_popup(arg.x_root+50, arg.y_root-50, 0)
@@ -304,10 +307,10 @@ class win():
             last_command = self.command_input_history[-self.command_input_history_index]
             self.command_entry.insert(0, last_command)
 
-            print(self.command_input_history_index)
+            #print(self.command_input_history_index)
 
         except IndexError:
-            print(self.command_input_history_index)
+            #print(self.command_input_history_index)
             self.command_input_history_index = 0
             self.command_entry.delete(0, "end")
 
@@ -328,8 +331,8 @@ class win():
                 if (command[1] != None):
                     self.help_win(command[1])
             except IndexError:
-                print("l: line number -options: get, [line_number.character] -puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)")
-                print("highlighting -options: on, off")
+                #print("l: line number -options: get, [line_number.character] -puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)")
+                #print("highlighting -options: on, off")
                 self.help_win()
 
         #highlighting command
@@ -371,7 +374,7 @@ class win():
 
         #append command to command history
         self.command_input_history.append(command)
-        print(self.command_input_history)
+        #print(self.command_input_history)
 
         #sets focus back to text widget
         self.txt.focus_set()
@@ -422,6 +425,18 @@ class win():
             self.error_win(e)
 
     def load_file(self):
+        try:
+            self.current_file = open(self.current_file_name, "r+")
+            content = self.current_file.read()
+            root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
+            self.txt.delete("1.0", "end-1c")
+            self.txt.insert("1.0", content)
+            self.current_file.close()
+            self.command_O(f"total lines: {self.get_line_count()}")
+        except Exception as e:
+            self.error_win(e)
+
+    def open_file(self):
         """ opens a file and loads it's content into the text widget """
         # try:
         #     if (self.current_file.read()==""):
@@ -433,14 +448,7 @@ class win():
             
 
         self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
-        try:
-            self.current_file = open(self.current_file_name, "r+")
-            content = self.current_file.read()
-            root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
-            self.txt.delete("1.0", "end-1c")
-            self.txt.insert("1.0", content)
-            self.current_file.close()
-            self.command_O(f"total lines: {self.get_line_count()}")
+        self.load_file()
 
             # a bug I thought I could fix with loading the file in chunks but it seems to be a problem of tkinter.Text wrapping
             # content_len = len(content)
@@ -452,8 +460,6 @@ class win():
             #     chunk0 += chunksize
             #     chunk1 += chunksize
 
-        except Exception as e:
-            self.error_win(e)
 
     def init(self):
         """ a completely useless initialize function """
@@ -461,13 +467,20 @@ class win():
 
     def update_win(self):
         """ updates window """
-        root.update()
-        root.update_idletasks()
+        try:
+            root.update()
+            root.update_idletasks()
+        except Exception:
+            root.quit()
+            raise SystemExit
+            exit()
+        
 
 
     def update_text(self, x=''):
         """ updates the text and sets current position of the insert cursor"""
         #basically the main function
+        counter = 0
         while self.run:
             self.update_win()
             #print(self.current_file)
@@ -479,13 +492,23 @@ class win():
             #t = threading.Thread(target=self.research()).start()
 
             if (self.highlighting): # if the highlighting option is on then turn on highlighting
+                #counter += 1
+                #if (counter == 2000):
                 self.highlight()
+                    #counter = 0
             else:
                 pass
+
     
     def highlight(self):
         for word in all_key:
-            self.txt.highlight_pattern(word, "other_chars")
+            self.txt.highlight_pattern(word, "other_chars", start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
+            #var_types, modules
+        for word in nums:
+            self.txt.highlight_pattern(word, "var_types", start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
+
+        for word in special_chars:
+            self.txt.highlight_pattern(word, "special_chars", start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
 
         # line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
         # for word in line:
