@@ -62,23 +62,20 @@ class CustomText(tkinter.Text):
 
         start = self.index(start)
         end = self.index(end)
-        indexu = "{}.{}".format(int(self.index(tkinter.INSERT).split(".")[0]), int(self.index(tkinter.INSERT).split(".")[1])-1)
         self.mark_set("matchStart", start)
         self.mark_set("matchEnd", start)
-        self.mark_set("searchLimit",indexu)
+        self.mark_set("searchLimit",end)
 
         count = tkinter.StringVar()
         while True:
-            print(indexu)
             index = self.search(pattern, "1.0", stopindex="end",
                                 count=count, regexp=regexp)
             if index == "": break
             if count.get() == 0: break # degenerate pattern which matches zero-length strings
             #print(count.get())
-            if index:
-                self.mark_set("matchStart", index)
-                self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
-                self.tag_add(tag, "matchStart", "matchEnd")
+            self.mark_set("matchStart", index)
+            self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
+            self.tag_add(tag, "matchStart", "matchEnd")
 
 
 
@@ -515,16 +512,7 @@ class win():
 
     
     def highlight(self):
-        count = tkinter.IntVar()
-        for keyword in keywords:
-
-            index = self.txt.search(keyword, "1.0", "end", count=count, exact=True)
-            #print(index, count)
-            if index == "": continue
-            print(self.txt.get("%s+%sc" % (index, count.get()+1)))
-            if (self.txt.get("%s+%sc" % (index, count.get()+1)) == " "):
-                self.txt.tag_add("var_types", index, "%s+%sc" % (index, count.get()))
-                
+        pass
 
         # offset = 0
         # line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
@@ -545,15 +533,15 @@ class win():
                 # for keyword in all_key:
                 #     if (word == keyword):
                 #         print("aha!")
-        # for word in all_key:
-        #     self.txt.highlight_pattern(word, self.theme[2], start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
-        # #     #var_types, modules
+        for word in all_key:
+            self.txt.highlight_pattern(word, self.theme[2], start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
+        #     #var_types, modules
         
-        # for word in nums:
-        #    self.txt.highlight_pattern(word, self.theme[3], start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
+        for word in nums:
+           self.txt.highlight_pattern(word, self.theme[3], start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
 
-        # for word in special_chars:
-        #     self.txt.highlight_pattern(word, self.theme[4], start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
+        for word in special_chars:
+            self.txt.highlight_pattern(word, self.theme[4], start=str(int(self.cursor_index[0])-30.0), end=str(int(self.cursor_index[0])+30.0))
 
         #some shitty bullshit i tried for highlighting but as you can see I don't really understand regex
         # line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
