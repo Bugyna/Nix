@@ -62,23 +62,20 @@ class CustomText(tkinter.Text):
 
         start = self.index(start)
         end = self.index(end)
-        indexu = "{}.{}".format(int(self.index(tkinter.INSERT).split(".")[0]), int(self.index(tkinter.INSERT).split(".")[1])-1)
         self.mark_set("matchStart", start)
         self.mark_set("matchEnd", start)
-        self.mark_set("searchLimit",indexu)
+        self.mark_set("searchLimit",end)
 
         count = tkinter.StringVar()
         while True:
-            print(indexu)
             index = self.search(pattern, "1.0", stopindex="end",
                                 count=count, regexp=regexp)
             if index == "": break
             if count.get() == 0: break # degenerate pattern which matches zero-length strings
             #print(count.get())
-            if index:
-                self.mark_set("matchStart", index)
-                self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
-                self.tag_add(tag, "matchStart", "matchEnd")
+            self.mark_set("matchStart", index)
+            self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
+            self.tag_add(tag, "matchStart", "matchEnd")
 
 
 
@@ -112,6 +109,13 @@ class win():
         self.line_count = None
         
         self.highlighting = True # turned off by default because it's not working properly (fucking regex)
+
+        self.countingChars = False
+        self.countingNums = False
+
+        self.pattern = ""
+        self.pattern_index = []
+
         self.loading = False
         self.fullscreen = False
         self.run = True
@@ -488,9 +492,7 @@ class win():
             root.update_idletasks()
         except Exception: #when exiting window it throws an error because root wasn't properly destroyed
             root.quit()
-            raise SystemExit
-            exit()
-        
+            quit()
 
     def update_text(self, x=''):
         """ updates the text and sets current position of the insert cursor"""
@@ -515,16 +517,27 @@ class win():
 
     
     def highlight(self):
-        count = tkinter.IntVar()
-        for keyword in keywords:
+        index = "{}.{}".format(self.cursor_index[0], int(self.cursor_index[1]) - 1)
+        current_char = self.txt.get(index)
+        # print(current_char)
+        # if (re.match(r"\s", current_char)):
+        if (re.match(r"[a-zA-Z]", current_char)):
+            if not self.countingChars:
+                self.pattern_index.append(index)
+                self.countingChars = True
+            #print(self.pattern + current_char)
+            self.pattern += current_char
 
-            index = self.txt.search(keyword, "1.0", "end", count=count, exact=True)
-            #print(index, count)
-            if index == "": continue
-            print(self.txt.get("%s+%sc" % (index, count.get()+1)))
-            if (self.txt.get("%s+%sc" % (index, count.get()+1)) == " "):
-                self.txt.tag_add("var_types", index, "%s+%sc" % (index, count.get()))
-                
+        else:
+            if self.countingChars:
+                self.pattern_index.append(index)
+                # if pattern in keywords:
+                print(self.pattern in keywords)
+                self.txt.tag_add("sumn", self.pattern_index[0], self.pattern_index[1])
+                self.pattern = ""
+                del self.pattern_index[:]
+                self.countingChars = False
+        print(self.pattern_index, self.pattern, current_char)
 
         # offset = 0
         # line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
