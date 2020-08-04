@@ -21,14 +21,9 @@ keywords = [
 
 #keywords = ['auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extern', 'float', 'for', 'goto', 'if', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof', 'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while']
 sumn = ['self']
-var_types = ['int','float','string','str']
+var_types = ['int', 'float', 'string', 'str', 'list']
 other_chars = ["$","#","@","&","|","^","_",r"\ ".split()]
-special_chars = ['"',"'",")","(","[","]","{","}"]
-operators = ["<",'>',"+","-","*","=","/","%"]
-nums = ['0','1','2','3','4','5','6','7','8','9']
-modules = []
-modules2 = []
-all_key = [keywords, sumn, var_types, modules, operators, other_chars]
+all_key = [keywords, sumn, var_types, other_chars]
 all_key = list(chain.from_iterable(all_key))
 #print(all_key)
 
@@ -36,47 +31,6 @@ all_key = list(chain.from_iterable(all_key))
 
 for i in tqdm.tqdm(range(10)):
    sleep(0.01)
-
-class CustomText(tkinter.Text):
-    '''A text widget with a new method, highlight_pattern()
-
-    example:
-
-    text = CustomText()
-    text.tag_configure("red", foreground="#ff0000")
-    text.highlight_pattern("this should be red", "red")
-
-    The highlight_pattern method is a simplified python
-    version of the tcl code at http://wiki.tcl.tk/3246
-    '''
-    def __init__(self, *args, **kwargs):
-        tkinter.Text.__init__(self, *args, **kwargs)
-
-    def highlight_pattern(self, pattern, tag, start="1.0", end="end",
-                          regexp=False):
-        '''Apply the given tag to all text that matches the given pattern
-
-        If 'regexp' is set to True, pattern will be treated as a regular
-        expression according to Tcl's regular expression syntax.
-        '''
-
-        start = self.index(start)
-        end = self.index(end)
-        self.mark_set("matchStart", start)
-        self.mark_set("matchEnd", start)
-        self.mark_set("searchLimit",end)
-
-        count = tkinter.StringVar()
-        while True:
-            index = self.search(pattern, "1.0", stopindex="end",
-                                count=count, regexp=regexp)
-            if index == "": break
-            if count.get() == 0: break # degenerate pattern which matches zero-length strings
-            #print(count.get())
-            self.mark_set("matchStart", index)
-            self.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
-            self.tag_add(tag, "matchStart", "matchEnd")
-
 
 
 class win():
@@ -147,7 +101,7 @@ class win():
         self.filename = filedialog
 
         #text widget configuration
-        self.txt = CustomText()
+        self.txt = tkinter.Text()
 
         #self.txt.grid(row=0, column=0 ,sticky="nsew")
         self.txt.configure(font=self.font,bg = self.theme[0],fg=self.theme[1], undo=True, spacing1=5,
@@ -256,9 +210,9 @@ class win():
 
 
         self.loading_label_background = tkinter.Label(root, bg="#999999", fg="#FFFFFF")
-        self.loading_label_background.place(relx=0.5,rely=0.8, relwidth=0.205 ,relheight=0.015)
+        self.loading_label_background.place(relx=0.52,rely=0.965, relwidth=0.205 ,relheight=0.015)
         self.loading_label = tkinter.Label(root, text="", bg=self.theme[0], fg="#FFFFFF")
-        self.loading_label.place(relx=0.5,rely=0.8, relheight=0.015)
+        self.loading_label.place(relx=0.52,rely=0.965, relheight=0.015)
 
 
     def loading_widg(self):
@@ -477,6 +431,7 @@ class win():
             self.txt.insert("1.0", content)
             self.current_file.close()
             self.command_O(f"total lines: {self.get_line_count()}")
+            self.highlight_all()
         except Exception as e:
             self.error_win(e)
 
@@ -504,40 +459,55 @@ class win():
             #self.txt.after(0, self.update_line_numbers)
             self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
             self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
-            try:
-                if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}", 'end-1c')[0] == '"'):
-                    pass
-            except Exception:
-                pass
             if (self.loading):
-                threading.Thread(target=self.loading_widg()).start()
+                threading.Thread(target=self.loading_widg, args=()).start()
 
-            if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-                self.highlight()
+            if (self.highlighting) and random.randint(1, 10) == 4: # if the highlighting option is on then turn on highlighting :D
+                self.highlight(self.cursor_index[0])
 
     
-    def highlight(self):
-        index = "{}.{}".format(self.cursor_index[0], int(self.cursor_index[1]) - 1)
-        current_char = self.txt.get(index)
-        # print(current_char)
-        # if (re.match(r"\s", current_char)):
-        if (re.match(r"[a-zA-Z]", current_char)):
-            if not self.countingChars:
-                self.pattern_index.append(index)
-                self.countingChars = True
-            #print(self.pattern + current_char)
-            self.pattern += current_char
+    def highlight(self, line_no):
+        for i, current_char in enumerate(self.txt.get(line_no+".0", "end"), 0):
+            index = f"{line_no}.{i}"
+            # current_char = self.txt.get(index)
+            # print(current_char)
+            # if (re.match(r"\s", current_char)):
 
-        else:
-            if self.countingChars:
-                self.pattern_index.append(index)
-                # if pattern in keywords:
-                print(self.pattern in keywords)
-                self.txt.tag_add("sumn", self.pattern_index[0], self.pattern_index[1])
-                self.pattern = ""
-                del self.pattern_index[:]
-                self.countingChars = False
-        print(self.pattern_index, self.pattern, current_char)
+            # if (re.match(r"#", current_char)):
+            #     self.txt.tag_add(self.theme[3], index, "end")
+            #     comment = True
+            #     break
+            #     continue
+        
+            if (re.match(r"[(+*/%^&|)]", current_char)):
+                self.txt.tag_add(self.theme[4], index)
+
+            elif (re.match(r"[0-9]", current_char)):
+                if self.countingChars:
+                    self.countingChars = False
+                
+                self.txt.tag_add(self.theme[3], index)
+    
+
+            if (re.match(r"[a-zA-Z]", current_char)):
+                if not self.countingChars:
+                    self.pattern_index.append(index)
+                    self.countingChars = True
+                #print(self.pattern + current_char)
+                self.pattern += current_char
+
+            else:
+                if self.countingChars:
+                    self.pattern_index.append(index)
+
+                    if self.pattern in all_key:
+                        self.txt.tag_add(self.theme[2], self.pattern_index[0], self.pattern_index[1])
+                    else:
+                        self.txt.tag_remove(self.theme[2], self.pattern_index[0], self.pattern_index[1])
+                    self.pattern = ""
+                    del self.pattern_index[:]
+                    self.countingChars = False
+            # print(self.pattern_index, self.pattern, current_char)
 
         # offset = 0
         # line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
@@ -578,15 +548,19 @@ class win():
         #             self.txt.tag_add("other_chars", f"{self.cursor_index[0]}.{found_index[0]}", f"{self.cursor_index[0]}.{found_index[1]}")
 
     def highlight_all(self):
-        """ don't even ask """
-        self.info = self.txt.get("1.0", 'end-1c')
-        for line in self.info.split("\n"):
-            for word in line:
-                for keyword in all_key:
-                    if (re.search(keyword, word)):
-                        found = re.search(r"\s*[_]*"+keyword, word)
-                        found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
-                        self.txt.tag_add("sumn", f"{self.cursor_index[0]}.{found_index[0]}", f"{self.cursor_index[0]}.{found_index[1]}")
+       for i in range(1, self.get_line_count()):
+           self.highlight(str(i))
+       
+       
+        # """ don't even ask """
+        # self.info = self.txt.get("1.0", 'end-1c')
+        # for line in self.info.split("\n"):
+        #     for word in line:
+        #         for keyword in all_key:
+        #             if (re.search(keyword, word)):
+        #                 found = re.search(r"\s*[_]*"+keyword, word)
+        #                 found_index = [ str(found.span()[0]), str(found.span()[1]-1) ]
+        #                 self.txt.tag_add("sumn", f"{self.cursor_index[0]}.{found_index[0]}", f"{self.cursor_index[0]}.{found_index[1]}")
         # try:
         #     for index, line in enumerate(self.info.split('\n'), start=1):
         # #         #if (re.search(r"[.,_]*[0-9]+", line)):
@@ -615,9 +589,9 @@ class win():
         # except AttributeError:
         #     pass
 
-        def unhighlight(self):
-            """  """
-            pass
+        # def unhighlight(self):
+        #     """  """
+        #     pass
 
 
 
