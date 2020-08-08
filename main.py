@@ -23,7 +23,7 @@ keywords = [
 sumn = ['self']
 var_types = ['int', 'float', 'string', 'str', 'list']
 other_chars = ["$","#","@","&","|","^","_",r"\ ".split()]
-all_key = [keywords, sumn, var_types, other_chars]
+all_key = [keywords, sumn, other_chars]
 all_key = list(chain.from_iterable(all_key))
 #print(all_key)
 
@@ -186,10 +186,10 @@ class win():
         self.txt.tag_configure("var_types",foreground="#01cdfe")
         self.txt.tag_configure("operators",foreground="#05ffa1")
         self.txt.tag_configure("keywords", foreground="#ff5500")
-        self.txt.tag_configure("modules", foreground="#f75f00")
+        self.txt.tag_configure("quotes", foreground="#f75f00")
         self.txt.tag_configure("default", foreground="#302387")
         self.txt.tag_configure("comments", foreground="#333333")
-        self.txt.tag_configure("quotes", foreground="#B71DDE")
+        self.txt.tag_configure("modules", foreground="#B71DDE")
         self.txt.tag_configure("other_chars", foreground="#302387")
 
         #command binding
@@ -479,8 +479,8 @@ class win():
             #self.txt.after(0, self.update_line_numbers)
             self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
             self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
-            if (self.loading):
-                threading.Thread(target=self.loading_widg, args=()).start()
+            # if (self.loading):
+            #     threading.Thread(target=self.loading_widg, args=()).start()
 
             if (self.highlighting) and random.randint(1, 10) == 4: # if the highlighting option is on then turn on highlighting :D
                 self.highlight(self.cursor_index[0])
