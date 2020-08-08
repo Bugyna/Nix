@@ -2,7 +2,6 @@ import tkinter
 from tkinter import ttk
 from tkinter import font
 import random
-import keyboard
 import re
 import threading
 import os, sys
@@ -10,6 +9,7 @@ import tqdm
 from itertools import chain
 from time import sleep
 from tkinter import filedialog
+from functools import partial
 
 
 keywords = [
@@ -39,8 +39,7 @@ class win():
         #self.background_color = "#000000"
         #self.foreground_color = "#9F005F"
         self.theme_options = {
-            "cake": ["#000000", "#9F005F", "other_chars", "var_types", "special_chars"],
-            "toast": ["#000000", "#9F005F", "special_chars", "modules", "special_chars"]
+            "cake": {"bg" : "#000000", "fg": "#9F005F", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
             }
         self.theme = self.theme_options["cake"]
         print(self.theme)
@@ -66,6 +65,8 @@ class win():
 
         self.countingChars = False
         self.countingNums = False
+        self.countingQuomarks = False
+        self.Quomark_count = 0
 
         self.pattern = ""
         self.pattern_index = []
@@ -74,16 +75,17 @@ class win():
         self.fullscreen = False
         self.run = True
 
+        self.Font_size = 11
+        self.sFont_size = self.Font_size - 2
+
         #configuring main window
         #root.overrideredirect(True)
         root.resizable(True,True)
-        root.config(bg=self.theme[0])
+        root.config(bg=self.theme["bg"])
         root.geometry("600x400")
         #root.minsize(width=200, height=200)
-        self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
+        #self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
         root.title(f"N Editor: <None>") #{os.path.basename(self.current_file.name)}
-        root.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
-        root.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
         #root.overrideredirect(True)
         root.resizable(1, 1)
         #prints all fonts you have installed
@@ -92,10 +94,10 @@ class win():
         #    print(item)
 
         #configuring fonts
-        self.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
-        self.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
-        # self.font = font.Font(family="Comic Sans", size=9, weight="bold")
-        # self.smaller_font = font.Font(family="Comic Sans", size=7, weight="bold")
+        # self.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
+        # self.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
+        self.font = font.Font(family="Serif", size=self.Font_size, weight="bold")
+        self.smaller_font = font.Font(family="Serif", size=self.sFont_size, weight="bold")
 
         #filediaolog pretty much self-explanatory
         self.filename = filedialog
@@ -104,10 +106,10 @@ class win():
         self.txt = tkinter.Text()
 
         #self.txt.grid(row=0, column=0 ,sticky="nsew")
-        self.txt.configure(font=self.font,bg = self.theme[0],fg=self.theme[1], undo=True, spacing1=5,
-            insertwidth=8, insertofftime=0, insertbackground="#A2000A", selectbackground="#0A00A2",
+        self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, spacing1=5,
+            insertwidth=5, insertofftime=0, insertbackground="#A2000A", selectbackground="#0A00A2",
             borderwidth=0, relief="sunken", tabs=("1c"), wrap="word")
-        self.txt.place(x=0,y=20,relwidth=0.985, relheight=0.9, anchor="nw")
+        self.txt.place(x=0,y=25,relwidth=0.985, relheight=0.9, anchor="nw")
             
         #scrollbar configuration
         # self.scrollb = tkinter.Scrollbar(root, command=self.txt.yview, relief="flat") #self.scrollb.grid(row=0,column=2,sticky="nsew")
@@ -115,19 +117,19 @@ class win():
         # self.txt['yscrollcommand'] = self.scrollb.set
 
         #line and column number label
-        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme[0],fg="#999999") #self.line_no.grid(row=1,column=2)
+        self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
         self.line_no.place(relx=0.75, rely=0.99, height=15, anchor="sw")
         
         
         #command line entry
         self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
-        bg = self.theme[0],fg="#999999", insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
+        bg = self.theme["bg"],fg="#999999", insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
         #self.command_entry.grid(row=1,column=0,ipady=3);
         self.command_entry.place(x=0.0,rely=0.99, relwidth=0.25, height=15, anchor="sw")
 
 
         #command output
-        self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.theme[0], fg="#00df00",
+        self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.theme["bg"], fg="#00df00",
          justify=tkinter.CENTER, anchor="w")
         self.command_out.place(relx=0.28,rely=0.99, relwidth=0.25, height=15, anchor="sw")
 
@@ -141,7 +143,7 @@ class win():
         #self.progress_bar.place(relx=0.35,rely=0.975,relwidth=0.3,relheight=0.025)
 
         #right click pop-up menu
-        self.right_click_menu = tkinter.Menu(tearoff=0, font=self.smaller_font, bg=self.theme[0], fg="#ffffff")
+        self.right_click_menu = tkinter.Menu(tearoff=0, font=self.smaller_font, bg=self.theme["bg"], fg="#ffffff")
         self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
         self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
         self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
@@ -153,19 +155,21 @@ class win():
 
         #self.menubar_button = tkinter.Button(root, text="File" ,font=self.font, bg=self.background_color, fg=self.foreground_color, command=self.popup).place(relx=0,rely=0,relwidth=0.05)
 
-        self.menubar_label_file = tkinter.Label(root, text="File" ,font=self.font, bg=self.theme[0], fg="#999999")
-        self.separator_label_file = tkinter.Label(root, text="----" ,font=self.font, bg=self.theme[0], fg="#999999").place(x=0, y=15, height=2, anchor="nw")
-        self.menubar_label_file.bind("<Button-1>", self.file_menu_popup)
-        self.menubar_label_file.place(x=0, y=0, anchor="nw")
+        self.file_menubar_label = tkinter.Label(root, text="File" ,font=self.font, bg=self.theme["bg"], fg="#999999")
+        self.file_separator_label = tkinter.Label(root, text="----" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=0, y=15, height=2, anchor="nw")
+        self.file_menubar_label.bind("<Button-1>", 
+            lambda event: self.file_menu_popup("file_menu"))
+        self.file_menubar_label.place(x=0, y=0, anchor="nw")
 
-        self.menubar_label_settings = tkinter.Label(root, text="Settings" ,font=self.font, bg=self.theme[0], fg="#999999")
-        self.separator_label_settings = tkinter.Label(root, text="--------" ,font=self.font, bg=self.theme[0], fg="#999999").place(x=60, y=15, height=2, anchor="nw")
-        self.menubar_label_settings.bind("<Button-1>", self.file_menu_popup)
-        self.menubar_label_settings.place(x=60, y=0, anchor="nw")
+        self.settings_menubar_label = tkinter.Label(root, text="Settings" ,font=self.font, bg=self.theme["bg"], fg="#999999")
+        self.settings_separator_label = tkinter.Label(root, text="--------" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=60, y=15, height=2, anchor="nw")
+        self.settings_menubar_label.bind("<Button-1>",
+            lambda event: self.file_menu_popup("settings_menu"))
+        self.settings_menubar_label.place(x=60, y=0, anchor="nw")
 
 
         #dropdown for menubar
-        self.file_dropdown = tkinter.Menu(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.theme[0]) #declare dropdown
+        self.file_dropdown = tkinter.Menu(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.theme["bg"]) #declare dropdown
         self.file_dropdown.add_command(label="New file",command=self.new_file) #add commands
         self.file_dropdown.add_command(label="Open file",command=self.load_file)
         self.file_dropdown.add_command(label="Save file",command=self.save_file)
@@ -184,6 +188,8 @@ class win():
         self.txt.tag_configure("keywords", foreground="#ff5500")
         self.txt.tag_configure("modules", foreground="#f75f00")
         self.txt.tag_configure("default", foreground="#302387")
+        self.txt.tag_configure("comments", foreground="#333333")
+        self.txt.tag_configure("quotes", foreground="#B71DDE")
         self.txt.tag_configure("other_chars", foreground="#302387")
 
         #command binding
@@ -191,6 +197,8 @@ class win():
         self.command_entry.bind("<Up>", self.command_history) # lets you scroll through commands you have already used
         self.command_entry.bind("<Down>", self.command_history)
         self.txt.bind("<Button-3>", self.popup) #right click pop-up window
+        self.txt.bind("<Control-s>", self.save_file)
+        self.txt.bind("<Control-S>", self.save_file)
         root.bind("<F11>", self.set_fullscreen)
         root.bind("<Alt-Right>", self.set_dimensions)
         root.bind("<Alt-Left>", self.set_dimensions)
@@ -211,7 +219,7 @@ class win():
 
         self.loading_label_background = tkinter.Label(root, bg="#999999", fg="#FFFFFF")
         self.loading_label_background.place(relx=0.52,rely=0.965, relwidth=0.205 ,relheight=0.015)
-        self.loading_label = tkinter.Label(root, text="", bg=self.theme[0], fg="#FFFFFF")
+        self.loading_label = tkinter.Label(root, text="", bg=self.theme["bg"], fg="#FFFFFF")
         self.loading_label.place(relx=0.52,rely=0.965, relheight=0.015)
 
 
@@ -276,11 +284,15 @@ class win():
 
     def popup(self, arg):
         """ gets x, y position of mouse click """
-        self.right_click_menu.tk_popup(arg.x_root+50, arg.y_root-50, 0)
+        self.right_click_menu.tk_popup(arg.x_root, arg.y_root)
         self.right_click_menu.grab_release()
 
-    def file_menu_popup(self, arg):
-        self.file_dropdown.tk_popup(arg.x_root+75, arg.y_root+25, 0)
+    def file_menu_popup(self, widget):
+        if (widget == "file_menu"):
+            self.file_dropdown.tk_popup(root.winfo_rootx(), root.winfo_rooty()+25)
+        
+        elif (widget == "settings_menu"):
+            self.file_dropdown.tk_popup(root.winfo_rootx()+63, root.winfo_rooty()+25)
         self.right_click_menu.grab_release()
 
     def command_history(self, arg):
@@ -317,7 +329,6 @@ class win():
         """ parses command(case insensitive) from command line and executes it"""
         self.command_input_history_index = 0
         command = self.command_entry.get().lower().split()#turns command into a list and turns it all into lowercase chars
-
         #help command
         if (command[0] == "help"):
             try:
@@ -338,14 +349,24 @@ class win():
                 self.highlighting = False
 
         #line/ line and column command        
-        elif (command[0][0] == "l"):
-            argument = command[0][2:]
+        if (command[0][0] == "l"):
+            for i, pnum in enumerate(command[0], 0):
+                if (re.search("[0-9]", pnum)): 
+                    argument = command[0][i:]
+                    break
+                
+                elif (re.search("[a-zA-Z]", pnum)):
+                    argument = command[0][i:]
+                    break
+
             if (re.search("[0-9]", argument)):
                 self.command_O(f"moved to: {float(argument)}")
                 self.txt.mark_set("insert", float(argument))
+                self.txt.see(float(argument))
 
             elif (re.search("get", argument)):
                 self.command_O(f"total lines: {self.get_line_count()}")
+
 
         elif (command[0] == "quit"):
             self.run = False
@@ -367,7 +388,6 @@ class win():
 
         #sets focus back to text widget
         self.txt.focus_set()
-        keyboard.press_and_release("enter+backspace")
         self.command_entry.delete(0, "end") #deletes command line input
 
         #set command history to newest index
@@ -383,7 +403,7 @@ class win():
             self.current_file.close()
             self.error_win(e)
 
-    def save_file(self):
+    def save_file(self, arg = None):
         """ saves current text into opened file """
         content = str(self.txt.get("1.0", "end-1c"))
         
@@ -455,7 +475,7 @@ class win():
         #counter = 0
         while self.run:
             self.update_win()
-            #print(self.txt.index(tkinter.INSERT))
+            # print(self.txt.index(tkinter.INSERT))
             #self.txt.after(0, self.update_line_numbers)
             self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
             self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
@@ -469,45 +489,61 @@ class win():
     def highlight(self, line_no):
         for i, current_char in enumerate(self.txt.get(line_no+".0", "end"), 0):
             index = f"{line_no}.{i}"
-            # current_char = self.txt.get(index)
-            # print(current_char)
-            # if (re.match(r"\s", current_char)):
+            if (i == 0):
+                self.countingQuomarks = False
 
-            # if (re.match(r"#", current_char)):
-            #     self.txt.tag_add(self.theme[3], index, "end")
-            #     comment = True
-            #     break
-            #     continue
-        
-            if (re.match(r"[(+*/%^&|)]", current_char)):
-                self.txt.tag_add(self.theme[4], index)
+            # if (re.match(r'"', current_char)):
+            #     self.Quomark_count = len(re.findall(current_char, self.txt.get(line_no+".0", "end")))
 
-            elif (re.match(r"[0-9]", current_char)):
+
+            #     if self.countingQuomarks and self.Quomark_count % 2 == 0:
+            #         self.countingQuomarks = False 
+            #     else:
+            #         self.countingQuomarks = True
+
+            if (re.match(r'"', current_char)):
+                self.txt.tag_add(self.theme["quotes"], index)
+                self.countingQuomarks = not self.countingQuomarks
+            
+            if (self.countingQuomarks):
+                continue
+            
+            elif (re.match(r"#", current_char)): #comments
+                self.txt.tag_add(self.theme["comments"], index, f"{line_no}.{i+1000}")
+                break
+
+            elif (re.match(r"[\[\]\{\}(+*/%^&|)]", current_char)): #special chars
+                    self.txt.tag_add(self.theme["special_chars"], index)
+
+            elif (re.match(r"[0-9]", current_char)): #numbers
                 if self.countingChars:
                     self.countingChars = False
-                
-                self.txt.tag_add(self.theme[3], index)
-    
+                self.txt.tag_add(self.theme["numbers"], index) 
 
-            if (re.match(r"[a-zA-Z]", current_char)):
+            if (re.match(r"[a-zA-Z_]", current_char)): #keywords
                 if not self.countingChars:
                     self.pattern_index.append(index)
                     self.countingChars = True
                 #print(self.pattern + current_char)
-                self.pattern += current_char
+                self.pattern += current_char 
 
             else:
                 if self.countingChars:
                     self.pattern_index.append(index)
 
-                    if self.pattern in all_key:
-                        self.txt.tag_add(self.theme[2], self.pattern_index[0], self.pattern_index[1])
+                    if (self.pattern in all_key):
+                        self.txt.tag_add(self.theme["keywords"], self.pattern_index[0], self.pattern_index[1])
+                    elif (re.match(r"[\(]", current_char)):
+                        self.txt.tag_add(self.theme["functions"], self.pattern_index[0], self.pattern_index[1])
                     else:
-                        self.txt.tag_remove(self.theme[2], self.pattern_index[0], self.pattern_index[1])
+                        self.txt.tag_remove(self.theme["keywords"], self.pattern_index[0], self.pattern_index[1])
+                        self.txt.tag_remove(self.theme["functions"], self.pattern_index[0], self.pattern_index[1])
                     self.pattern = ""
                     del self.pattern_index[:]
                     self.countingChars = False
-            # print(self.pattern_index, self.pattern, current_char)
+
+            # print(self.pattern_index, self.pattern, current_char, self.Quomark_count, self.countingQuomarks)
+            # print(i)
 
         # offset = 0
         # line = self.txt.get(self.cursor_index[0]+".0", "end").split("\n")
