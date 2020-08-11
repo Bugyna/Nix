@@ -33,6 +33,8 @@ for i in tqdm.tqdm(range(10)):
    sleep(0.01)
 
 
+
+
 class win():
     def __init__(self, root, file=None):
 
@@ -109,7 +111,7 @@ class win():
         self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, spacing1=5,
             insertwidth=5, insertofftime=0, insertbackground="#A2000A", selectbackground="#0A00A2",
             borderwidth=0, relief="sunken", tabs=("1c"), wrap="word")
-        self.txt.place(x=0,y=25,relwidth=0.985, relheight=0.9, anchor="nw")
+        # self.txt.place(x=0,y=25,relwidth=0.9975, relheight=0.925, anchor="nw")
             
         #scrollbar configuration
         # self.scrollb = tkinter.Scrollbar(root, command=self.txt.yview, relief="flat") #self.scrollb.grid(row=0,column=2,sticky="nsew")
@@ -118,23 +120,23 @@ class win():
 
         #line and column number label
         self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
-        self.line_no.place(relx=0.75, rely=0.99, height=15, anchor="sw")
+        self.line_no.place(relx=0.85, y=20, height=15, anchor="sw")
         
         
         #command line entry
         self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
         bg = self.theme["bg"],fg="#999999", insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
         #self.command_entry.grid(row=1,column=0,ipady=3);
-        self.command_entry.place(x=0.0,rely=0.99, relwidth=0.25, height=15, anchor="sw")
+        # self.command_entry.place(x=0.0,rely=0.99, relwidth=0.25, height=15, anchor="sw")
 
 
         #command output
         self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.theme["bg"], fg="#00df00",
          justify=tkinter.CENTER, anchor="w")
-        self.command_out.place(relx=0.28,rely=0.99, relwidth=0.25, height=15, anchor="sw")
+        # self.command_out.place(relx=0.28,rely=0.99, relwidth=0.25, height=15, anchor="sw")
 
         #progressbar
-        #self.progress_bar = p_bar(root) #.grid(row=1,column=1)
+        #self.progress_bar = p_bar(root) #.grid(row=1,column=1)8
         #self.style=ttk.Style()
         #self.style.theme_use("clam")
         #self.style.configure("color.Horizontal.TProgressbar", foreground="white", background="white")
@@ -218,9 +220,9 @@ class win():
 
 
         self.loading_label_background = tkinter.Label(root, bg="#999999", fg="#FFFFFF")
-        self.loading_label_background.place(relx=0.52,rely=0.965, relwidth=0.205 ,relheight=0.015)
+        # self.loading_label_background.place(relx=0.52,rely=0.965, relwidth=0.205 ,relheight=0.015)
         self.loading_label = tkinter.Label(root, text="", bg=self.theme["bg"], fg="#FFFFFF")
-        self.loading_label.place(relx=0.52,rely=0.965, relheight=0.015)
+        # self.loading_label.place(relx=0.52,rely=0.965, relheight=0.015)
 
 
     def loading_widg(self):
@@ -475,10 +477,13 @@ class win():
         #counter = 0
         while self.run:
             self.update_win()
+            if random.randint(1, 10) == 4:
+                self.txt.place(x=0,y=25,relwidth=0.9975, height=root.winfo_height()-25, anchor="nw")
             # print(self.txt.index(tkinter.INSERT))
             #self.txt.after(0, self.update_line_numbers)
             self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
-            self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
+            # self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
+            self.line_no.configure(text=f"[{self.cursor_index[0]}.{self.cursor_index[1]}]")
             # if (self.loading):
             #     threading.Thread(target=self.loading_widg, args=()).start()
 
@@ -500,7 +505,7 @@ class win():
             #         self.countingQuomarks = False 
             #     else:
             #         self.countingQuomarks = True
-
+            # if (re.findall(r'"', self.txt.get(line_no+".0", "end")) % 2 == 0):
             if (re.match(r'"', current_char)):
                 self.txt.tag_add(self.theme["quotes"], index)
                 self.countingQuomarks = not self.countingQuomarks
@@ -512,7 +517,7 @@ class win():
                 self.txt.tag_add(self.theme["comments"], index, f"{line_no}.{i+1000}")
                 break
 
-            elif (re.match(r"[\[\]\{\}(+*/%^&|)]", current_char)): #special chars
+            elif (re.match(r"[\[\]\{\}(+*/%^&|)=]", current_char)): #special chars
                     self.txt.tag_add(self.theme["special_chars"], index)
 
             elif (re.match(r"[0-9]", current_char)): #numbers
