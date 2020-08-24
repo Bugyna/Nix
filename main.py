@@ -11,7 +11,7 @@ from time import sleep
 from tkinter import filedialog
 from functools import partial
 
-from highligher import python_highlighter, C_highlighter
+from highlighter import python_highlighter, C_highlighter
 
 # keywords = [
 # 	'False', 'await', 'else', 'import', 'pass', 'None', 'break', 'except', 'in',
@@ -270,6 +270,9 @@ class win():
 			self.highlighter = python_highlighter(self.txt, self.theme)
 		elif (arg == "c"):
 			self.highlighter = C_highlighter(self.txt, self.theme)
+		else:
+			self.highlighting = False
+			self.highlighter = None
 
 	def set_tab_lock(self, arg):
 		self.tab_lock = False
@@ -555,11 +558,16 @@ class win():
 
 			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
 
-			self.content = self.current_file.readlines()
+			# self.content = self.current_file.readlines()
 			root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
 			self.txt.delete("1.0", "end-1c")
-			for line in self.content[0:self.cursor_index[0]+40]:
-				self.txt.insert("end", line)
+			print(self.current_file)
+			self.content = self.current_file.read()
+			self.txt.insert("1.0", self.content)
+			# for line in self.content[0]:
+			# 	self.txt.insert("end", line)
+			# 	self.txt.mark_set("insert", "1.0")
+			# 	self.txt.see("insert")
 			self.current_file.close()
 			self.command_O(f"total lines: {self.get_line_count()}")
 			# del content
@@ -568,9 +576,9 @@ class win():
 			self.new_file(name=self.current_file_name)
 			self.save_file()
 
-	def udpate_buffer(self):
-			for line in self.content[self.last_index:self.last_index+1]:
-				self.txt.insert("end", line)
+	def update_buffer(self):
+		for line in self.content[self.get_line_count():self.get_line_count()+1]:
+			self.txt.insert("end", line)
 
 	def update_win(self):
 		""" updates window """
@@ -591,9 +599,11 @@ class win():
 
 			# print(root.winfo_pointerx())
 			# if random.randint(1, 10) == 4:
-			if (self.last_index != self.cursor_index[0]):
-				self.last_index = self.cursor_index[0]
-				self.update_buffer()
+			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
+			# if (self.last_index != self.cursor_index[0] and self.get_line_count() < len(self.content)-1):
+			# 	print(self.get_line_count(), len(self.content))
+			# 	self.last_index = int(self.cursor_index[0])
+			# 	self.update_buffer()
 			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")
 			# print(self.txt.index(tkinter.INSERT))
 			#self.txt.after(0, self.update_line_numbers)
@@ -612,7 +622,6 @@ class win():
 				self.command_highlight()
 
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
 				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(self.cursor_index[0]+".0", "end"))
 				if (not self.tab_lock):
 					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
@@ -629,7 +638,7 @@ class win():
 		for current_char in self.txt.get(f"{int(self.cursor_index[0])-1}.0", "end"):
 			if (re.match(r"[\t]",  current_char)):
 				offset_string += "\t"
-			elif (re.match("[\/\#]"), current_char):
+			elif (re.match(r"[\/\#]", current_char)):
 				pass
 			else:
 				break
