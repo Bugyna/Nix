@@ -1,31 +1,37 @@
 import random
 import tkinter
+import asyncio
 from tkinter import ttk
 from tkinter import font
 import re
 import threading
 import os, sys
 import tqdm
-from itertools import chain
 from time import sleep
 from tkinter import filedialog
 from functools import partial
 
+from highligher import python_highlighter, C_highlighter
 
-keywords = [
-	'False', 'await', 'else', 'import', 'pass', 'None', 'break', 'except', 'in',
-	 'raise', 'True', 'class', 'finally', 'is', 'return', 'and', 'continue', 'for',
-	  'lambda', 'try', 'as', 'def', 'from', 'nonlocal', 'while', 'assert', 'del',
-	   'global', 'not', 'with', 'async', 'elif', 'if', 'or', 'yield'
-	   ]
+# keywords = [
+# 	'False', 'await', 'else', 'import', 'pass', 'None', 'break', 'except', 'in',
+# 	 'raise', 'True', 'class', 'finally', 'is', 'return', 'and', 'continue', 'for',
+# 	  'lambda', 'try', 'as', 'def', 'from', 'nonlocal', 'while', 'assert', 'del',
+# 	   'global', 'not', 'with', 'async', 'elif', 'if', 'or', 'yield', "self"
+# 	   ]
 
-#keywords = ['auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extern', 'float', 'for', 'goto', 'if', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof', 'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while']
-sumn = ['self']
-var_types = ['int', 'float', 'string', 'str', 'list']
-other_chars = ["$","#","@","&","|","^","_","\\",r"\\",r"\[\]",r"[\\]"]
-print("\\")
-all_key = [keywords, sumn, other_chars]
-all_key = list(chain.from_iterable(all_key))
+# keywords = [
+# 		'auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum',
+# 		 'extern', 'float', 'for', 'goto', 'if', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof',
+# 		  'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while',
+# 		   "int", "char", "bool"
+#    ]
+
+# sumn = ['self']
+# var_types = ['int', 'float', 'string', 'str', 'list']
+# other_chars = ["$","#","@","&","|","^","_","\\",r"\\",r"\[\]",r"[\\]"]
+# all_key = [keywords, other_chars]
+# all_key = list(chain.from_iterable(all_key))
 #print(all_key)
 
 #print(chr(9619))
@@ -38,12 +44,12 @@ for i in tqdm.tqdm(range(10)):
 
 class win():
 	def __init__(self, root, file=None):
-
 		#self.background_color = "#000000"
 		#self.foreground_color = "#9F005F"
 		self.theme_options = {
-			"cake": {"bg" : "#222222", "fg": "#9F005F", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"toast" : {"bg" : "#000000", "fg": "#9F005F", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"cake": {"bg" : "#000000", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"muffin" : {"bg" : "#CCCCCC", "fg": "#9F005F", "insertbg": "#111111", "selectbg": "#111111", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
 			}
 		self.theme = self.theme_options["cake"]
@@ -59,39 +65,34 @@ class win():
 
 		self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
 		self.current_file_name = None
+		self.content = ""
+
+		self.scroll_multiplier = 0
 
 		self.line_count = None
+		self.last_index = 1
 
 		self.tab_offset = 0
 		self.tab_lock = False
 		
-		self.highlighting = True # turned off by default because it's not working properly (fucking regex)
+		self.highlighter = None
+		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex)
+		self.command_highlighting = False
 
-		self.countingChars = False
-		self.countingNums = False
-		self.countingQuomarks = False
-		self.Quomark_count = 0
-
-		self.pattern = ""
-		self.pattern_index = []
 
 		self.loading = False
 		self.fullscreen = False
 		self.run = True
 
-		self.Font_size = 12
-		self.sFont_size = self.Font_size - 2
 
 		#configuring main window
 		#root.overrideredirect(True)
 		root.resizable(True,True)
-		root.config(bg=self.theme["bg"])
 		root.geometry("600x400")
 		#root.minsize(width=200, height=200)
 		#self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
 		root.title(f"N Editor: <None>") #{os.path.basename(self.current_file.name)}
 		#root.overrideredirect(True)
-		root.resizable(1, 1)
 		#prints all fonts you have installed
 		#fonts = list(font.families())
 		#for item in fonts:
@@ -106,21 +107,31 @@ class win():
 		""" a completely useless initialize function """
 		
 		self.update_win()
+		
 		root.config(bg=self.theme["bg"])
-		self.font = font.Font(size=self.Font_size)
-		self.smaller_font = font.Font(size=self.sFont_size)
+		root.wm_attributes("-alpha", 0.9)
+			
+		self.Font_size = 11
+		self.sFont_size = self.Font_size - 2
+		self.font = font.Font(family="Ubuntu", size=self.Font_size, weight="normal")
+		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="normal")
 
 		#filediaolog pretty much self-explanatory
 		self.filename = filedialog
 
+		# self.canvas = tkinter.Canvas(bg=self.theme["bg"])
+		# self.canvas.create_line(3, 23, 38, 23, dash=(6, 3), fill="#CCCCCC")
+		# self.canvas.place(x=0, y=0, relwidth=1, relheight=1)
+
 		#text widget configuration
 		self.txt = tkinter.Text()
 
-		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, spacing1=5,
-			insertwidth=0, insertofftime=500, insertbackground="#CCCCCC", selectbackground="#CCCCCC",
-			borderwidth=0, relief="ridge", tabs=(f"{(self.Font_size/2-1)*4}"), wrap="word", blockcursor=True)
+		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, spacing1=2,
+			insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
+			borderwidth=0, relief="ridge", tabs=(f"{(self.Font_size/2-1)*4}"), wrap="word", blockcursor=True, highlightthickness=0, insertborderwidth=0)
+
 		# self.txt.place(x=0,y=25,relwidth=0.9975, relheight=0.9475, anchor="nw", bordermode="outside") "#A2000A"
-			
+		
 		#scrollbar configuration
 		# self.scrollb = tkinter.Scrollbar(root, command=self.txt.yview, relief="flat") #self.scrollb.grid(row=0,column=2,sticky="nsew")
 		# self.scrollb.place(relx=0.985, rely=0.0, relwidth=0.15, relheight=.95)
@@ -133,7 +144,7 @@ class win():
 		
 		#command line entry
 		self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
-		bg = self.theme["bg"],fg="#999999", insertwidth=8, insertofftime=500, insertbackground="#fb2e01", relief="flat")
+		bg = self.theme["bg"],fg="#555555", insertwidth=0, insertofftime=0, insertbackground="#CCCCCC", relief="flat")
 		#self.command_entry.grid(row=1,column=0,ipady=3);
 		# self.command_entry.place(x=0.0,rely=0.99, relwidth=0.25, height=15, anchor="sw")
 
@@ -198,10 +209,11 @@ class win():
 		self.txt.tag_configure("keywords", foreground="#ff5500")
 		self.txt.tag_configure("quotes", foreground="#f75f00")
 		self.txt.tag_configure("default", foreground="#302387")
-		self.txt.tag_configure("comments", foreground="#333333")
 		self.txt.tag_configure("modules", foreground="#B71DDE")
 		self.txt.tag_configure("other_chars", foreground="#302387")
+		self.txt.tag_configure("comments", foreground="#333333")
 		self.txt.tag_configure("tabs", background="#444444")
+		self.txt.tag_configure("command_keywords", background="#FFFFFF")
 
 		#command binding
 		self.line_no.bind("<Button-3>", self.detach_widget)
@@ -209,12 +221,19 @@ class win():
 		self.command_entry.bind("<Up>", self.command_history) # lets you scroll through commands you have already used
 		self.command_entry.bind("<Down>", self.command_history)
 		self.command_entry.bind("<Escape>", self.command_entry_unset)
+		self.command_out.bind("<Return>", lambda arg: self.txt.focus_set())
+		self.txt.unbind("<MouseWheel>")
+		self.txt.unbind("<Button-4>")
+		self.txt.unbind("<Button-5>")
+		self.txt.bind("<MouseWheel>", self.scroll)
+		self.txt.bind("<Button-4>", self.scroll)
+		self.txt.bind("<Button-5>", self.scroll)
 		self.txt.bind("<Button-3>", self.popup) #right click pop-up window
 		self.txt.bind("<Control-s>", self.save_file)
 		self.txt.bind("<Control-S>", self.save_file)
 		self.txt.bind("<Return>", self.set_tab_lock)
 		self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
-		self.txt.bind("<Control-space>", self.command_entry_set)
+		root.bind("<Control-space>", self.command_entry_set)
 		root.bind("<F11>", self.set_fullscreen)
 		root.bind("<Alt-Right>", self.set_dimensions)
 		root.bind("<Alt-Left>", self.set_dimensions)
@@ -243,6 +262,15 @@ class win():
 		except IndexError:
 			pass
 
+
+	def set_highlighter(self, arg):
+		print(arg)
+		self.highlighting = True
+		if (arg == "py"):
+			self.highlighter = python_highlighter(self.txt, self.theme)
+		elif (arg == "c"):
+			self.highlighter = C_highlighter(self.txt, self.theme)
+
 	def set_tab_lock(self, arg):
 		self.tab_lock = False
 
@@ -264,6 +292,7 @@ class win():
 		""" returns total amount of lines in opened text """
 		self.info = self.txt.get("1.0", "end-1c")
 		return sum(1 for line in self.info.split("\n"))
+		# return len(self.content)
 
 
 	def error_win(self, e):
@@ -317,19 +346,18 @@ class win():
 
 	def popup(self, arg):
 		""" gets x, y position of mouse click """
-		self.right_click_menu.tk_popup(arg.x_root, arg.y_root)
-		self.right_click_menu.grab_release()
-
+		self.right_click_menu.tk_popup(arg.x_root+5, arg.y_root)
+		# self.right_click_menu.grab_release()
+		
 	def file_menu_popup(self, widget):
-		if (widget == "file_menu"):
+		if (widget == "file_menu"): 
 			self.file_dropdown.tk_popup(root.winfo_rootx(), root.winfo_rooty()+25)
 		
 		elif (widget == "settings_menu"):
 			self.file_dropdown.tk_popup(root.winfo_rootx()+63, root.winfo_rooty()+25)
-		self.right_click_menu.grab_release()
 
 	def command_entry_set(self, arg):
-		self.command_entry.place(x=0,rely=0.99975, relwidth=0.9975, height=15, anchor="sw")
+		self.command_entry.place(x=0,rely=0.99975, relwidth=0.9975, height=20, anchor="sw")
 		self.command_entry.focus_set()
 
 	def command_entry_unset(self, arg):
@@ -364,12 +392,16 @@ class win():
 	def command_O(self, arg):
 		""" sets the text in command output"""
 		#(I have no idea why past me made this into a function when it doesn't really have to be a function)
+		self.command_out.place(relx=0.1,rely=0.99975, relwidth=1, height=20, anchor="sw")
 		self.command_out.configure(text=str(arg))
+		self.command_out.focus_set()
+
 
 	def cmmand(self, arg):
 		""" parses command(case insensitive) from command line and executes it"""
 		self.command_input_history_index = 0
 		command = self.command_entry.get().lower().split()#turns command into a list and turns it all into lowercase chars
+
 		#help command
 		if (command[0] == "help"):
 			try:
@@ -390,9 +422,17 @@ class win():
 				self.command_O("highlighting off")
 				self.highlighting = False
 
-		#line/ line and column command        
-		if (command[0][0] == "l"):
-			for i, pnum in enumerate(command[0], 0):
+		#line/ line and column commands
+
+		elif (re.match(r"[0-9]", command[0][0])):
+			self.txt.mark_set("insert", float(command[0]))
+			self.txt.see(float(command[0]))
+			self.command_O(f"moved to: {float(command[0])}")
+
+		elif (command[0][0] == "l"):
+			print(command[0][0])
+			for i, pnum in enumerate(command[0][1:], 1):
+				print(pnum)
 				if (re.search("[0-9]", pnum)): 
 					argument = command[0][i:]
 					break
@@ -402,9 +442,9 @@ class win():
 					break
 
 			if (re.match("[0-9]", argument)):
-				self.command_O(f"moved to: {float(argument)}")
 				self.txt.mark_set("insert", float(argument))
-				self.txt.see(float(argument))
+				self.txt.see("insert")
+				self.command_O(f"moved to: {float(argument)}")
 
 			elif (re.match("get", argument)):
 				self.command_O(f"total lines: {self.get_line_count()}")
@@ -422,8 +462,14 @@ class win():
 			#self.command_O(f"file saved")
 		
 		elif (command[0] == "theme"):
-			self.theme = self.theme_options[command[1]]
-			self.init()
+			try:
+				self.theme = self.theme_options[command[1]]
+				self.init()
+			except IndexError:
+				p = "themes:"
+				for x in list(self.theme_options.keys()):
+					p += " "+x
+				self.command_O(p)
 
 
 		#append command to command history
@@ -437,12 +483,26 @@ class win():
 		self.command_input_history_index = 0
 		self.command_entry.place_forget()
 
+
+	def scroll(self, arg):
+		
+		next_index = float(self.txt.index("insert"))
+		if (arg.num == 5):
+			self.txt.mark_set("insert", next_index+3)
+
+		elif (arg.num == 4):
+			self.txt.mark_set("insert", next_index-3)
+		
+
 	#menubar functions
-	def new_file(self):
+	def new_file(self, name="untitled.txt"):
 		try:
-			self.current_file_name = f"{os.getcwd()}/untitled.txt"
+			self.current_file_name = f"{os.getcwd()}/{name}"
 			self.current_file = open(self.current_file_name, "w+")
 			root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
+			
+			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
+
 		except Exception as e:
 			self.current_file.close()
 			self.error_win(e)
@@ -460,6 +520,9 @@ class win():
 		try:
 			self.current_file = open(self.current_file_name, "w")
 			self.current_file.write(content)
+			
+			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
+
 			self.current_file.close()
 			self.command_O(f"total of {self.get_line_count()} lines saved")
 		except TypeError:
@@ -470,11 +533,11 @@ class win():
 	def save_file_as(self):
 		""" saves current text into a new file """
 		if (self.current_file_name != None):
-			tmp = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
+			tmp = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c"],("all files","*.*")))
 			os.rename(self.current_file_name, tmp)
 			self.current_file_name = tmp
 		else:
-			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
+			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c"],("all files","*.*")))
 
 		root.title(f"N Editor: <{os.path.basename(self.current_file_name)}>")
 		self.save_file()
@@ -485,20 +548,29 @@ class win():
 			self.current_file_name = filename
 		
 		elif (filename == None):
-			self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(("TXT files", "*.txt *.py"),("all files","*.*")))
+			self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(["TXT files", "*.txt *.py *.c"],("all files","*.*")))
 		
 		try:
 			self.current_file = open(self.current_file_name, "r+")
-			content = self.current_file.read()
+
+			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
+
+			self.content = self.current_file.readlines()
 			root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
 			self.txt.delete("1.0", "end-1c")
-			self.txt.insert("1.0", content)
+			for line in self.content[0:self.cursor_index[0]+40]:
+				self.txt.insert("end", line)
 			self.current_file.close()
 			self.command_O(f"total lines: {self.get_line_count()}")
+			# del content
 			self.highlight_all()
 		except Exception as e:
-			self.error_win(e)
+			self.new_file(name=self.current_file_name)
+			self.save_file()
 
+	def udpate_buffer(self):
+			for line in self.content[self.last_index:self.last_index+1]:
+				self.txt.insert("end", line)
 
 	def update_win(self):
 		""" updates window """
@@ -515,24 +587,37 @@ class win():
 		#counter = 0
 		while self.run:
 			self.update_win()
+			self.txt.see("insert")
 
+			# print(root.winfo_pointerx())
 			# if random.randint(1, 10) == 4:
+			if (self.last_index != self.cursor_index[0]):
+				self.last_index = self.cursor_index[0]
+				self.update_buffer()
 			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")
 			# print(self.txt.index(tkinter.INSERT))
 			#self.txt.after(0, self.update_line_numbers)
-			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
 			# self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
-			self.line_no.configure(text=f"[{self.cursor_index[0]}.{self.cursor_index[1]}]")
+			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]")
 			# if (self.loading):
 			#     threading.Thread(target=self.loading_widg, args=()).start()
 
-			if not self.tab_lock:
-				if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
-					self.txt.insert(self.txt.index("insert"), self.keep_indent())
-					self.tab_lock = True
+			if (root.focus_displayof() != self.command_entry):
+				self.command_entry.place_forget()
 
-			if (self.highlighting) and random.randint(1, 10) == 4: # if the highlighting option is on then turn on highlighting :D
-				self.highlight(self.cursor_index[0])
+			if (root.focus_displayof() != self.command_out):
+				self.command_out.place_forget() 
+
+			if (self.command_highlighting):
+				self.command_highlight()
+
+			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
+				self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
+				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(self.cursor_index[0]+".0", "end"))
+				if (not self.tab_lock):
+					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
+						self.txt.insert(self.txt.index("insert"), self.keep_indent())
+						self.tab_lock = True
 
 	def unindent(self, arg=None):
 		if (re.match(r"\t", self.txt.get(f"{self.cursor_index[0]}.0"))):
@@ -541,144 +626,32 @@ class win():
 	def keep_indent(self):
 		# tab_offset = 0
 		offset_string = ""
-		line = self.txt.get(f"{int(self.cursor_index[0])-1}.0", "end")
-		for current_char in line:
-			# print(i)
-			if (re.match(r"[\t]", current_char)):
+		for current_char in self.txt.get(f"{int(self.cursor_index[0])-1}.0", "end"):
+			if (re.match(r"[\t]",  current_char)):
 				offset_string += "\t"
-				# print("daw:", tab_offset)
-				
-			elif (re.match(r"\s", current_char)):
+			elif (re.match("[\/\#]"), current_char):
 				pass
-			
 			else:
-				if (re.match(r"[\:]", line[-3])):
-					offset_string += "\t"
 				break
+				
+			# else:
+			# 	if (re.match(r"[\:]", line[-3])):
+			# 		offset_string += "\t"
+			# 	break
 		
 		return offset_string
 
 
-	def highlight(self, line_no):
-		for i, current_char in enumerate(self.txt.get(line_no+".0", "end"), 0):
-			index = f"{line_no}.{i}"
-			if (i == 0):
-				self.countingQuomarks = False
-
-			# if (re.match(r'"', current_char)):
-			#     self.Quomark_count = len(re.findall(current_char, self.txt.get(line_no+".0", "end")))
-
-
-			#     if self.countingQuomarks and self.Quomark_count % 2 == 0:
-			#         self.countingQuomarks = False 
-			#     else:
-			#         self.countingQuomarks = True
-			# if (re.findall(r'"', self.txt.get(line_no+".0", "end")) % 2 == 0):
-			if (re.match(r'"', current_char)):
-				self.txt.tag_add(self.theme["quotes"], index)
-				self.countingQuomarks = not self.countingQuomarks
-			
-			if (self.countingQuomarks):
-				continue
-
-			# elif (re.match(r"\t", current_char)):
-			# 	self.txt.tag_add("tabs", index)
-
-			elif (re.match(r"#", current_char)): #comments
-				self.txt.tag_add(self.theme["comments"], index, f"{line_no}.{i+1000}")
-				break
-
-			elif (re.match(r"[\[\]\{\}(+*/%^&|)=]", current_char)): #special chars
-				self.txt.tag_add(self.theme["special_chars"], index)
-
-			elif (re.match(r"[0-9]", current_char)): #numbers
-				if self.countingChars:
-					self.countingChars = False
-				self.txt.tag_add(self.theme["numbers"], index) 
-
-
-			if (re.match(r"[a-zA-Z_]", current_char)): #keywords
-				if not self.countingChars:
-					self.pattern_index.append(index)
-					self.countingChars = True
-				#print(self.pattern + current_char)
-				self.txt.tag_remove(self.theme["numbers"], self.pattern_index[0], f"{line_no}.{i+1}")
-				self.txt.tag_remove(self.theme["special_chars"], self.pattern_index[0], f"{line_no}.{i+1}")
-				self.pattern += current_char 
-
-			else:
-				if self.countingChars:
-					self.pattern_index.append(index)
-
-					if (self.pattern in all_key):
-						self.txt.tag_add(self.theme["keywords"], self.pattern_index[0], self.pattern_index[1])
-					elif (re.match(r"[\(]", current_char)):
-						self.txt.tag_add(self.theme["functions"], self.pattern_index[0], self.pattern_index[1])
-					else:
-						self.txt.tag_remove(self.theme["keywords"], self.pattern_index[0], self.pattern_index[1])
-						self.txt.tag_remove(self.theme["functions"], self.pattern_index[0], self.pattern_index[1])
-					self.pattern = ""
-					del self.pattern_index[:]
-					self.countingChars = False
-
+	def command_highlight(self):
+		pass
 
 	def highlight_all(self):
-	   for i in range(1, self.get_line_count()):
-		   self.highlight(str(i))
-
-	def unhighlight(self, line_no):
-		for i, current_char in enumerate(self.txt.get(line_no+".0", "end"), 0):
-			index = f"{line_no}.{i}"
-
-			# if (re.match(r'"', current_char)):
-			#     self.Quomark_count = len(re.findall(current_char, self.txt.get(line_no+".0", "end")))
-
-
-			#     if self.countingQuomarks and self.Quomark_count % 2 == 0:
-			#         self.countingQuomarks = False 
-			#     else:
-			#         self.countingQuomarks = True
-			# if (re.findall(r'"', self.txt.get(line_no+".0", "end")) % 2 == 0):
-			if (re.match(r'"', current_char)):
-				self.txt.tag_remove(self.theme["quotes"], index)
-
-			# elif (re.match(r"\t", current_char)):
-			# 	self.txt.tag_add("tabs", index)
-
-			elif (re.match(r"#", current_char)): #comments
-				self.txt.tag_remove(self.theme["comments"], index, f"{line_no}.{i+1000}")
-				break
-
-			elif (re.match(r"[\[\]\{\}(+*/%^&|)=]", current_char)): #special chars
-				self.txt.tag_remove(self.theme["special_chars"], index)
-
-			elif (re.match(r"[0-9]", current_char)): #numbers
-				self.txt.tag_remove(self.theme["numbers"], index) 
-
-
-			if (re.match(r"[a-zA-Z_]", current_char)): #keywords
-				if not self.countingChars:
-					self.pattern_index.append(index)
-					self.countingChars = True
-				#print(self.pattern + current_char)
-				self.pattern += current_char 
-				
-
-			else:
-				if self.countingChars:
-					self.pattern_index.append(index)
-
-					if (self.pattern in all_key):
-						self.txt.tag_remove(self.theme["keywords"], self.pattern_index[0], self.pattern_index[1])
-					elif (re.match(r"[\(]", current_char)):
-						self.txt.tag_remove(self.theme["functions"], self.pattern_index[0], self.pattern_index[1])
-					self.pattern = ""
-					del self.pattern_index[:]
-					self.countingChars = False
+		for i in range(1, self.get_line_count()):
+			self.highlighter.highlight(str(i))
 
 	def unhighlight_all(self):
 		for i in range(1, self.get_line_count()+1):
-			self.unhighlight(str(i))
+			self.highlighter.unhighlight(str(i))
 
 	def note_mode(self):
 		self.highlighting = False
@@ -694,3 +667,4 @@ main_win = win(root)
 
 if __name__ == '__main__':
 	main_win.update_text()
+	
