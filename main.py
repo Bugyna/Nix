@@ -7,7 +7,7 @@ import re
 import threading
 import os, sys
 import tqdm
-from time import sleep
+from time import sleep, time
 from tkinter import filedialog
 from functools import partial
 
@@ -228,6 +228,9 @@ class win():
 		self.txt.bind("<MouseWheel>", self.scroll)
 		self.txt.bind("<Button-4>", self.scroll)
 		self.txt.bind("<Button-5>", self.scroll)
+		self.txt.bind("<Alt-MouseWheel>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Alt-Button-4>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Alt-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
 		self.txt.bind("<Button-3>", self.popup) #right click pop-up window
 		self.txt.bind("<Control-s>", self.save_file)
 		self.txt.bind("<Control-S>", self.save_file)
@@ -483,18 +486,18 @@ class win():
 		self.command_entry.delete(0, "end") #deletes command line input
 
 		#set command history to newest index
-		self.command_input_history_index = 0
+		self.command_input_history_index = 0       
 		self.command_entry.place_forget()
 
 
-	def scroll(self, arg):
+	def scroll(self, arg, multiplier=1):
 		
 		next_index = float(self.txt.index("insert"))
 		if (arg.num == 5):
-			self.txt.mark_set("insert", next_index+3)
+			self.txt.mark_set("insert", next_index+3*multiplier)
 
 		elif (arg.num == 4):
-			self.txt.mark_set("insert", next_index-3)
+			self.txt.mark_set("insert", next_index-3*multiplier)
 		
 
 	#menubar functions
@@ -561,17 +564,27 @@ class win():
 			# self.content = self.current_file.readlines()
 			root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
 			self.txt.delete("1.0", "end-1c")
-			print(self.current_file)
+
 			self.content = self.current_file.read()
+			# print(len(self.content)/2)
+
 			self.txt.insert("1.0", self.content)
+			# for i in range(10):
+			# 	print(offset, offset1)
+			# 	self.txt.insert("end", self.content[offset:offset1])
+			# 	offset += int(len(self.content)/10)
+			# 	offset1 += int(len(self.content)/10)
 			# for line in self.content[0]:
 			# 	self.txt.insert("end", line)
-			# 	self.txt.mark_set("insert", "1.0")
-			# 	self.txt.see("insert")
+			t0 = time()
+			self.txt.mark_set("insert", "1.0")
+			self.txt.see("insert")
 			self.current_file.close()
 			self.command_O(f"total lines: {self.get_line_count()}")
 			# del content
 			self.highlight_all()
+			t1 = time()
+			print(t1-t0)
 		except Exception as e:
 			self.new_file(name=self.current_file_name)
 			self.save_file()
@@ -623,6 +636,7 @@ class win():
 
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
 				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(self.cursor_index[0]+".0", "end"))
+				# self.highlight_chunk()
 				if (not self.tab_lock):
 					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
 						self.txt.insert(self.txt.index("insert"), self.keep_indent())
@@ -654,9 +668,15 @@ class win():
 	def command_highlight(self):
 		pass
 
+	def highlight_chunk(self):
+		if self.highlighting:
+			for i in range(int(self.cursor_index[0])-30, int(self.cursor_index[0])+30):
+				self.highlighter.highlight(str(i))
+
 	def highlight_all(self):
-		for i in range(1, self.get_line_count()):
-			self.highlighter.highlight(str(i))
+		if self.highlighting:
+			for i in range(1, self.get_line_count()):
+				self.highlighter.highlight(str(i))
 
 	def unhighlight_all(self):
 		for i in range(1, self.get_line_count()+1):
