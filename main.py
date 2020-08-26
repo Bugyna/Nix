@@ -235,7 +235,10 @@ class win():
 		self.txt.bind("<Control-s>", self.save_file)
 		self.txt.bind("<Control-S>", self.save_file)
 		self.txt.bind("<Return>", self.set_tab_lock)
-		self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
+		try:
+			self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
+		except Exception:
+			self.txt.bind("<Shift-Tab>", self.unindent)
 		root.bind("<Control-space>", self.command_entry_set)
 		root.bind("<F11>", self.set_fullscreen)
 		root.bind("<Alt-Right>", self.set_dimensions)
@@ -491,13 +494,14 @@ class win():
 
 
 	def scroll(self, arg, multiplier=1):
-		
+
 		next_index = float(self.txt.index("insert"))
-		if (arg.num == 5):
+		if (arg.num == 5 or arg.delta < 0):
 			self.txt.mark_set("insert", next_index+3*multiplier)
 
-		elif (arg.num == 4):
+		elif (arg.num == 4 or arg.delta > 0):
 			self.txt.mark_set("insert", next_index-3*multiplier)
+	
 		
 
 	#menubar functions
