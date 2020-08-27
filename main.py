@@ -11,7 +11,7 @@ from time import sleep, time
 from tkinter import filedialog
 from functools import partial
 
-from highlighter import python_highlighter, C_highlighter
+from highlighter import highlighter
 
 # keywords = [
 # 	'False', 'await', 'else', 'import', 'pass', 'None', 'break', 'except', 'in',
@@ -126,7 +126,7 @@ class win():
 		#text widget configuration
 		self.txt = tkinter.Text()
 
-		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, spacing1=2,
+		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, maxundo=0, spacing1=2,
 			insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
 			borderwidth=0, relief="ridge", tabs=(f"{(self.Font_size/2-1)*4}"), wrap="word", blockcursor=True, highlightthickness=0, insertborderwidth=0)
 
@@ -225,6 +225,14 @@ class win():
 		self.txt.unbind("<MouseWheel>")
 		self.txt.unbind("<Button-4>")
 		self.txt.unbind("<Button-5>")
+		self.txt.unbind("<Control-slash>")
+
+		self.txt.bind("<Control-period>", self.set_font_size)
+		self.txt.bind("<Control-comma>", self.set_font_size)
+		self.txt.bind("<Control-MouseWheel>", self.set_font_size)
+		self.txt.bind("<Control-Button-4>", self.set_font_size)
+		self.txt.bind("<Control-Button-5>", self.set_font_size)
+
 		self.txt.bind("<MouseWheel>", self.scroll)
 		self.txt.bind("<Button-4>", self.scroll)
 		self.txt.bind("<Button-5>", self.scroll)
@@ -235,6 +243,8 @@ class win():
 		self.txt.bind("<Control-s>", self.save_file)
 		self.txt.bind("<Control-S>", self.save_file)
 		self.txt.bind("<Return>", self.set_tab_lock)
+		self.txt.bind("<Control-slash>", lambda arg: print("aaa"))#self.comment_line)
+
 		try:
 			self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
 		except Exception:
@@ -245,19 +255,9 @@ class win():
 		root.bind("<Alt-Left>", self.set_dimensions)
 		root.bind("<Alt-Up>", self.set_dimensions)
 		root.bind("<Alt-Down>", self.set_dimensions)
-		#self.txt.bind("<Tab>", self.cmmand)
-		#self.txt.bind("<Control_L><k>", self.cmmand)
-
-		#self.checked = [] #checked lines (for syntax highlighting optimization not yet added)
-		#self.keys = [] #no idea 
-
 
 
 		self.a=""
-		if self.current_file_name:
-			self.load_file()
-
-
 		self.loading_label_background = tkinter.Label(root, bg="#999999", fg="#FFFFFF")
 		# self.loading_label_background.place(relx=0.52,rely=0.965, relwidth=0.205 ,relheight=0.015)
 		self.loading_label = tkinter.Label(root, text="", bg=self.theme["bg"], fg="#FFFFFF")
@@ -273,9 +273,9 @@ class win():
 		print(arg)
 		self.highlighting = True
 		if (arg == "py"):
-			self.highlighter = python_highlighter(self.txt, self.theme)
+			self.highlighter = highlighter(self.txt, self.theme, "py")
 		elif (arg == "c"):
-			self.highlighter = C_highlighter(self.txt, self.theme)
+			self.highlighter = highlighter(self.txt, self.theme, "c")
 		else:
 			self.highlighting = False
 			self.highlighter = None
@@ -352,6 +352,36 @@ class win():
 			root.geometry(f"{root.winfo_width()}x{root.winfo_height()-margin}")
 		if (key == "Down"):
 			root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}")
+		
+	def set_font_size(self, arg):
+		if (arg.keysym == "period" or arg.num == 4 or arg.delta > 0):
+			self.Font_size += 1
+			self.sFont_size += 1
+		else:
+			self.Font_size -= 1
+			self.sFont_size -= 1
+		
+		if self.Font_size <= 0:
+			self.Font_size = 1
+		elif self.Font_size >= 30:
+			self.Font_size = 30
+
+		self.font = font.Font(family="Ubuntu", size=self.Font_size, weight="normal")
+		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="normal")
+		self.txt.configure(font=self.font)
+		# self.command_out.configure(text=f"font size: {self.Font_size}")
+		self.command_O(f"font size: {self.Font_size}")
+
+
+	def scroll(self, arg, multiplier=1):
+
+		next_index = float(self.txt.index("insert"))
+		if (arg.num == 5 or arg.delta < 0):
+			self.txt.mark_set("insert", next_index+3*multiplier)
+
+		elif (arg.num == 4 or arg.delta > 0):
+			self.txt.mark_set("insert", next_index-3*multiplier)
+
 
 	def popup(self, arg):
 		""" gets x, y position of mouse click """
@@ -490,19 +520,7 @@ class win():
 
 		#set command history to newest index
 		self.command_input_history_index = 0       
-		self.command_entry.place_forget()
-
-
-	def scroll(self, arg, multiplier=1):
-
-		next_index = float(self.txt.index("insert"))
-		if (arg.num == 5 or arg.delta < 0):
-			self.txt.mark_set("insert", next_index+3*multiplier)
-
-		elif (arg.num == 4 or arg.delta > 0):
-			self.txt.mark_set("insert", next_index-3*multiplier)
-	
-		
+		self.command_entry.place_forget()	
 
 	#menubar functions
 	def new_file(self, name="untitled.txt"):
@@ -656,11 +674,13 @@ class win():
 		for current_char in self.txt.get(f"{int(self.cursor_index[0])-1}.0", "end"):
 			if (re.match(r"[\t]",  current_char)):
 				offset_string += "\t"
-			elif (re.match(r"[\/\#]", current_char)):
-				pass
-			else:
+			elif (re.match(r"[\:\{]", current_char)):
+				offset_string += "\t"
+			elif (re.match(r"\n", current_char)):
 				break
-				
+			else:
+				pass
+		
 			# else:
 			# 	if (re.match(r"[\:]", line[-3])):
 			# 		offset_string += "\t"
