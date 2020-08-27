@@ -649,7 +649,7 @@ class win():
 	def unindent(self, arg=None):
 		if (re.match(r"\t", self.txt.get(f"{self.cursor_index[0]}.0"))):
 			self.txt.delete(f"{self.cursor_index[0]}.0", f"{self.cursor_index[0]}.1")
-
+			
 	def keep_indent(self):
 		# tab_offset = 0
 		offset_string = ""
@@ -672,10 +672,10 @@ class win():
 	def command_highlight(self):
 		pass
 
-	def highlight_chunk(self):
-		if self.highlighting:
-			for i in range(int(self.cursor_index[0])-30, int(self.cursor_index[0])+30):
-				self.highlighter.highlight(str(i))
+	# def highlight_chunk(self):
+	# 	if self.highlighting:
+	# 		for i in range(int(self.cursor_index[0])-30, int(self.cursor_index[0])+30):
+	# 			self.highlighter.highlight(str(i))
 
 	def highlight_all(self):
 		if self.highlighting:
