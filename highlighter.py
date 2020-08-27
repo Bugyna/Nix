@@ -30,61 +30,58 @@ class python_highlighter():
 	# 		if (re.match(r"[a-zA-Z]", current_char)):
 
 
-	def highlight(self, line_no, line=None):
-		last_separator_index = 0
-		last_separator = f"{line_no}.{last_separator_index}"
+	def highlight(self, line_no ,line=None):
 		if line == None:
 			line = self.txt.get(float(line_no), "end")
+
+		last_separator_index = 0
+		last_separator = f"{line_no}.{last_separator_index}"
+		pattern = ""
+		self.txt.tag_remove(self.theme["quotes"], last_separator, f"{line_no}.{len(line)}")
+		self.txt.tag_remove(self.theme["functions"], last_separator, f"{line_no}.{len(line)}")
+		self.txt.tag_remove(self.theme["keywords"], last_separator, f"{line_no}.{len(line)}")
+		self.txt.tag_remove(self.theme["numbers"], last_separator, f"{line_no}.{len(line)}")
+		self.txt.tag_remove(self.theme["special_chars"], last_separator, f"{line_no}.{len(line)}")
+		self.txt.tag_remove(self.theme["comments"], last_separator, f"{line_no}.{len(line)}")
+		
 		for i, current_char in enumerate(line, 0):
 			index = f"{line_no}.{i}"
-			if (i == 0):
-				self.countingQuomarks = False
-
-			# if (re.match(r'"', current_char)):
-			#     self.Quomark_count = len(re.findall(current_char, self.txt.get(line_no+".0", "end")))
-
-
-			#     if self.countingQuomarks and self.Quomark_count % 2 == 0:
-			#         self.countingQuomarks = False 
-			#     else:
-			#         self.countingQuomarks = True
-			# if (re.findall(r'"', self.txt.get(line_no+".0", "end")) % 2 == 0):
-
-			# if (re.match(r"\s", current_char)):
-			# 	continue
-
+			# if (i == 0):
+			# 	self.countingQuomarks = False
+			
 			if (re.match(r"[\"\']", current_char)):
 				self.txt.tag_add(self.theme["quotes"], index)
 				self.countingQuomarks = not self.countingQuomarks
+				pattern = ""
 			
-			if (self.countingQuomarks):
+			elif (self.countingQuomarks):
 				continue
+
+			elif (re.match(r"[a-zA-Z]", current_char)):
+				pattern += current_char
 			
 			elif (re.match(r"[\s\.\,\:\(]", current_char)):
-				if line[last_separator_index:i] in self.keywords:
+				if (pattern in self.keywords):
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
 
 				elif (re.match(r"\(", current_char)):
 					self.txt.tag_add(self.theme["functions"], last_separator, index)
-
-				else:
-					self.txt.tag_remove(self.theme["functions"], last_separator, index)
-					self.txt.tag_remove(self.theme["keywords"], last_separator, index)
 					
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{i+1}"
+				pattern = ""
+
+			elif (re.match(r"[0-9]", current_char)): #numbers
+				self.txt.tag_add(self.theme["numbers"], index) 
+				pattern = ""
+			
+			elif (re.match(r"[\-\+\*\/\%\^\&\|\=\[\]\{\}]", current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
+				self.txt.tag_add(self.theme["special_chars"], index)
+				pattern = ""
 
 			elif (re.match(r"[\#]", current_char)): #comments
 				self.txt.tag_add(self.theme["comments"], index, f"{line_no}.{i+1000}")
 				break
-
-			elif (re.match(r"[\-\+\*\/\%\^\&\|\=\[\]\{\}]", current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
-				self.txt.tag_add(self.theme["special_chars"], index)
-
-			elif (re.match(r"[0-9]", current_char)): #numbers
-				self.txt.tag_add(self.theme["numbers"], index) 
-
-
 
 
 
