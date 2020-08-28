@@ -210,7 +210,7 @@ class win():
 		self.txt.tag_configure("quotes", foreground="#f75f00")
 		self.txt.tag_configure("default", foreground="#302387")
 		self.txt.tag_configure("modules", foreground="#B71DDE")
-		self.txt.tag_configure("other_chars", foreground="#302387")
+		self.txt.tag_configure("other_chars", foreground="#3023DD")
 		self.txt.tag_configure("comments", foreground="#333333")
 		self.txt.tag_configure("tabs", background="#444444")
 		self.txt.tag_configure("command_keywords", background="#FFFFFF")
@@ -657,7 +657,7 @@ class win():
 				self.command_highlight()
 
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(self.cursor_index[0]+".0", "end"))
+				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(float(self.cursor_index[0]), "end"))
 				# self.highlight_chunk()
 				if (not self.tab_lock):
 					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
