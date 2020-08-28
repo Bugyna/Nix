@@ -139,7 +139,7 @@ class highlighter():
 
 	def C_highlight(self, line_no, line=None):
 		if line == None:
-			line = self.txt.get(float(line_no), "end")
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -152,6 +152,8 @@ class highlighter():
 		self.txt.tag_remove(self.theme["numbers"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["special_chars"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["comments"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["operators"], last_separator, line_end_index)
+		
 		
 		for i, current_char in enumerate(line, 0):
 			index = f"{line_no}.{i}"
@@ -214,11 +216,22 @@ class highlighter():
 					self.pattern += current_char
 				continue
 
+			elif (self.operator_regex.match(current_char)):
+				self.txt.tag_add(self.theme["operators"], index)
+				self.pattern = ""
+				continue
 			
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
 				self.txt.tag_add(self.theme["special_chars"], index)
 				self.pattern = ""
 				continue
+				
+			elif (self.equal_regex.match(current_char)):
+				self.txt.tag_add(self.theme["operators"], index)
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				self.pattern = ""
+				
 
 	def unhighlight(self, line_no, line=None):
 		if line == None:
