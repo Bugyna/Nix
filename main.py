@@ -47,7 +47,7 @@ class win():
 		#self.background_color = "#000000"
 		#self.foreground_color = "#9F005F"
 		self.theme_options = {
-			"cake": {"bg" : "#000000", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"cake": {"bg" : "#000000", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"muffin" : {"bg" : "#CCCCCC", "fg": "#9F005F", "insertbg": "#111111", "selectbg": "#111111", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
@@ -205,12 +205,12 @@ class win():
 		self.txt.tag_configure("sumn", foreground="#74091D")
 		self.txt.tag_configure("special_chars",foreground="#ff00bb")
 		self.txt.tag_configure("var_types",foreground="#01cdfe")
-		self.txt.tag_configure("operators",foreground="#05ffa1")
+		self.txt.tag_configure("quotes",foreground="#05ffa1")
 		self.txt.tag_configure("keywords", foreground="#ff5500")
-		self.txt.tag_configure("quotes", foreground="#f75f00")
+		self.txt.tag_configure("operators", foreground="#f75f00")
 		self.txt.tag_configure("default", foreground="#302387")
-		self.txt.tag_configure("modules", foreground="#B71DDE")
-		self.txt.tag_configure("other_chars", foreground="#3023DD")
+		self.txt.tag_configure("other_chars", foreground="#B71DDE")
+		self.txt.tag_configure("modules", foreground="#3023DD")
 		self.txt.tag_configure("comments", foreground="#333333")
 		self.txt.tag_configure("tabs", background="#444444")
 		self.txt.tag_configure("command_keywords", background="#FFFFFF")
@@ -657,7 +657,7 @@ class win():
 				self.command_highlight()
 
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(float(self.cursor_index[0]), "end"))
+				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(self.cursor_index[0]))+"\n")
 				# self.highlight_chunk()
 				if (not self.tab_lock):
 					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
@@ -687,7 +687,6 @@ class win():
 			# 	break
 		
 		return offset_string
-
 
 	def command_highlight(self):
 		pass
