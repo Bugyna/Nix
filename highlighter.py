@@ -61,18 +61,19 @@ class highlighter():
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)}"
 		self.pattern = ""
-		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
+		
 		self.txt.tag_remove(self.theme["functions"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["keywords"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["numbers"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["special_chars"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["comments"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["operators"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
 		
 		for i, current_char in enumerate(line, 0):
 			index = f"{line_no}.{i}"
-			# if (i == 0):
-			# 	self.countingQuomarks = False
+			if (i == 0):
+				self.countingQuomarks = False
 			
 			if (self.quote_regex.match(current_char)):
 				self.txt.tag_add(self.theme["quotes"], index)
@@ -84,13 +85,6 @@ class highlighter():
 
 			elif (self.countingQuomarks):
 				self.txt.tag_add(self.theme["quotes"], index)
-				# last_separator_index = i+2
-				# last_separator = f"{line_no}.{last_separator_index}"
-				# i = last_separator_index
-				# if (self.string_special_char_regex.match(current_char)):
-				# 	self.txt.tag_add(self.theme["special_chars"], index, last_separator)	
-				# else:
-				# 	self.txt.tag_add(self.theme["quotes"], index)
 				continue
 			
 			elif (self.abc_regex.match(current_char)):
@@ -110,7 +104,7 @@ class highlighter():
 				continue
 
 			elif (self.commment_regex.match(current_char)): #comments
-				self.txt.tag_add(self.theme["comments"], index, f"{line_no}.{i+1000}")
+				self.txt.tag_add(self.theme["comments"], index, line_end_index)
 				break
 
 			elif (self.num_regex.match(current_char)): #numbers
@@ -163,7 +157,7 @@ class highlighter():
 
 			try:
 				if (self.commment_regex.match(r"//", current_char+line[i+1])): #comments
-					self.txt.tag_add(self.theme["comments"], index, f"{line_no}.{i+1000}")
+					self.txt.tag_add(self.theme["comments"], index, line_end_index)
 					break
 
 			except Exception:
@@ -235,14 +229,16 @@ class highlighter():
 
 	def unhighlight(self, line_no, line=None):
 		if line == None:
-			line = self.txt.get(float(line_no), "end")
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
+		line_end_index = f"{line_no}.{len(line)}"
 		
-		self.txt.tag_remove(self.theme["quotes"], last_separator, f"{line_no}.{len(line)}")
-		self.txt.tag_remove(self.theme["functions"], last_separator, f"{line_no}.{len(line)}")
-		self.txt.tag_remove(self.theme["keywords"], last_separator, f"{line_no}.{len(line)}")
-		self.txt.tag_remove(self.theme["numbers"], last_separator, f"{line_no}.{len(line)}")
-		self.txt.tag_remove(self.theme["special_chars"], last_separator, f"{line_no}.{len(line)}")
-		self.txt.tag_remove(self.theme["comments"], last_separator, f"{line_no}.{len(line)}")
+		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["functions"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["keywords"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["numbers"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["special_chars"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["comments"], last_separator, line_end_index)
+		self.txt.tag_remove(self.theme["operators"], last_separator, line_end_index)
