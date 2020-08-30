@@ -7,9 +7,12 @@ import re
 import threading
 import os, sys
 import tqdm
-from time import sleep, time
+from datetime import datetime
+from time import sleep, time, localtime, strftime
 from tkinter import filedialog
 from functools import partial
+import requests
+from bs4 import BeautifulSoup
 
 from highlighter import highlighter
 
@@ -65,7 +68,7 @@ class win():
 
 		self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
 		self.current_file_name = None
-		self.content = ""
+		self.content = "dwadw"
 
 		self.scroll_multiplier = 0
 
@@ -79,11 +82,11 @@ class win():
 		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex)
 		self.command_highlighting = False
 
-
 		self.loading = False
 		self.fullscreen = False
 		self.run = True
 
+		self.last_index = "0.0"
 
 		#configuring main window
 		#root.overrideredirect(True)
@@ -91,7 +94,7 @@ class win():
 		root.geometry("600x400")
 		#root.minsize(width=200, height=200)
 		#self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
-		root.title(f"N Editor: <None>") #{os.path.basename(self.current_file.name)}
+		root.title(f"Nix: <None>") #{os.path.basename(self.current_file.name)}
 		#root.overrideredirect(True)
 		#prints all fonts you have installed
 		#fonts = list(font.families())
@@ -113,8 +116,9 @@ class win():
 			
 		self.Font_size = 11
 		self.sFont_size = self.Font_size - 2
-		self.font = font.Font(family="Ubuntu", size=self.Font_size, weight="normal")
-		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="normal")
+		self.font_family = ["Consolas", "bold"]
+		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
+		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="bold")
 
 		#filediaolog pretty much self-explanatory
 		self.filename = filedialog
@@ -128,7 +132,7 @@ class win():
 
 		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, maxundo=0, spacing1=2,
 			insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
-			borderwidth=0, relief="ridge", tabs=(f"{(self.Font_size/2-1)*4}"), wrap="word", blockcursor=True, highlightthickness=0, insertborderwidth=0)
+			borderwidth=0, relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="char", blockcursor=True, highlightthickness=0, insertborderwidth=0)
 
 		# self.txt.place(x=0,y=25,relwidth=0.9975, relheight=0.9475, anchor="nw", bordermode="outside") "#A2000A"
 		
@@ -139,8 +143,13 @@ class win():
 
 		#line and column number label
 		self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
-		self.line_no.place(relx=0.85, y=20, height=15, anchor="sw")
-		
+		self.line_no.place(relx=0.80, y=20, height=15, anchor="sw")
+
+		self.time_label = tkinter.Label(text="",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
+		self.time_label.place(relx=0.65, y=20, height=15, anchor="sw")
+
+		self.temperature_label = tkinter.Label(text=self.get_rand_temperature(), fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999")
+		self.temperature_label.place(relx=0.90, y=20, height=15, anchor="sw")
 		
 		#command line entry
 		self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
@@ -150,8 +159,7 @@ class win():
 
 
 		#command output
-		self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.theme["bg"], fg="#00df00",
-		 justify=tkinter.CENTER, anchor="w")
+		self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.theme["bg"], fg="#00df00")
 		# self.command_out.place(relx=0.28,rely=0.99, relwidth=0.25, height=15, anchor="sw")
 
 		#progressbar
@@ -180,13 +188,13 @@ class win():
 		# self.file_separator_label = tkinter.Label(root, text="----" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=0, y=15, height=2, anchor="nw")
 		self.file_menubar_label.bind("<Button-1>", 
 			lambda event: self.file_menu_popup("file_menu"))
-		self.file_menubar_label.place(x=0, y=5, height=15, anchor="nw")
+		self.file_menubar_label.place(x=0, y=5, height=20, anchor="nw")
 
 		self.settings_menubar_label = tkinter.Label(root, text="Settings" ,font=self.font, bg=self.theme["bg"], fg="#999999")
 		# self.settings_separator_label = tkinter.Label(root, text="--------" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=60, y=15, height=2, anchor="nw")
 		self.settings_menubar_label.bind("<Button-1>",
 			lambda event: self.file_menu_popup("settings_menu"))
-		self.settings_menubar_label.place(x=60, y=5, height=15, anchor="nw")
+		self.settings_menubar_label.place(x=60, y=5, height=20, anchor="nw")
 
 
 		#dropdown for menubar
@@ -205,7 +213,6 @@ class win():
 		self.txt.tag_configure("sumn", foreground="#74091D")
 		self.txt.tag_configure("special_chars",foreground="#ff00bb")
 		self.txt.tag_configure("var_types",foreground="#01cdfe")
-		self.txt.tag_configure("quotes",foreground="#05ffa1")
 		self.txt.tag_configure("keywords", foreground="#ff5500")
 		self.txt.tag_configure("operators", foreground="#f75f00")
 		self.txt.tag_configure("default", foreground="#302387")
@@ -213,6 +220,7 @@ class win():
 		self.txt.tag_configure("modules", foreground="#3023DD")
 		self.txt.tag_configure("comments", foreground="#333333")
 		self.txt.tag_configure("tabs", background="#444444")
+		self.txt.tag_configure("quotes",foreground="#05ffa1")
 		self.txt.tag_configure("command_keywords", background="#FFFFFF")
 
 		#command binding
@@ -236,9 +244,9 @@ class win():
 		self.txt.bind("<MouseWheel>", self.scroll)
 		self.txt.bind("<Button-4>", self.scroll)
 		self.txt.bind("<Button-5>", self.scroll)
-		self.txt.bind("<Alt-MouseWheel>", lambda arg: self.scroll(arg, multiplier=3))
-		self.txt.bind("<Alt-Button-4>", lambda arg: self.scroll(arg, multiplier=3))
-		self.txt.bind("<Alt-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Shift-MouseWheel>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Shift-Button-4>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Shift-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
 		self.txt.bind("<Button-3>", self.popup) #right click pop-up window
 		self.txt.bind("<Control-s>", self.save_file)
 		self.txt.bind("<Control-S>", self.save_file)
@@ -366,9 +374,9 @@ class win():
 		elif self.Font_size >= 30:
 			self.Font_size = 30
 
-		self.font = font.Font(family="Ubuntu", size=self.Font_size, weight="normal")
-		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="normal")
-		self.txt.configure(font=self.font)
+		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
+		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="bold")
+		self.txt.configure(font=self.font, tabs=(f"{self.font.measure(' ' * 4)}"))
 		# self.command_out.configure(text=f"font size: {self.Font_size}")
 		self.command_O(f"font size: {self.Font_size}")
 
@@ -381,6 +389,9 @@ class win():
 
 		elif (arg.num == 4 or arg.delta > 0):
 			self.txt.mark_set("insert", next_index-3*multiplier)
+		
+		self.txt.see("insert")
+		self.txt.focus_set()
 
 
 	def popup(self, arg):
@@ -431,8 +442,8 @@ class win():
 	def command_O(self, arg):
 		""" sets the text in command output"""
 		#(I have no idea why past me made this into a function when it doesn't really have to be a function)
-		self.command_out.place(relx=0.1,rely=0.99975, relwidth=1, height=20, anchor="sw")
-		self.command_out.configure(text=str(arg))
+		self.command_out.place(relx=0, rely=0.99975, relwidth=1, height=20, anchor="sw")
+		self.command_out.configure(text=str(arg), anchor="w")
 		self.command_out.focus_set()
 
 
@@ -488,6 +499,9 @@ class win():
 			elif (re.match("get", argument)):
 				self.command_O(f"total lines: {self.get_line_count()}")
 
+		elif (command[0] == "temp"):
+			self.temperature_label.configure(text=self.get_temperature())
+			self.command_O("temperature changed")
 
 		elif (command[0] == "quit"):
 			self.run = False
@@ -523,11 +537,19 @@ class win():
 		self.command_entry.place_forget()	
 
 	#menubar functions
-	def new_file(self, name="untitled.txt"):
+	def new_file(self, name=""):
+		i = 0
+		name = f"{os.getcwd()}/untitled_{i}.txt"
+		while (os.path.isfile(name)):
+			i += 1
+			name = f"{os.getcwd()}/untitled_{i}.txt"
+
+		# del i, name
+
 		try:
-			self.current_file_name = f"{os.getcwd()}/{name}"
+			self.current_file_name = name
 			self.current_file = open(self.current_file_name, "w+")
-			root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
+			root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
 			
 			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
 
@@ -537,7 +559,7 @@ class win():
 
 	def save_file(self, arg = None):
 		""" saves current text into opened file """
-		content = str(self.txt.get("1.0", "end-1c"))
+		self.content = str(self.txt.get("1.0", "end-1c"))
 		
 		# try:
 		#     self.current_file = open(f"{os.getcwd()}/untitled.txt", "w+")
@@ -547,12 +569,14 @@ class win():
 		
 		try:
 			self.current_file = open(self.current_file_name, "w")
-			self.current_file.write(content)
+			self.current_file.write(self.content)
 			
 			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
 
 			self.current_file.close()
+			root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.command_O(f"total of {self.get_line_count()} lines saved")
+			
 		except TypeError:
 			self.new_file()
 			self.save_file()
@@ -567,7 +591,7 @@ class win():
 		else:
 			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c"],("all files","*.*")))
 
-		root.title(f"N Editor: <{os.path.basename(self.current_file_name)}>")
+		root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 		self.save_file()
 
 	def load_file(self, filename=None):
@@ -584,13 +608,12 @@ class win():
 			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
 
 			# self.content = self.current_file.readlines()
-			root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
+			root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
 			self.txt.delete("1.0", "end-1c")
 
 			self.content = self.current_file.read()
 			# print(len(self.content)/2)
 
-			self.txt.insert("1.0", self.content)
 			# for i in range(10):
 			# 	print(offset, offset1)
 			# 	self.txt.insert("end", self.content[offset:offset1])
@@ -599,21 +622,86 @@ class win():
 			# for line in self.content[0]:
 			# 	self.txt.insert("end", line)
 			t0 = time()
+			self.txt.insert("1.0", self.content)
 			self.txt.mark_set("insert", "1.0")
 			self.txt.see("insert")
 			self.current_file.close()
-			self.command_O(f"total lines: {self.get_line_count()}")
 			# del content
 			self.highlight_all()
 			t1 = time()
-			print(t1-t0)
+			self.command_O(f"total lines: {self.get_line_count()};	loaded in: {round(t1-t0, 3)} seconds")
+			print(round(t1-t0, 3))
 		except Exception as e:
 			self.new_file(name=self.current_file_name)
 			self.save_file()
 
+	def get_rand_temperature(self):
+		month = datetime.now().date().month
+		temperature = 0
+		if (month == 12 or month <= 2):
+			temperature = random.randint(-17, 14)
+		elif (month > 2 and month <= 5):
+			temperature = random.randint(14, 28)
+		elif (month > 5 and month <= 8):
+			temperature = random.randint(20, 35)
+		elif (month > 8 and month <= 11):
+			temperature = random.randint(3, 20)
+
+		return f"{temperature}°C"
+
+	def get_temperature(self):
+		url = "https://www.bbc.com/weather/2673730"
+		html = requests.get(url).content
+		return BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C"
+
+	def get_time(self):
+		d_time = datetime.now().time()
+		time = ""
+
+		if (d_time.hour < 10):
+			time += f"0{d_time.hour}:"
+		else:
+			time += f"{d_time.hour}:"
+
+		if (d_time.minute < 10):
+			time += f"0{d_time.minute}:"
+		else:
+			time += f"{d_time.minute}:"
+
+		if (d_time.second < 10):	
+			time += f"0{d_time.second}"
+		else:
+			time += f"{d_time.second}"
+
+		# print(d_time.microsecond)
+		if (d_time.minute % 10 == 0 and d_time.second == 10 and d_time.microsecond >= 51000 and d_time.microsecond <= 52000):
+			self.temperature_label.configure(text=self.get_temperature())
+			self.command_O("temperature changed")
+
+		return time
+
 	def update_buffer(self):
-		for line in self.content[self.get_line_count():self.get_line_count()+1]:
-			self.txt.insert("end", line)
+		if (self.current_file_name): root.title(f"Nix: <*{os.path.basename(self.current_file_name)}>")
+		# len(self.content) != len(self.txt.get("1.0", "end-1c")) and
+		self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
+		
+		if (root.focus_displayof() != self.command_entry):
+			self.command_entry.place_forget()
+
+		if (root.focus_displayof() != self.command_out):
+			self.command_out.place_forget() 
+
+		if (self.command_highlighting):
+			self.command_highlight()
+
+		if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
+			self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(self.cursor_index[0]))+"\n")
+			# self.highlight_chunk()
+			if (not self.tab_lock):
+				if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
+					self.txt.insert(self.txt.index("insert"), self.keep_indent())
+					self.tab_lock = True
+
 
 	def update_win(self):
 		""" updates window """
@@ -621,48 +709,26 @@ class win():
 			root.update()
 			root.update_idletasks()
 		except Exception: #when exiting window it throws an error because root wasn't properly destroyed
+			self.run = False
 			root.quit()
-			quit()
 
-	def update_text(self, x=''):
+
+	def main(self):
 		""" updates the text and sets current position of the insert cursor"""
 		#basically the main function
 		#counter = 0
-		while self.run:
+		while (self.run):
 			self.update_win()
-			self.txt.see("insert")
-
-			# print(root.winfo_pointerx())
-			# if random.randint(1, 10) == 4:
-			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
-			# if (self.last_index != self.cursor_index[0] and self.get_line_count() < len(self.content)-1):
-			# 	print(self.get_line_count(), len(self.content))
-			# 	self.last_index = int(self.cursor_index[0])
-			# 	self.update_buffer()
-			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")
-			# print(self.txt.index(tkinter.INSERT))
-			#self.txt.after(0, self.update_line_numbers)
-			# self.line_no.configure(text=f"l:{self.cursor_index[0]} c:{self.cursor_index[1]}") # sets the cursor position into line number label
+			self.time_label.config(text=self.get_time())
+			# print(self.get_temperature())
 			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]")
-			# if (self.loading):
-			#     threading.Thread(target=self.loading_widg, args=()).start()
+			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")
 
-			if (root.focus_displayof() != self.command_entry):
-				self.command_entry.place_forget()
-
-			if (root.focus_displayof() != self.command_out):
-				self.command_out.place_forget() 
-
-			if (self.command_highlighting):
-				self.command_highlight()
-
-			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(self.cursor_index[0]))+"\n")
-				# self.highlight_chunk()
-				if (not self.tab_lock):
-					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
-						self.txt.insert(self.txt.index("insert"), self.keep_indent())
-						self.tab_lock = True
+			# if (self.last_index != self.txt.index(tkinter.INSERT)):
+			if (len(self.content) != len(self.txt.get("1.0", "end-1c"))):
+				self.update_buffer()
+				
+				self.last_index = self.txt.index(tkinter.INSERT)
 
 	def unindent(self, arg=None):
 		if (re.match(r"\t", self.txt.get(f"{self.cursor_index[0]}.0"))):
@@ -718,5 +784,6 @@ main_win = win(root)
 
 
 if __name__ == '__main__':
-	main_win.update_text()
+	main_win.main()
+	root.quit()
 	
