@@ -51,8 +51,9 @@ class win():
 		#self.foreground_color = "#9F005F"
 		self.theme_options = {
 			"cake": {"bg" : "#000000", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"muffin" : {"bg" : "#CCCCCC", "fg": "#9F005F", "insertbg": "#111111", "selectbg": "#111111", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"timelord": {"bg" : "#000099", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"muffin" : {"bg" : "#CCCCCC", "fg": "#9F005F", "insertbg": "#111111", "selectbg": "#111111", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
 			}
 		self.theme = self.theme_options["cake"]
@@ -68,7 +69,7 @@ class win():
 
 		self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
 		self.current_file_name = None
-		self.content = "dwadw"
+		self.content = ""
 
 		self.scroll_multiplier = 0
 
@@ -89,6 +90,9 @@ class win():
 
 		self.last_index = "0.0"
 
+		self.Font_size = 11
+		self.sFont_size = self.Font_size - 2
+
 		#configuring main window
 		#root.overrideredirect(True)
 		root.resizable(True,True)
@@ -102,9 +106,12 @@ class win():
 		#for item in fonts:
 		#    print(item)
 
-		#configuring fonts
-		# self.font = font.Font(family="Px437 IBM CGA", size=9, weight="bold")
-		# self.smaller_font = font.Font(family="Px437 IBM CGA", size=7, weight="bold")
+
+		self.txt = tkinter.Text()
+
+		#filediaolog pretty much self-explanatory
+		self.filename = filedialog
+
 		self.init()
 
 	def init(self):
@@ -112,67 +119,36 @@ class win():
 		
 		self.update_win()
 		
-		root.config(bg=self.theme["bg"])
 		root.wm_attributes("-alpha", 0.9)
 			
-		self.Font_size = 11
-		self.sFont_size = self.Font_size - 2
+
 		self.font_family = ["Consolas", "bold"]
 		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
 		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="bold")
 
-		#filediaolog pretty much self-explanatory
-		self.filename = filedialog
 
-		# self.canvas = tkinter.Canvas(bg=self.theme["bg"])
-		# self.canvas.create_line(3, 23, 38, 23, dash=(6, 3), fill="#CCCCCC")
-		# self.canvas.place(x=0, y=0, relwidth=1, relheight=1)
 
-		#text widget configuration
-		self.txt = tkinter.Text()
-
-		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, maxundo=0, spacing1=2,
-			insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
-			borderwidth=0, relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="char", blockcursor=True, highlightthickness=0, insertborderwidth=0)
-
-		# self.txt.place(x=0,y=25,relwidth=0.9975, relheight=0.9475, anchor="nw", bordermode="outside") "#A2000A"
-		
-		#scrollbar configuration
-		# self.scrollb = tkinter.Scrollbar(root, command=self.txt.yview, relief="flat") #self.scrollb.grid(row=0,column=2,sticky="nsew")
-		# self.scrollb.place(relx=0.985, rely=0.0, relwidth=0.15, relheight=.95)
-		# self.txt['yscrollcommand'] = self.scrollb.set
-
-		self.time_label = tkinter.Label(text="",fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
+		self.time_label = tkinter.Label() #self.line_no.grid(row=1,column=2)
 		self.time_label.place(relx=0.60, y=20, height=15, anchor="sw")
 
-		self.temperature_label = tkinter.Label(text="("+self.get_rand_temperature()+")", fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
+		
+		self.temperature_label = tkinter.Label(text="("+self.get_rand_temperature()+")")
 		self.temperature_label.place(relx=0.725, y=20, width=55, height=15, anchor="sw")
 
-		self.line_no = tkinter.Label(text="aaa",fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
+		self.line_no = tkinter.Label() #self.line_no.grid(row=1,column=2)
 		self.line_no.place(relx=0.85, y=20, width=100, height=15, anchor="sw")
 		
 		#command line entry
-		self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
-		bg = self.theme["bg"],fg="#555555", insertwidth=0, insertofftime=0, insertbackground="#CCCCCC", relief="flat")
-		#self.command_entry.grid(row=1,column=0,ipady=3);
-		# self.command_entry.place(x=0.0,rely=0.99, relwidth=0.25, height=15, anchor="sw")
+		self.command_entry = tkinter.Entry()
+
 
 
 		#command output
-		self.command_out = tkinter.Label(font=self.smaller_font, text="biog bruh", bg=self.theme["bg"], fg="#00df00")
-		# self.command_out.place(relx=0.28,rely=0.99, relwidth=0.25, height=15, anchor="sw")
-
-		#progressbar
-		#self.progress_bar = p_bar(root) #.grid(row=1,column=1)8
-		#self.style=ttk.Style()
-		#self.style.theme_use("clam")
-		#self.style.configure("color.Horizontal.TProgressbar", foreground="white", background="white")
-		#self.progress_bar = ttk.Progressbar(orient=tkinter.HORIZONTAL, style="color.Horizontal.TProgressbar",
-		# length=100, mode='determinate')
-		#self.progress_bar.place(relx=0.35,rely=0.975,relwidth=0.3,relheight=0.025)
+		self.command_out = tkinter.Label()
+		
 
 		#right click pop-up menu
-		self.right_click_menu = tkinter.Menu(tearoff=0, font=self.smaller_font, bg=self.theme["bg"], fg="#ffffff")
+		self.right_click_menu = tkinter.Menu()
 		self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
 		self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
 		self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
@@ -184,13 +160,13 @@ class win():
 
 		#self.menubar_button = tkinter.Button(root, text="File" ,font=self.font, bg=self.background_color, fg=self.foreground_color, command=self.popup).place(relx=0,rely=0,relwidth=0.05)
 
-		self.file_menubar_label = tkinter.Label(root, text="File" ,font=self.font, bg=self.theme["bg"], fg="#999999")
+		self.file_menubar_label = tkinter.Label(root)
 		# self.file_separator_label = tkinter.Label(root, text="----" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=0, y=15, height=2, anchor="nw")
 		self.file_menubar_label.bind("<Button-1>", 
 			lambda event: self.file_menu_popup("file_menu"))
 		self.file_menubar_label.place(x=0, y=5, height=20, anchor="nw")
 
-		self.settings_menubar_label = tkinter.Label(root, text="Settings" ,font=self.font, bg=self.theme["bg"], fg="#999999")
+		self.settings_menubar_label = tkinter.Label(root)
 		# self.settings_separator_label = tkinter.Label(root, text="--------" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=60, y=15, height=2, anchor="nw")
 		self.settings_menubar_label.bind("<Button-1>",
 			lambda event: self.file_menu_popup("settings_menu"))
@@ -198,7 +174,7 @@ class win():
 
 
 		#dropdown for menubar
-		self.file_dropdown = tkinter.Menu(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.theme["bg"]) #declare dropdown
+		self.file_dropdown = tkinter.Menu() #declare dropdown
 		self.file_dropdown.add_command(label="New file",command=self.new_file) #add commands
 		self.file_dropdown.add_command(label="Open file",command=self.load_file)
 		self.file_dropdown.add_command(label="Save file",command=self.save_file)
@@ -280,6 +256,23 @@ class win():
 		except IndexError:
 			pass
 
+		self.theme_load()
+
+	def theme_load(self):
+		root.config(bg=self.theme["bg"])
+		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, maxundo=0, spacing1=2,
+			insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
+			borderwidth=0, relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="char", blockcursor=True, highlightthickness=0, insertborderwidth=0)
+		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
+		self.temperature_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
+		self.line_no.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
+		self.command_entry.configure(justify=tkinter.LEFT, font=self.font, bg = self.theme["bg"],fg="#555555",
+		 insertwidth=0, insertofftime=0, insertbackground="#CCCCCC", relief="flat", highlightthickness=0, bd=-1)
+		self.command_out.configure(font=self.smaller_font, bg=self.theme["bg"], fg="#00df00")
+		self.right_click_menu.configure(tearoff=0, font=self.smaller_font, bg=self.theme["bg"], fg="#ffffff")
+		self.file_menubar_label.configure(text="File" ,font=self.font, bg=self.theme["bg"], fg="#999999")
+		self.settings_menubar_label.configure(text="Settings" ,font=self.font, bg=self.theme["bg"], fg="#999999")
+		self.file_dropdown.configure(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.theme["bg"], bd=0)
 
 	def set_highlighter(self, arg):
 		print(arg)
@@ -521,7 +514,7 @@ class win():
 		elif (command[0] == "theme"):
 			try:
 				self.theme = self.theme_options[command[1]]
-				self.init()
+				self.theme_load()
 			except IndexError:
 				p = "themes:"
 				for x in list(self.theme_options.keys()):
@@ -657,7 +650,7 @@ class win():
 	def get_temperature(self):
 		url = "https://www.bbc.com/weather/2673730"
 		html = requests.get(url).content
-		return "{"+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C}"
+		return "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)"
 
 	def get_time(self):
 		d_time = datetime.now().time()
@@ -684,6 +677,16 @@ class win():
 			self.command_O("temperature changed")
 
 		return time
+
+	def reload_buffer(self):
+		swap = self.txt.get("1.0", "end")
+		self.init()
+		self.txt.insert("1.0", swap)
+		self.txt.mark_set("insert", "1.0")
+		self.txt.see("insert")
+
+		if (self.highlighting):
+			self.highlight_all()
 
 	def update_buffer(self):
 		if (self.current_file_name): root.title(f"Nix: <*{os.path.basename(self.current_file_name)}>")
