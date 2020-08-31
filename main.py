@@ -85,6 +85,7 @@ class win():
 		self.loading = False
 		self.fullscreen = False
 		self.run = True
+		self.x = self
 
 		self.last_index = "0.0"
 
@@ -141,15 +142,14 @@ class win():
 		# self.scrollb.place(relx=0.985, rely=0.0, relwidth=0.15, relheight=.95)
 		# self.txt['yscrollcommand'] = self.scrollb.set
 
-		#line and column number label
-		self.line_no = tkinter.Label(text="aaa",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
-		self.line_no.place(relx=0.80, y=20, height=15, anchor="sw")
+		self.time_label = tkinter.Label(text="",fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
+		self.time_label.place(relx=0.60, y=20, height=15, anchor="sw")
 
-		self.time_label = tkinter.Label(text="",fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
-		self.time_label.place(relx=0.65, y=20, height=15, anchor="sw")
+		self.temperature_label = tkinter.Label(text="("+self.get_rand_temperature()+")", fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
+		self.temperature_label.place(relx=0.725, y=20, width=55, height=15, anchor="sw")
 
-		self.temperature_label = tkinter.Label(text=self.get_rand_temperature(), fill=None ,justify=tkinter.RIGHT, font=self.font,bg = self.theme["bg"],fg="#999999")
-		self.temperature_label.place(relx=0.90, y=20, height=15, anchor="sw")
+		self.line_no = tkinter.Label(text="aaa",fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999") #self.line_no.grid(row=1,column=2)
+		self.line_no.place(relx=0.85, y=20, width=100, height=15, anchor="sw")
 		
 		#command line entry
 		self.command_entry = tkinter.Entry(text="aa", justify=tkinter.LEFT, font=self.font,
@@ -230,6 +230,7 @@ class win():
 		self.command_entry.bind("<Down>", self.command_history)
 		self.command_entry.bind("<Escape>", self.command_entry_unset)
 		self.command_out.bind("<Return>", lambda arg: self.txt.focus_set())
+		
 		self.txt.unbind("<MouseWheel>")
 		self.txt.unbind("<Button-4>")
 		self.txt.unbind("<Button-5>")
@@ -240,6 +241,9 @@ class win():
 		self.txt.bind("<Control-MouseWheel>", self.set_font_size)
 		self.txt.bind("<Control-Button-4>", self.set_font_size)
 		self.txt.bind("<Control-Button-5>", self.set_font_size)
+
+		self.txt.bind("<Up>", lambda arg: self.command_out.place_forget())
+		self.txt.bind("<Down>", lambda arg: self.command_out.place_forget())
 
 		self.txt.bind("<MouseWheel>", self.scroll)
 		self.txt.bind("<Button-4>", self.scroll)
@@ -408,6 +412,7 @@ class win():
 
 	def command_entry_set(self, arg):
 		self.command_entry.place(x=0,rely=0.99975, relwidth=0.9975, height=20, anchor="sw")
+		self.command_out.place_forget()
 		self.command_entry.focus_set()
 
 	def command_entry_unset(self, arg):
@@ -444,7 +449,6 @@ class win():
 		#(I have no idea why past me made this into a function when it doesn't really have to be a function)
 		self.command_out.place(relx=0, rely=0.99975, relwidth=1, height=20, anchor="sw")
 		self.command_out.configure(text=str(arg), anchor="w")
-		self.command_out.focus_set()
 
 
 	def cmmand(self, arg):
@@ -475,8 +479,8 @@ class win():
 		#line/ line and column commands
 
 		elif (re.match(r"[0-9]", command[0][0])):
-			self.txt.mark_set("insert", float(command[0]))
-			self.txt.see(float(command[0]))
+			self.txt.mark_set(tkinter.INSERT, float(command[0]))
+			self.txt.see(float(command[0])+2)
 			self.command_O(f"moved to: {float(command[0])}")
 
 		elif (command[0][0] == "l"):
@@ -492,8 +496,8 @@ class win():
 					break
 
 			if (re.match("[0-9]", argument)):
-				self.txt.mark_set("insert", float(argument))
-				self.txt.see("insert")
+				self.txt.mark_set(tkinter.INSERT, float(argument))
+				self.txt.see(float(argument)+2)
 				self.command_O(f"moved to: {float(argument)}")
 
 			elif (re.match("get", argument)):
@@ -530,6 +534,7 @@ class win():
 
 		#sets focus back to text widget
 		self.txt.focus_set()
+		self.txt.see(tkinter.INSERT)
 		self.command_entry.delete(0, "end") #deletes command line input
 
 		#set command history to newest index
@@ -652,7 +657,7 @@ class win():
 	def get_temperature(self):
 		url = "https://www.bbc.com/weather/2673730"
 		html = requests.get(url).content
-		return BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C"
+		return "{"+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C}"
 
 	def get_time(self):
 		d_time = datetime.now().time()
