@@ -30,7 +30,7 @@ class highlighter():
 			self.highlight = self.python_highlight
 			self.commment_regex = re.compile(r"[\#]")
 
-		self.other_chars = ["$","#","@","&","|","^","_","\\",r"\\",r"\[\]",r"[\\]"]
+		# self.other_chars = ["$","#","@","&","|","^","_","\\",r"\\",r"\[\]",r"[\\]"]
 
 		self.txt = text
 		self.theme = theme
@@ -40,12 +40,13 @@ class highlighter():
 
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z]")
-		self.separator_regex = re.compile(r"[\s\.\,\(\)]")
+		self.separator_regex = re.compile(r"[\s\.\,\:\(\)]")
 		self.num_regex = re.compile(r"[0-9]")
-		self.special_char_regex = re.compile(r"[\{\}\&\^\|]")
-		self.equal_regex = re.compile(r"[\=]")
-		self.operator_regex = re.compile(r"[\%\+\-\*\/]")
-		self.string_special_char_regex = re.compile(r"[\\{\}]")
+		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]]")
+		self.L_bracket_regex = re.compile(r"[\(]")
+		self.R_bracket_regex = re.compile(r"[\)]")
+		self.operator_regex = re.compile(r"[\%\+\-\*\/\=]")
+		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		
 	def get_line_lenght(self, line_no):
 		for i, char in enumerate(self.txt.get(float(line_no), "end"), 0):
@@ -54,7 +55,7 @@ class highlighter():
 
 	def python_highlight(self, line_no ,line=None):
 		if line == None:
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
 			# print(line)
 
 		last_separator_index = 0
@@ -71,11 +72,11 @@ class highlighter():
 		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
 		
 		for i, current_char in enumerate(line, 0):
-			index = f"{line_no}.{i}"
 			if (i == 0):
 				self.countingQuomarks = False
 			
 			if (self.quote_regex.match(current_char)):
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["quotes"], index)
 				if (self.countingQuomarks):
 					self.countingQuomarks = False
@@ -84,31 +85,45 @@ class highlighter():
 				# self.countingQuomarks = not self.countingQuomarks
 
 			elif (self.countingQuomarks):
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["quotes"], index)
 				continue
 			
 			elif (self.abc_regex.match(current_char)):
 				self.pattern += current_char
+				# print(self.pattern)
 				continue
 			
 			elif (self.separator_regex.match(current_char)):
 				# print(self.pattern)
-				if (re.match(r"\(", current_char)):
+
+				if (self.R_bracket_regex.match(current_char)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add(self.theme["special_chars"], index)
+
+				if (self.L_bracket_regex.match(current_char)):
+					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["functions"], last_separator, index)
+					self.txt.tag_add(self.theme["special_chars"], index)
+
 				elif (self.pattern in self.keywords):
+					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
-					
+			
+
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				self.pattern = ""
-				continue
+				
 
 			elif (self.commment_regex.match(current_char)): #comments
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["comments"], index, line_end_index)
 				break
 
 			elif (self.num_regex.match(current_char)): #numbers
 				if (self.pattern == ""):
+					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["numbers"], index)
 					self.pattern = ""
 				else:
@@ -116,20 +131,21 @@ class highlighter():
 				continue
 			
 			elif (self.operator_regex.match(current_char)):
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["operators"], index)
 				self.pattern = ""
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
 				continue
 			
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["special_chars"], index)
 				self.pattern = ""
-				continue
-				
-			elif (self.equal_regex.match(current_char)):
-				self.txt.tag_add(self.theme["operators"], index)
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
-				self.pattern = ""
+				continue
+				
 
 	def C_highlight(self, line_no, line=None):
 		if line == None:
@@ -150,13 +166,13 @@ class highlighter():
 		
 		
 		for i, current_char in enumerate(line, 0):
-			index = f"{line_no}.{i}"
 			if (i == 0):
 				self.countingQuomarks = False
 
 
 			try:
 				if (self.commment_regex.match(r"//", current_char+line[i+1])): #comments
+					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["comments"], index, line_end_index)
 					break
 
@@ -164,6 +180,7 @@ class highlighter():
 				pass
 
 			if (self.quote_regex.match(current_char)):
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["quotes"], index)
 				if (self.countingQuomarks):
 					self.countingQuomarks = False
@@ -172,6 +189,7 @@ class highlighter():
 				# self.countingQuomarks = not self.countingQuomarks
 
 			elif (self.countingQuomarks):
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["quotes"], index)
 				# last_separator_index = i+2
 				# last_separator = f"{line_no}.{last_separator_index}"
@@ -189,8 +207,10 @@ class highlighter():
 			elif (self.separator_regex.match(current_char)):
 				# print(self.pattern)
 				if (re.match(r"\(", current_char)):
+					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["functions"], last_separator, index)
 				elif (self.pattern in self.keywords):
+					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
 					
 				last_separator_index = i+1
@@ -199,10 +219,12 @@ class highlighter():
 				continue
 
 			elif (self.commment_regex.match(current_char)): #comments
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["comments"], index, f"{line_no}.{i+1000}")
 				break
 
 			elif (self.num_regex.match(current_char)): #numbers
+				index = f"{line_no}.{i}"
 				if (self.pattern == ""):
 					self.txt.tag_add(self.theme["numbers"], index)
 					self.pattern = ""
@@ -211,20 +233,21 @@ class highlighter():
 				continue
 
 			elif (self.operator_regex.match(current_char)):
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["operators"], index)
 				self.pattern = ""
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
 				continue
 			
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
+				index = f"{line_no}.{i}"
 				self.txt.tag_add(self.theme["special_chars"], index)
 				self.pattern = ""
-				continue
-				
-			elif (self.equal_regex.match(current_char)):
-				self.txt.tag_add(self.theme["operators"], index)
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
-				self.pattern = ""
+				continue
+				
 				
 
 	def unhighlight(self, line_no, line=None):
