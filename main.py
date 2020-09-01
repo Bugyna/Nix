@@ -86,7 +86,8 @@ class win():
 		self.loading = False
 		self.fullscreen = False
 		self.run = True
-		self.x = self
+
+		self.current_line = ""
 
 		self.last_index = "0.0"
 
@@ -119,6 +120,7 @@ class win():
 		
 		self.update_win()
 		
+		self.set_highlighter("NaN")
 		root.wm_attributes("-alpha", 0.9)
 			
 
@@ -206,12 +208,7 @@ class win():
 		self.command_entry.bind("<Down>", self.command_history)
 		self.command_entry.bind("<Escape>", self.command_entry_unset)
 		self.command_out.bind("<Return>", lambda arg: self.txt.focus_set())
-		
-		self.txt.unbind("<MouseWheel>")
-		self.txt.unbind("<Button-4>")
-		self.txt.unbind("<Button-5>")
-		self.txt.unbind("<Control-slash>")
-
+	
 		self.txt.bind("<Control-period>", self.set_font_size)
 		self.txt.bind("<Control-comma>", self.set_font_size)
 		self.txt.bind("<Control-MouseWheel>", self.set_font_size)
@@ -231,12 +228,14 @@ class win():
 		self.txt.bind("<Control-s>", self.save_file)
 		self.txt.bind("<Control-S>", self.save_file)
 		self.txt.bind("<Return>", self.set_tab_lock)
-		self.txt.bind("<Control-slash>", lambda arg: print("aaa"))#self.comment_line)
+		self.txt.bind("<Control-slash>", self.comment_line) #self.comment_line)
 
 		try:
 			self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
 		except Exception:
 			self.txt.bind("<Shift-Tab>", self.unindent)
+
+
 		root.bind("<Control-space>", self.command_entry_set)
 		root.bind("<F11>", self.set_fullscreen)
 		root.bind("<Alt-Right>", self.set_dimensions)
@@ -255,8 +254,9 @@ class win():
 			self.load_file(filename=sys.argv[1])
 		except IndexError:
 			pass
-
+		
 		self.theme_load()
+		self.update_buffer()
 
 	def theme_load(self):
 		root.config(bg=self.theme["bg"])
@@ -274,16 +274,28 @@ class win():
 		self.settings_menubar_label.configure(text="Settings" ,font=self.font, bg=self.theme["bg"], fg="#999999")
 		self.file_dropdown.configure(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.theme["bg"], bd=0)
 
+
+
 	def set_highlighter(self, arg):
-		print(arg)
+		
 		self.highlighting = True
+
 		if (arg == "py"):
-			self.highlighter = highlighter(self.txt, self.theme, "py")
+			self.highlighter = highlighter(self.txt, self.theme, arg)
+			self.comment_sign = "#"
+
 		elif (arg == "c"):
-			self.highlighter = highlighter(self.txt, self.theme, "c")
+			self.highlighter = highlighter(self.txt, self.theme, arg)
+			self.comment_sign = "//"
+
+		elif (arg == "cpp" or arg == "cc"):
+			self.highlighter = highlighter(self.txt, self.theme, arg)
+			self.comment_sign = "//"
+
 		else:
+			self.highlighter = highlighter(self.txt, self.theme, "NaN")
+			self.comment_sign = "#"
 			self.highlighting = False
-			self.highlighter = None
 
 	def set_tab_lock(self, arg):
 		self.tab_lock = False
@@ -374,9 +386,29 @@ class win():
 		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
 		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="bold")
 		self.txt.configure(font=self.font, tabs=(f"{self.font.measure(' ' * 4)}"))
-		# self.command_out.configure(text=f"font size: {self.Font_size}")
+		self.command_out.configure(text=f"font size: {self.Font_size}")
 		self.command_O(f"font size: {self.Font_size}")
 
+	def comment_line(self, arg=None):
+		""" I wish I knew what the fuck is going on in here I am depressed """
+
+		for i, current_char in enumerate(self.current_line, 0):
+			if (self.highlighter.commment_regex.match(current_char)):
+				if (re.match(r"\s", self.txt.get(f"{self.cursor_index[0]}.{i+len(self.comment_sign)}"))):
+					self.txt.delete(f"{self.cursor_index[0]}.{i}", f"{self.cursor_index[0]}.{i+1+len(self.comment_sign)}")
+				else:
+					self.txt.delete(f"{self.cursor_index[0]}.{i}", f"{self.cursor_index[0]}.{i+len(self.comment_sign)}")
+				break
+			elif (self.highlighter.abc_regex.match(current_char)):
+				self.txt.insert(f"{self.cursor_index[0]}.{i}", self.comment_sign+" ")
+				break
+
+		return "break"
+
+
+	def unindent(self, arg=None):
+		if (re.match(r"\t", self.txt.get(f"{self.cursor_index[0]}.0"))):
+			self.txt.delete(f"{self.cursor_index[0]}.0", f"{self.cursor_index[0]}.1")
 
 	def scroll(self, arg, multiplier=1):
 
@@ -387,8 +419,9 @@ class win():
 		elif (arg.num == 4 or arg.delta > 0):
 			self.txt.mark_set("insert", next_index-3*multiplier)
 		
-		self.txt.see("insert")
+		self.txt.see(tkinter.INSERT)
 		self.txt.focus_set()
+		self.command_out.place_forget()
 
 
 	def popup(self, arg):
@@ -583,11 +616,11 @@ class win():
 	def save_file_as(self):
 		""" saves current text into a new file """
 		if (self.current_file_name != None):
-			tmp = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c"],("all files","*.*")))
+			tmp = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
 			os.rename(self.current_file_name, tmp)
 			self.current_file_name = tmp
 		else:
-			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c"],("all files","*.*")))
+			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
 
 		root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 		self.save_file()
@@ -598,7 +631,7 @@ class win():
 			self.current_file_name = filename
 		
 		elif (filename == None):
-			self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(["TXT files", "*.txt *.py *.c"],("all files","*.*")))
+			self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
 		
 		try:
 			self.current_file = open(self.current_file_name, "r+")
@@ -691,7 +724,6 @@ class win():
 	def update_buffer(self):
 		if (self.current_file_name): root.title(f"Nix: <*{os.path.basename(self.current_file_name)}>")
 		# len(self.content) != len(self.txt.get("1.0", "end-1c")) and
-		self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
 		
 		if (root.focus_displayof() != self.command_entry):
 			self.command_entry.place_forget()
@@ -702,13 +734,6 @@ class win():
 		if (self.command_highlighting):
 			self.command_highlight()
 
-		if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-			self.highlighter.highlight(self.cursor_index[0], line=self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(self.cursor_index[0]))+"\n")
-			# self.highlight_chunk()
-			if (not self.tab_lock):
-				if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
-					self.txt.insert(self.txt.index("insert"), self.keep_indent())
-					self.tab_lock = True
 
 
 	def update_win(self):
@@ -729,18 +754,27 @@ class win():
 			self.update_win()
 			self.time_label.config(text=self.get_time())
 			# print(self.get_temperature())
+			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
 			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]")
 			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")
 
 			# if (self.last_index != self.txt.index(tkinter.INSERT)):
 			if (len(self.content) != len(self.txt.get("1.0", "end-1c"))):
 				self.update_buffer()
-				
-				self.last_index = self.txt.index(tkinter.INSERT)
 
-	def unindent(self, arg=None):
-		if (re.match(r"\t", self.txt.get(f"{self.cursor_index[0]}.0"))):
-			self.txt.delete(f"{self.cursor_index[0]}.0", f"{self.cursor_index[0]}.1")
+
+			if (self.last_index != self.txt.index(tkinter.INSERT)):
+				self.current_line = self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(self.cursor_index[0]))+"\n"
+				self.last_index = self.txt.index(tkinter.INSERT)
+			
+			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
+				self.highlighter.highlight(self.cursor_index[0], line=self.current_line)
+				# self.highlight_chunk()
+				if (not self.tab_lock):
+					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
+						self.txt.insert(self.txt.index("insert"), self.keep_indent())
+						self.tab_lock = True
+
 			
 	def keep_indent(self):
 		# tab_offset = 0
