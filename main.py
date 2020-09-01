@@ -22,7 +22,7 @@ from highlighter import highlighter
 # 	  'lambda', 'try', 'as', 'def', 'from', 'nonlocal', 'while', 'assert', 'del',
 # 	   'global', 'not', 'with', 'async', 'elif', 'if', 'or', 'yield', "self"
 # 	   ]
-
+	
 # keywords = [
 # 		'auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum',
 # 		 'extern', 'float', 'for', 'goto', 'if', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof',
@@ -52,7 +52,7 @@ class win():
 		self.theme_options = {
 			"cake": {"bg" : "#000000", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"timelord": {"bg" : "#000099", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"muffin" : {"bg" : "#CCCCCC", "fg": "#9F005F", "insertbg": "#111111", "selectbg": "#111111", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"muffin" : {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
 			}
@@ -95,17 +95,13 @@ class win():
 		self.sFont_size = self.Font_size - 2
 
 		#configuring main window
-		#root.overrideredirect(True)
 		root.resizable(True,True)
 		root.geometry("600x400")
-		#root.minsize(width=200, height=200)
-		#self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
-		root.title(f"Nix: <None>") #{os.path.basename(self.current_file.name)}
+		root.title(f"Nix: <None>")
+			
 		#root.overrideredirect(True)
-		#prints all fonts you have installed
-		#fonts = list(font.families())
-		#for item in fonts:
-		#    print(item)
+		#self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
+
 
 
 		self.txt = tkinter.Text()
@@ -277,7 +273,7 @@ class win():
 
 
 	def set_highlighter(self, arg):
-		
+		""" sets the highlighter accordingly to the current file extension """
 		self.highlighting = True
 
 		if (arg == "py"):
@@ -298,50 +294,15 @@ class win():
 			self.highlighting = False
 
 	def set_tab_lock(self, arg):
+		"""  """
 		self.tab_lock = False
 
-	def loading_widg(self):
-		self.a += chr(9608)
-		if len(self.a) < 11:
-			print(len(self.a))
-			sleep(0.1)
-			self.loading_label.configure(text=self.a)
-		
-		else:
-			print("aa")
-			self.loading = False
-			self.a = ""
-			sleep(0.1)
-			self.loading_label.configure(text=self.a)
 
 	def get_line_count(self):
 		""" returns total amount of lines in opened text """
 		self.info = self.txt.get("1.0", "end-1c")
 		return sum(1 for line in self.info.split("\n"))
-		# return len(self.content)
-
-
-	def error_win(self, e):
-		""" set up error window """
-		error_win = tkinter.Tk("aaa")
-		error_win.configure(bg="#000000", bd=2)
-		#error_win.geometry("600x200")
-		error_win.title(f"Error Window")
-		error_label = tkinter.Label(error_win, text=f"Error: {e}", justify=tkinter.CENTER, bg="#000000", fg="#ffffff"); error_label.pack()
-		error_button = tkinter.Button(error_win, text="OK", command=error_win.destroy, bg="#000000", fg="#ffffff"); error_button.pack()
-		#error_label.place(relx=0.0, rely=0.10, relwidth=1, relheight=0.20)
-		#error_button.place(relx=0.25, rely=0.25, relwidth=0.35, relheight=0.26)
-
-	def help_win(self, command=None):
-		""" set up help window """
-		help_win = tkinter.Tk("aaa")
-		help_win.configure(bg="#000000")
-		help_win.title(f"Help Window")
-		if (command == None):
-			help_label = tkinter.Label(help_win, text=f"Commands: \n l -options: get || [ LINE_NUMBER(.CHARACTER) ] (eg. 120 or 120.5)  \n highlighting -options: on || off \n", bg="#000000", fg="#ffffff", justify=tkinter.LEFT).pack()
-		elif (command != None):
-			help_label = tkinter.Label(help_win, text=f"{command}: {self.command_definition[command]}", bg="#000000", fg="#ffffff", justify=tkinter.LEFT).pack()
-		#-puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)
+		
 
 	#binded functions
 
@@ -355,10 +316,12 @@ class win():
 		# self.line_no.place(width=100, height=50)
 
 	def set_fullscreen(self, arg):
+		""" set the window to be fullscreen F11 """
 		self.fullscreen = not self.fullscreen
 		root.attributes("-fullscreen", self.fullscreen)
 
 	def set_dimensions(self, arg):
+		""" changes window size accordingly to keys pressed Alt-Curses """
 		key = arg.keysym
 		margin = 20
 		if (key == "Right"):
@@ -371,6 +334,7 @@ class win():
 			root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}")
 		
 	def set_font_size(self, arg):
+		""" Changes font size and reconfigures(updates) widgets accordingly """
 		if (arg.keysym == "period" or arg.num == 4 or arg.delta > 0):
 			self.Font_size += 1
 			self.sFont_size += 1
@@ -407,11 +371,12 @@ class win():
 
 
 	def unindent(self, arg=None):
+		""" Checks if the first character in line is \t (tab) and deletes it accordingly """
 		if (re.match(r"\t", self.txt.get(f"{self.cursor_index[0]}.0"))):
 			self.txt.delete(f"{self.cursor_index[0]}.0", f"{self.cursor_index[0]}.1")
 
 	def scroll(self, arg, multiplier=1):
-
+		""" scrolls through the text widget MouseWheel && Shift-MouseWheel for speedy scrolling """
 		next_index = float(self.txt.index("insert"))
 		if (arg.num == 5 or arg.delta < 0):
 			self.txt.mark_set("insert", next_index+3*multiplier)
@@ -419,17 +384,19 @@ class win():
 		elif (arg.num == 4 or arg.delta > 0):
 			self.txt.mark_set("insert", next_index-3*multiplier)
 		
-		self.txt.see(tkinter.INSERT)
+		# hides widgets that could be in the way
 		self.txt.focus_set()
+		self.txt.see(tkinter.INSERT)
 		self.command_out.place_forget()
+		self.command_entry.place_forget()
 
 
 	def popup(self, arg):
-		""" gets x, y position of mouse click """
+		""" gets x, y position of mouse click and places a menu accordingly """
 		self.right_click_menu.tk_popup(arg.x_root+5, arg.y_root)
-		# self.right_click_menu.grab_release()
 		
 	def file_menu_popup(self, widget):
+		""" places a dropdown menu accordingly to menubar option clicked """
 		if (widget == "file_menu"): 
 			self.file_dropdown.tk_popup(root.winfo_rootx(), root.winfo_rooty()+25)
 		
@@ -437,11 +404,13 @@ class win():
 			self.file_dropdown.tk_popup(root.winfo_rootx()+63, root.winfo_rooty()+25)
 
 	def command_entry_set(self, arg):
+		""" Shows command entry widget """
 		self.command_entry.place(x=0,rely=0.99975, relwidth=0.9975, height=20, anchor="sw")
 		self.command_out.place_forget()
 		self.command_entry.focus_set()
 
 	def command_entry_unset(self, arg):
+		""" hides command entry widget 'tis a kinda useless function"""
 		self.command_entry.place_forget()
 		self.txt.focus_set()
 
@@ -471,7 +440,7 @@ class win():
 			self.command_entry.delete(0, "end")
 
 	def command_O(self, arg):
-		""" sets the text in command output"""
+		""" sets the text in command output """
 		#(I have no idea why past me made this into a function when it doesn't really have to be a function)
 		self.command_out.place(relx=0, rely=0.99975, relwidth=1, height=20, anchor="sw")
 		self.command_out.configure(text=str(arg), anchor="w")
@@ -575,30 +544,18 @@ class win():
 			i += 1
 			name = f"{os.getcwd()}/untitled_{i}.txt"
 
-		# del i, name
-
-		try:
-			self.current_file_name = name
-			self.current_file = open(self.current_file_name, "w+")
-			root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
-			
-			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
-
-		except Exception as e:
-			self.current_file.close()
-			self.error_win(e)
+		self.current_file_name = name
+		self.current_file = open(self.current_file_name, "w+")
+		root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
+		
+		self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
 
 	def save_file(self, arg = None):
 		""" saves current text into opened file """
 		self.content = str(self.txt.get("1.0", "end-1c"))
 		
-		# try:
-		#     self.current_file = open(f"{os.getcwd()}/untitled.txt", "w+")
-		#     root.title(f"N Editor: <{os.path.basename(self.current_file.name)}>")
-		# except:
-		#     pass
 		
-		try:
+		if (self.current_file_name):
 			self.current_file = open(self.current_file_name, "w")
 			self.current_file.write(self.content)
 			
@@ -608,10 +565,10 @@ class win():
 			root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.command_O(f"total of {self.get_line_count()} lines saved")
 			
-		except TypeError:
+		elif (not self.current_file_name):
 			self.new_file()
 			self.save_file()
-			# self.error_win(f"{e}\n aka you probably didn't open any file yet")
+
 
 	def save_file_as(self):
 		""" saves current text into a new file """
@@ -622,51 +579,44 @@ class win():
 		else:
 			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
 
+
 		root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 		self.save_file()
 
 	def load_file(self, filename=None):
 		""" opens a file and loads it's content into the text widget """
-		if (filename):
+
+		if (filename): #if the filename arguments is given: set the current filename to be the argument (pretty self explanatory)
 			self.current_file_name = filename
 		
-		elif (filename == None):
+		elif (filename == None): #if the filename argument is not provided open a file menu to provide a filename
 			self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
 		
-		try:
-			self.current_file = open(self.current_file_name, "r+")
+		self.current_file = open(self.current_file_name, "r+") #opens the file
 
-			self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
+		self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1]) #takes the file extension and passes it to the set_highlighter function to highlight the file accordingly
 
-			# self.content = self.current_file.readlines()
-			root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
-			self.txt.delete("1.0", "end-1c")
 
-			self.content = self.current_file.read()
-			# print(len(self.content)/2)
+		root.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
+		self.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
 
-			# for i in range(10):
-			# 	print(offset, offset1)
-			# 	self.txt.insert("end", self.content[offset:offset1])
-			# 	offset += int(len(self.content)/10)
-			# 	offset1 += int(len(self.content)/10)
-			# for line in self.content[0]:
-			# 	self.txt.insert("end", line)
-			t0 = time()
-			self.txt.insert("1.0", self.content)
-			self.txt.mark_set("insert", "1.0")
-			self.txt.see("insert")
-			self.current_file.close()
-			# del content
-			self.highlight_all()
-			t1 = time()
-			self.command_O(f"total lines: {self.get_line_count()};	loaded in: {round(t1-t0, 3)} seconds")
-			print(round(t1-t0, 3))
-		except Exception as e:
-			self.new_file(name=self.current_file_name)
-			self.save_file()
+		self.content = self.current_file.read() #self.content is the variable storing all of the files text
+		self.current_file.close() #closes current file
+
+		t0 = time() # timer| gets current time in miliseconds
+		self.txt.insert("1.0", self.content) #puts all of the file's text in the text widget
+		self.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
+		self.txt.see(tkinter.INSERT) #puts the cursor at the start of the file
+
+		
+		self.highlight_all() #highlights the text in the text widget
+		t1 = time() # timer| gets current time in miliseconds
+		elapsed_time = round(t1-t0, 3) #elapsed time
+		self.command_O(f"total lines: {self.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
+
 
 	def get_rand_temperature(self):
+		""" generates a random temperature depending on the current month """
 		month = datetime.now().date().month
 		temperature = 0
 		if (month == 12 or month <= 2):
@@ -681,11 +631,14 @@ class win():
 		return f"{temperature}°C"
 
 	def get_temperature(self):
-		url = "https://www.bbc.com/weather/2673730"
-		html = requests.get(url).content
-		return "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)"
+		""" scrapes the current temperature of Stockholm """
+
+		url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
+		html = requests.get(url).content #gets the html of the url
+		return "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)" #returns the scraped temperature
 
 	def get_time(self):
+		""" gets time and parses to make it look the way I want it to """
 		d_time = datetime.now().time()
 		time = ""
 
@@ -704,40 +657,32 @@ class win():
 		else:
 			time += f"{d_time.second}"
 
-		# print(d_time.microsecond)
-		if (d_time.minute % 10 == 0 and d_time.second == 10 and d_time.microsecond >= 51000 and d_time.microsecond <= 52000):
+		
+		if (d_time.minute % 10 == 0 and d_time.second == 10 and d_time.microsecond >= 51000 and d_time.microsecond <= 52000): #checks if it's time for updating the temperature
 			self.temperature_label.configure(text=self.get_temperature())
 			self.command_O("temperature changed")
 
 		return time
 
-	def reload_buffer(self):
-		swap = self.txt.get("1.0", "end")
-		self.init()
-		self.txt.insert("1.0", swap)
-		self.txt.mark_set("insert", "1.0")
-		self.txt.see("insert")
-
-		if (self.highlighting):
-			self.highlight_all()
 
 	def update_buffer(self):
-		if (self.current_file_name): root.title(f"Nix: <*{os.path.basename(self.current_file_name)}>")
+		""" updates some of the widgets when a character is typed in """
+		if (self.current_file_name): root.title(f"Nix: <*{os.path.basename(self.current_file_name)}>") #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
 		# len(self.content) != len(self.txt.get("1.0", "end-1c")) and
 		
-		if (root.focus_displayof() != self.command_entry):
+		if (root.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
 
-		if (root.focus_displayof() != self.command_out):
+		if (root.focus_displayof() != self.command_out): #if the a character has been typed into the text widget: hide the command output widget
 			self.command_out.place_forget() 
 
-		if (self.command_highlighting):
+		if (self.command_highlighting): #TODO
 			self.command_highlight()
 
 
 
 	def update_win(self):
-		""" updates window """
+		""" updates the window whole window (all of it's widgets)"""
 		try:
 			root.update()
 			root.update_idletasks()
@@ -747,37 +692,35 @@ class win():
 
 
 	def main(self):
-		""" updates the text and sets current position of the insert cursor"""
+		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
 		#basically the main function
 		#counter = 0
 		while (self.run):
 			self.update_win()
-			self.time_label.config(text=self.get_time())
-			# print(self.get_temperature())
+			self.time_label.config(text=self.get_time()) #updates the time label/widget to show current time
+			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]") #updates the line&column widget to show current cursor index/position
 			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
-			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]")
-			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")
+			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw") #repositions the text widget to be placed correctly
 
 			# if (self.last_index != self.txt.index(tkinter.INSERT)):
-			if (len(self.content) != len(self.txt.get("1.0", "end-1c"))):
+			if (len(self.content) != len(self.txt.get("1.0", "end-1c"))): #if a character has been typed into the text widget call the udpate buffer function
 				self.update_buffer()
 
 
-			if (self.last_index != self.txt.index(tkinter.INSERT)):
+			if (self.last_index != self.txt.index(tkinter.INSERT)): #if the cursor index/position has been changed: get current line
 				self.current_line = self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(self.cursor_index[0]))+"\n"
-				self.last_index = self.txt.index(tkinter.INSERT)
 			
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				self.highlighter.highlight(self.cursor_index[0], line=self.current_line)
+				self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
 				# self.highlight_chunk()
-				if (not self.tab_lock):
-					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"):
-						self.txt.insert(self.txt.index("insert"), self.keep_indent())
-						self.tab_lock = True
+				if (not self.tab_lock): #if tab has not been pressed yet: 
+					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"): #no idea actually
+						self.keep_indent()
 
 			
 	def keep_indent(self):
-		# tab_offset = 0
+		""" gets the amount of tabs in the last line and puts them at the start of a new one """
+		#this functions gets called everytime Enter/Return has been pressed or rather everytime a \n (newline) character has been found
 		offset_string = ""
 		for current_char in self.txt.get(f"{int(self.cursor_index[0])-1}.0", "end"):
 			if (re.match(r"[\t]",  current_char)):
@@ -789,20 +732,11 @@ class win():
 			else:
 				pass
 		
-			# else:
-			# 	if (re.match(r"[\:]", line[-3])):
-			# 		offset_string += "\t"
-			# 	break
-		
-		return offset_string
+		self.txt.insert(self.txt.index(tkinter.INSERT), offset_string) #insert the tabs at the start of the line
+		self.tab_lock = True
 
 	def command_highlight(self):
 		pass
-
-	# def highlight_chunk(self):
-	# 	if self.highlighting:
-	# 		for i in range(int(self.cursor_index[0])-30, int(self.cursor_index[0])+30):
-	# 			self.highlighter.highlight(str(i))
 
 	def highlight_all(self):
 		if self.highlighting:
