@@ -5,6 +5,7 @@ from itertools import chain
 
 
 class highlighter():
+	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
 	def __init__(self, text, theme, lang):
 		self.Py_keywords = [
 			'False', 'await', 'else', 'import', 'pass', 'None', 'break', 'except', 'in',
@@ -31,25 +32,25 @@ class highlighter():
 			 "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
 		]
 		
-		self.keywords = []
-		
+		#sets keywords accordingly to language
 		if (lang == "c"):
 			self.keywords = self.C_keywords
 			self.highlight = self.C_highlight
 			self.commment_regex = re.compile(r"[//]")
+
 		elif (lang == "cpp" or lang == "cc"):
 			self.keywords = self.Cplus_keywords
 			self.highlight = self.C_highlight
 			self.commment_regex = re.compile(r"[//]")
+
 		elif (lang == "py"):
 			self.keywords = self.Py_keywords
 			self.highlight = self.python_highlight
 			self.commment_regex = re.compile(r"[\#]")
+
 		elif (lang == "NaN"):
 			self.commment_regex = re.compile(r"[\#]")
 			pass
-
-		# self.other_chars = ["$","#","@","&","|","^","_","\\",r"\\",r"\[\]",r"[\\]"]
 
 		self.txt = text
 		self.theme = theme
@@ -57,6 +58,7 @@ class highlighter():
 		self.countingQuomarks = False
 		self.Quomark_count = 0
 
+		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z]")
 		self.separator_regex = re.compile(r"[\s\.\,\:\(\)]")
@@ -68,11 +70,13 @@ class highlighter():
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		
 	def get_line_lenght(self, line_no):
+		""" gets the length of current line """
 		for i, char in enumerate(self.txt.get(float(line_no), "end"), 0):
 			if (re.match(r"\n", char)):
 				return f"{line_no}.{i}"
 
 	def python_highlight(self, line_no ,line=None):
+		""" highlighting for python language """
 		if line == None:
 			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
 			# print(line)
@@ -167,6 +171,7 @@ class highlighter():
 				
 
 	def C_highlight(self, line_no, line=None):
+		""" highlighting for C and C++ languages """
 		if line == None:
 			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
