@@ -231,6 +231,7 @@ class win():
 
 		try:
 			self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
+			self.command_entry.bind("<KP_Enter>", self.cmmand)
 		except Exception:
 			self.txt.bind("<Shift-Tab>", self.unindent)
 
@@ -318,7 +319,7 @@ class win():
 		# self.line_no.configure(bg=self.theme["bg"], fg=self.theme["fg"])
 		# self.line_no.place(width=100, height=50)
 
-	def set_fullscreen(self, arg):
+	def set_fullscreen(self, arg=None):
 		""" set the window to be fullscreen F11 """
 		self.fullscreen = not self.fullscreen
 		root.attributes("-fullscreen", self.fullscreen)
@@ -355,23 +356,27 @@ class win():
 		self.txt.configure(font=self.font, tabs=(f"{self.font.measure(' ' * 4)}"))
 		self.command_out.configure(text=f"font size: {self.Font_size}")
 		self.command_O(f"font size: {self.Font_size}")
-		return "break"
+		return "break" # returning "break" prevents system/tkinter to call default bindings
 
 	def comment_line(self, arg=None):
 		""" I wish I knew what the fuck is going on in here I am depressed """
 
 		for i, current_char in enumerate(self.current_line, 0):
 			if (self.highlighter.commment_regex.match(current_char)):
+
 				if (re.match(r"\s", self.txt.get(f"{self.cursor_index[0]}.{i+len(self.comment_sign)}"))):
 					self.txt.delete(f"{self.cursor_index[0]}.{i}", f"{self.cursor_index[0]}.{i+1+len(self.comment_sign)}")
 				else:
 					self.txt.delete(f"{self.cursor_index[0]}.{i}", f"{self.cursor_index[0]}.{i+len(self.comment_sign)}")
-				break
-			elif (self.highlighter.abc_regex.match(current_char)):
-				self.txt.insert(f"{self.cursor_index[0]}.{i}", self.comment_sign+" ")
+
 				break
 
-		return "break"
+			elif (self.highlighter.abc_regex.match(current_char)):
+				self.txt.insert(f"{self.cursor_index[0]}.{i}", self.comment_sign+" ")
+
+				break
+
+		return "break" # returning "break" prevents system/tkinter to call default bindings
 
 
 	def unindent(self, arg=None):
@@ -395,7 +400,7 @@ class win():
 		self.command_entry.place_forget()
 
 
-	def popup(self, arg):
+	def popup(self, arg=None):
 		""" gets x, y position of mouse click and places a menu accordingly """
 		self.right_click_menu.tk_popup(arg.x_root+5, arg.y_root)
 		
@@ -407,18 +412,18 @@ class win():
 		elif (widget == "settings_menu"):
 			self.file_dropdown.tk_popup(root.winfo_rootx()+63, root.winfo_rooty()+25)
 
-	def command_entry_set(self, arg):
+	def command_entry_set(self, arg=None):
 		""" Shows command entry widget """
 		self.command_entry.place(x=0,rely=0.99975, relwidth=0.9975, height=20, anchor="sw")
 		self.command_out.place_forget()
 		self.command_entry.focus_set()
 
-	def command_entry_unset(self, arg):
+	def command_entry_unset(self, arg=None):
 		""" hides command entry widget 'tis a kinda useless function"""
 		self.command_entry.place_forget()
 		self.txt.focus_set()
 
-	def command_history(self, arg):
+	def command_history(self, arg=None):
 		""" scroll through used commands with Up and Down arrows(?) """
 		self.command_entry.delete(0, "end")
 		try:
@@ -453,7 +458,9 @@ class win():
 	def cmmand(self, arg):
 		""" parses command(case insensitive) from command line and executes it"""
 		self.command_input_history_index = 0
-		command = self.command_entry.get().lower().split()#turns command into a list and turns it all into lowercase chars
+		command = self.command_entry.get().split()#turns command into a list of arguments
+		
+		if (not command): self.command_entry_unset(); return #if no input/argument were provided hide the command entry widget and break function
 
 		#help command
 		if (command[0] == "help"):
@@ -494,7 +501,7 @@ class win():
 					argument = command[0][i:]
 					break
 
-			if (re.match("[0-9]", argument)):
+			if (re.match(r"[0-9]", argument)):
 				self.txt.mark_set(tkinter.INSERT, float(argument))
 				self.txt.see(float(argument)+2)
 				self.command_O(f"moved to: {float(argument)}")
@@ -511,7 +518,8 @@ class win():
 
 		elif (command[0] == "sharpness"):
 			self.sharpness = command[1]
-			root.tk.call("tk", "scaling", self.sharpness)
+			root.tk.call("tk", "scaling", command[1])
+			self.command_O(f"sharpness: {command[1]}")
 
 		elif (command[0] == "save"):
 			self.save_file()
@@ -526,10 +534,10 @@ class win():
 				self.theme = self.theme_options[command[1]]
 				self.theme_load()
 			except IndexError:
-				p = "themes:"
-				for x in list(self.theme_options.keys()):
-					p += " "+x
-				self.command_O(p)
+				result = "themes:"
+				for key in self.theme_options.keys():
+					result += "  "+key
+				self.command_O(result)
 
 
 		#append command to command history
@@ -581,15 +589,20 @@ class win():
 	def save_file_as(self):
 		""" saves current text into a new file """
 		if (self.current_file_name != None):
-			tmp = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
+			try:
+				tmp = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
+			except TypeError: #throws an error when closing the menu without choosing anything
+				pass
 			os.rename(self.current_file_name, tmp)
 			self.current_file_name = tmp
 		else:
-			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Select file", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
+			self.current_file_name = self.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
 
 
 		root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 		self.save_file()
+		self.unhighlight_all()
+		self.highlight_all()
 
 	def load_file(self, filename=None):
 		""" opens a file and loads it's content into the text widget """
@@ -598,8 +611,11 @@ class win():
 			self.current_file_name = filename
 		
 		elif (filename == None): #if the filename argument is not provided open a file menu to provide a filename
-			self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
-		
+			try:
+				self.current_file_name = self.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
+			except TypeError: #throws an error when closing the menu without choosing anything
+				pass
+
 		self.current_file = open(self.current_file_name, "r+") #opens the file
 
 		self.set_highlighter(os.path.basename(self.current_file.name).split(".")[1]) #takes the file extension and passes it to the set_highlighter function to highlight the file accordingly
@@ -640,10 +656,12 @@ class win():
 
 	def get_temperature(self):
 		""" scrapes the current temperature of Stockholm """
-
-		url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
-		html = requests.get(url).content #gets the html of the url
-		return "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)" #returns the scraped temperature
+		try: 
+			url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
+			html = requests.get(url).content #gets the html of the url
+			return "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)" #returns the scraped temperature
+		except Exception: #dunno if it won't crash the app if there's no internet connection
+			pass
 
 	def get_time(self):
 		""" gets time and parses to make it look the way I want it to """
@@ -688,7 +706,6 @@ class win():
 			self.command_highlight()
 
 
-
 	def update_win(self):
 		""" updates the window whole window (all of it's widgets)"""
 		try:
@@ -702,7 +719,7 @@ class win():
 	def main(self):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
 		#basically the main function
-		#counter = 0
+		
 		while (self.run):
 			self.update_win()
 			self.time_label.config(text=self.get_time()) #updates the time label/widget to show current time
@@ -720,7 +737,6 @@ class win():
 			
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
 				self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
-				# self.highlight_chunk()
 				if (not self.tab_lock): #if tab has not been pressed yet: 
 					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"): #no idea actually
 						self.keep_indent()
