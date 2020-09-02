@@ -14,6 +14,7 @@ from functools import partial
 import requests
 from bs4 import BeautifulSoup
 
+
 from highlighter import highlighter
 
 # keywords = [
@@ -352,6 +353,7 @@ class win():
 		self.txt.configure(font=self.font, tabs=(f"{self.font.measure(' ' * 4)}"))
 		self.command_out.configure(text=f"font size: {self.Font_size}")
 		self.command_O(f"font size: {self.Font_size}")
+		return "break"
 
 	def comment_line(self, arg=None):
 		""" I wish I knew what the fuck is going on in here I am depressed """
@@ -756,6 +758,7 @@ class win():
 
 
 root = tkinter.Tk()
+root.tk.call("tk","scaling", 1.35)
 main_win = win(root)
 
 
