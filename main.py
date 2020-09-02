@@ -87,6 +87,7 @@ class win():
 		self.loading = False
 		self.fullscreen = False
 		self.run = True
+		self.sharpness = 1.35
 
 		self.current_line = ""
 
@@ -97,6 +98,7 @@ class win():
 
 		#configuring main window
 		root.resizable(True,True)
+		root.tk.call("tk","scaling", self.sharpness)
 		root.geometry("600x400")
 		root.title(f"Nix: <None>")
 			
@@ -507,6 +509,10 @@ class win():
 		elif (command[0] == "quit"):
 			self.run = False
 
+		elif (command[0] == "sharpness"):
+			self.sharpness = command[1]
+			root.tk.call("tk", "scaling", self.sharpness)
+
 		elif (command[0] == "save"):
 			self.save_file()
 			self.loading = True
@@ -758,7 +764,6 @@ class win():
 
 
 root = tkinter.Tk()
-root.tk.call("tk","scaling", 1.35)
 main_win = win(root)
 
 
