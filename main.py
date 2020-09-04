@@ -51,10 +51,10 @@ class win():
 		#self.background_color = "#000000"
 		#self.foreground_color = "#9F005F"
 		self.theme_options = {
-			"cake": {"bg" : "#000000", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"timelord": {"bg" : "#000099", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"muffin" : {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"cake": {"bg" : "#000000", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"timelord": {"bg" : "#000099", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"muffin" : {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
 			}
 		self.theme = self.theme_options["cake"]
@@ -123,9 +123,10 @@ class win():
 		root.wm_attributes("-alpha", 0.9)
 			
 
-		self.font_family = ["Consolas", "bold"]
-		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
-		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="bold")
+		self.font_family = ["Consolas", "normal", "bold", "roman"]
+		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[2], slant=self.font_family[3])
+		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight=self.font_family[1])
+		self.widget_font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[2])
 
 
 
@@ -236,6 +237,16 @@ class win():
 			self.txt.bind("<Shift-Tab>", self.unindent)
 
 
+		self.txt.bind("<Control-Tab>", lambda arg: self.window_select("file_menu"))
+		self.file_menubar_label.bind("<Return>", lambda arg: self.file_menu_popup("file_menu"))
+		self.file_menubar_label.bind("<Control-Tab>", lambda arg: self.window_select("settings_menu"))
+		self.file_menubar_label.bind("<Right>", lambda arg: self.window_select("settings_menu"))
+		self.file_menubar_label.bind("<Left>", lambda arg: self.window_select("text"))
+		self.settings_menubar_label.bind("<Return>", lambda arg: self.file_menu_popup("settings_menu"))
+		self.settings_menubar_label.bind("<Control-Tab>", lambda arg: self.window_select("text"))
+		self.settings_menubar_label.bind("<Right>", lambda arg: self.window_select("text"))
+		self.settings_menubar_label.bind("<Left>", lambda arg: self.window_select("file_menu"))
+
 		root.bind("<Control-space>", self.command_entry_set)
 		root.bind("<F11>", self.set_fullscreen)
 		root.bind("<Alt-Right>", self.set_dimensions)
@@ -258,21 +269,25 @@ class win():
 		self.theme_load()
 		self.update_buffer()
 
+	def test_function(self, arg=None):
+		print("fuuuuuck")
+		return "break"
+
 	def theme_load(self):
 		root.config(bg=self.theme["bg"])
 		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, maxundo=0, spacing1=2,
 			insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
 			borderwidth=0, relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="char", blockcursor=True, highlightthickness=0, insertborderwidth=0)
-		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
-		self.temperature_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
-		self.line_no.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.font,bg = self.theme["bg"],fg="#999999")
+		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font,bg = self.theme["bg"],fg="#999999")
+		self.temperature_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font,bg = self.theme["bg"],fg="#999999")
+		self.line_no.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, bg = self.theme["bg"],fg="#999999")
 		self.command_entry.configure(justify=tkinter.LEFT, font=self.font, bg = self.theme["bg"],fg="#555555",
 		 insertwidth=0, insertofftime=0, insertbackground="#CCCCCC", relief="flat", highlightthickness=0, bd=-1)
 		self.command_out.configure(font=self.smaller_font, bg=self.theme["bg"], fg="#00df00")
 		self.right_click_menu.configure(tearoff=0, font=self.smaller_font, bg=self.theme["bg"], fg="#ffffff")
-		self.file_menubar_label.configure(text="File" ,font=self.font, bg=self.theme["bg"], fg="#999999")
-		self.settings_menubar_label.configure(text="Settings" ,font=self.font, bg=self.theme["bg"], fg="#999999")
-		self.file_dropdown.configure(font=self.font, tearoff=False,fg="#FFFFFF", bg=self.theme["bg"], bd=0)
+		self.file_menubar_label.configure(text="File" ,font=self.widget_font, bg=self.theme["bg"], fg="#999999")
+		self.settings_menubar_label.configure(text="Settings" ,font=self.widget_font, bg=self.theme["bg"], fg="#999999")
+		self.file_dropdown.configure(font=self.widget_font, tearoff=False,fg="#FFFFFF", bg=self.theme["bg"], bd=0)
 
 
 
@@ -318,6 +333,13 @@ class win():
 		# self.line_no = tkinter.Label(self.widget_window)
 		# self.line_no.configure(bg=self.theme["bg"], fg=self.theme["fg"])
 		# self.line_no.place(width=100, height=50)
+
+	def window_select(self, widget="", arg=None,):
+		if (widget == "file_menu"): self.file_menubar_label.focus_set(); self.file_menubar_label.configure(bg=self.theme["select_widget"]); self.settings_menubar_label.configure(bg=self.theme["bg"])
+		elif (widget == "settings_menu"): self.settings_menubar_label.focus_set(); self.settings_menubar_label.configure(bg=self.theme["select_widget"]); self.file_menubar_label.configure(bg=self.theme["bg"])
+		elif (widget == "text"): self.txt.focus_set(); self.file_menubar_label.configure(bg=self.theme["bg"]); self.settings_menubar_label.configure(bg=self.theme["bg"])
+
+		return "break"
 
 	def set_fullscreen(self, arg=None):
 		""" set the window to be fullscreen F11 """
@@ -737,39 +759,39 @@ class win():
 			
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
 				self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
-				if (not self.tab_lock): #if tab has not been pressed yet: 
-					if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"): #no idea actually
-						self.keep_indent()
+				if (not self.tab_lock): #if tab has not been pressed on current line yet: 
+					self.keep_indent()
 
 			
 	def keep_indent(self):
 		""" gets the amount of tabs in the last line and puts them at the start of a new one """
 		#this functions gets called everytime Enter/Return has been pressed or rather everytime a \n (newline) character has been found
-		offset_string = ""
-		for current_char in self.txt.get(f"{int(self.cursor_index[0])-1}.0", "end"):
-			if (re.match(r"[\t]",  current_char)):
-				offset_string += "\t"
-			elif (re.match(r"[\:\{]", current_char)):
-				offset_string += "\t"
-			elif (re.match(r"\n", current_char)):
-				break
-			else:
-				pass
-		
-		self.txt.insert(self.txt.index(tkinter.INSERT), offset_string) #insert the tabs at the start of the line
-		self.tab_lock = True
+		if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"): #no idea actually
+			offset_string = ""
+			for current_char in self.txt.get(f"{int(self.cursor_index[0])-1}.0", "end"):
+				if (re.match(r"[\t]",  current_char)):
+					offset_string += "\t"
+				elif (re.match(r"[\:\{]", current_char)):
+					offset_string += "\t"
+				elif (re.match(r"\n", current_char)):
+					break
+				else:
+					pass
+			
+			self.txt.insert(self.txt.index(tkinter.INSERT), offset_string) #insert the tabs at the start of the line
+			self.tab_lock = True
 
 	def command_highlight(self):
 		pass
 
 	def highlight_all(self):
 		if self.highlighting:
-			for i in range(1, self.get_line_count()):
-				self.highlighter.highlight(str(i))
+			for i in range(1, self.get_line_count()+1): #+1 because the last line doesn't get highlighted
+				self.highlighter.highlight(i)
 
 	def unhighlight_all(self):
-		for i in range(1, self.get_line_count()+1):
-			self.highlighter.unhighlight(str(i))
+		for i in range(1, self.get_line_count()+1): #+1 because the last line doesn't get (un)highlighted
+			self.highlighter.unhighlight(i)
 
 	def note_mode(self):
 		self.highlighting = False
