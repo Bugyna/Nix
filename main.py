@@ -79,6 +79,9 @@ class win():
 
 		self.tab_offset = 0
 		self.tab_lock = False
+
+		self.found = []
+		self.found_index = 0
 		
 		self.highlighter = None
 		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex)
@@ -97,9 +100,10 @@ class win():
 		self.sFont_size = self.Font_size - 2
 
 		#configuring main window
+		self.update_win()
 		root.resizable(True,True)
 		root.tk.call("tk","scaling", self.sharpness)
-		root.geometry("600x400")
+		root.geometry(f"600x400")
 		root.title(f"Nix: <None>")
 			
 		#root.overrideredirect(True)
@@ -123,10 +127,11 @@ class win():
 		root.wm_attributes("-alpha", 0.9)
 			
 
-		self.font_family = ["Consolas", "normal", "bold", "roman"]
-		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[2], slant=self.font_family[3])
+		self.font_family = ["Consolas", "bold", "normal", "roman"]
+		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1], slant=self.font_family[3])
+		self.font_bold = font.Font(family=self.font_family[0], size=self.Font_size, weight="bold", slant=self.font_family[3]) 
 		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight=self.font_family[1])
-		self.widget_font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[2])
+		self.widget_font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
 
 
 
@@ -140,10 +145,12 @@ class win():
 		self.line_no = tkinter.Label() #self.line_no.grid(row=1,column=2)
 		self.line_no.place(relx=0.85, y=20, width=100, height=15, anchor="sw")
 		
+		self.find_entry = tkinter.Entry()
+
+		self.find_label = tkinter.Label()
+
 		#command line entry
 		self.command_entry = tkinter.Entry()
-
-
 
 		#command output
 		self.command_out = tkinter.Label()
@@ -200,6 +207,8 @@ class win():
 		self.txt.tag_configure("tabs", background="#444444")
 		self.txt.tag_configure("quotes",foreground="#05ffa1")
 		self.txt.tag_configure("command_keywords", background="#FFFFFF")
+		self.txt.tag_configure("found", background="#145226")
+		self.txt.tag_configure("found_select", background="#FFFFFF")
 
 		#command binding
 		self.line_no.bind("<Button-3>", self.detach_widget)
@@ -225,10 +234,21 @@ class win():
 		self.txt.bind("<Shift-Button-4>", lambda arg: self.scroll(arg, multiplier=3))
 		self.txt.bind("<Shift-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
 		self.txt.bind("<Button-3>", self.popup) #right click pop-up window
-		self.txt.bind("<Control-s>", self.save_file)
-		self.txt.bind("<Control-S>", self.save_file)
+
 		self.txt.bind("<Return>", self.set_tab_lock)
 		self.txt.bind("<Control-slash>", self.comment_line) #self.comment_line)
+
+		self.txt.bind("<Control-s>", self.save_file)
+		self.txt.bind("<Control-S>", self.save_file)
+		self.txt.bind("<Control-f>", self.find_place)
+		self.txt.bind("<Control-F>", self.find_place)
+
+		self.find_entry.bind("<Return>", self.find)
+		self.find_entry.bind("<Up>", self.scroll_through_found)
+		self.find_entry.bind("<Down>", self.scroll_through_found)
+		self.find_entry.bind("<Escape>", self.find_unplace)
+
+		
 
 		try:
 			self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
@@ -253,6 +273,7 @@ class win():
 		root.bind("<Alt-Left>", self.set_dimensions)
 		root.bind("<Alt-Up>", self.set_dimensions)
 		root.bind("<Alt-Down>", self.set_dimensions)
+		root.bind("<Configure>", lambda arg: self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")) #repositions the text widget to be placed correctly
 
 
 		self.a=""
@@ -281,9 +302,11 @@ class win():
 		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font,bg = self.theme["bg"],fg="#999999")
 		self.temperature_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font,bg = self.theme["bg"],fg="#999999")
 		self.line_no.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, bg = self.theme["bg"],fg="#999999")
-		self.command_entry.configure(justify=tkinter.LEFT, font=self.font, bg = self.theme["bg"],fg="#555555",
-		 insertwidth=0, insertofftime=0, insertbackground="#CCCCCC", relief="flat", highlightthickness=0, bd=-1)
+		self.command_entry.configure(justify=tkinter.LEFT, font=self.font, bg=self.theme["bg"], fg="#555555",
+		 insertwidth=1, insertofftime=0, insertbackground="#CCCCCC", relief="flat", highlightthickness=0, bd=0)
 		self.command_out.configure(font=self.smaller_font, bg=self.theme["bg"], fg="#00df00")
+		self.find_entry.configure(font=self.font, bg="#555555", fg="#00df00", insertbackground=self.theme["fg"], relief="flat", highlightthickness=0)
+		self.find_label.configure(font=self.font, bg=self.theme["bg"], fg="#00df00")
 		self.right_click_menu.configure(tearoff=0, font=self.smaller_font, bg=self.theme["bg"], fg="#ffffff")
 		self.file_menubar_label.configure(text="File" ,font=self.widget_font, bg=self.theme["bg"], fg="#999999")
 		self.settings_menubar_label.configure(text="Settings" ,font=self.widget_font, bg=self.theme["bg"], fg="#999999")
@@ -399,6 +422,78 @@ class win():
 				break
 
 		return "break" # returning "break" prevents system/tkinter to call default bindings
+
+	def find(self, arg=None, keyword=None):
+		"""  """
+
+		if (not keyword): keyword = self.find_entry.get()
+
+		for index in self.found:
+			self.txt.tag_remove("found_select", index[0], index[1])
+			self.txt.tag_remove("found", index[0], index[1])
+
+		self.found_index = 0
+		self.found = []
+
+		start = self.txt.index("1.0")
+		end = self.txt.index("end")
+		self.txt.mark_set("matchStart", start)
+		self.txt.mark_set("matchEnd", start)
+		self.txt.mark_set("searchLimit", end)
+
+		count = tkinter.IntVar()
+		while True:
+			index = self.txt.search(keyword, "matchEnd", "searchLimit", count=count)
+			if index == "": break
+			if count.get() == 0: break # degenerate pattern which matches zero-length strings
+			self.txt.mark_set("matchStart", index)
+			self.txt.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
+			self.found.append([index, self.txt.index(f"{index}+{count.get()}c")])
+		
+		for index in self.found:
+			self.txt.tag_add("found", index[0], index[1])
+		
+		self.scroll_through_found()
+
+	def scroll_through_found(self, arg=None):
+		result_count = len(self.found)
+		if (result_count == 0): self.find_label.configure(text=f" 0 found"); return
+
+		if (arg):
+			self.command_out.place_forget()
+			if (arg.keysym == "Up"):
+				self.found_index -= 1
+				if (self.found_index < 0):
+					self.found_index = result_count-1
+
+			elif (arg.keysym == "Down"):
+				self.found_index += 1
+				if (self.found_index >= result_count):
+					self.found_index = 0
+
+		for index in self.found:
+			self.txt.tag_remove("found_select", index[0], index[1])
+			
+		self.txt.see(self.found[self.found_index][0])
+		self.find_label.configure(text=f" {self.found_index+1} out of {result_count} results : {self.found[self.found_index]}")
+		self.txt.tag_add("found_select", self.found[self.found_index][0], self.found[self.found_index][1])
+
+
+	def find_place(self, arg=None, text=""):
+		self.find_entry.place(x=250, y=100, width=100)
+		self.find_entry.insert("1", text)
+		self.find_label.place(x=350, y=100)
+		self.find_entry.focus_set()
+	
+	def find_unplace(self, arg=None):
+		for index in self.found:
+			self.txt.tag_remove("found", index[0], index[1])
+			self.txt.tag_remove("found_select", index[0], index[1])
+		self.find_entry.place_forget()
+		self.find_label.place_forget()
+		self.txt.focus_set()
+		self.found_index = 0
+		self.found = []
 
 
 	def unindent(self, arg=None):
@@ -531,6 +626,10 @@ class win():
 			elif (re.match("get", argument)):
 				self.command_O(f"total lines: {self.get_line_count()}")
 
+		elif (command[0] == "find"):
+			self.find_place(text=command[1])
+			self.find(command[1])
+
 		elif (command[0] == "temp"):
 			self.temperature_label.configure(text=self.get_temperature())
 			self.command_O("temperature changed")
@@ -542,6 +641,10 @@ class win():
 			self.sharpness = command[1]
 			root.tk.call("tk", "scaling", command[1])
 			self.command_O(f"sharpness: {command[1]}")
+
+		elif (command[0] == "resize"):
+			self.update_win()
+			root.geometry(f"{int(command[1])}x{int(command[2])}")
 
 		elif (command[0] == "save"):
 			self.save_file()
@@ -718,11 +821,15 @@ class win():
 		if (self.current_file_name): root.title(f"Nix: <*{os.path.basename(self.current_file_name)}>") #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
 		# len(self.content) != len(self.txt.get("1.0", "end-1c")) and
 		
+		
 		if (root.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
 
 		if (root.focus_displayof() != self.command_out): #if the a character has been typed into the text widget: hide the command output widget
 			self.command_out.place_forget() 
+		
+		if (root.focus_displayof() != self.find_entry): #if the a character has been typed into the text widget: hide the command output widget
+			self.find_unplace()
 
 		if (self.command_highlighting): #TODO
 			self.command_highlight()
@@ -744,10 +851,11 @@ class win():
 		
 		while (self.run):
 			self.update_win()
+			if (root.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["bg"]); self.settings_menubar_label.configure(bg=self.theme["bg"])
+				
 			self.time_label.config(text=self.get_time()) #updates the time label/widget to show current time
 			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]") #updates the line&column widget to show current cursor index/position
 			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
-			self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw") #repositions the text widget to be placed correctly
 
 			# if (self.last_index != self.txt.index(tkinter.INSERT)):
 			if (len(self.content) != len(self.txt.get("1.0", "end-1c"))): #if a character has been typed into the text widget call the udpate buffer function
