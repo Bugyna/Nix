@@ -1,4 +1,5 @@
 import re
+import tkinter
 from itertools import chain
 
 
@@ -13,12 +14,17 @@ class highlighter():
 			'lambda', 'try', 'as', 'def', 'from', 'nonlocal', 'while', 'assert', 'del',
 			'global', 'not', 'with', 'async', 'elif', 'if', 'or', 'yield', "self"
 			]
+		
+		self.Py_keywords_regex = re.compile('|'.join(self.Py_keywords))#(r'\b(?:\|)\b'.join(self.Py_keywords))
+
 
 		self.C_keywords = [
 			'auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum',
 		 	'extern', 'float', 'for', 'goto', 'if', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof',
 		  	'static', 'struct', 'switch', 'typedef', 'union', 'unsigned', 'void', 'volatile', 'while',
    		]
+
+		self.C_keywords_regex = re.compile('|'.join(self.C_keywords))
 
 		self.Cplus_keywords = [
 			"alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case",
@@ -32,19 +38,24 @@ class highlighter():
 			 "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
 		]
 		
+		self.Cplus_keywords_regex = re.compile('|'.join(self.Cplus_keywords))
+
 		#sets keywords accordingly to language
 		if (lang == "c"):
 			self.keywords = self.C_keywords
+			self.keywords_regex = self.C_keywords_regex
 			self.highlight = self.C_highlight
 			self.commment_regex = re.compile(r"[//]")
 
 		elif (lang == "cpp" or lang == "cc"):
 			self.keywords = self.Cplus_keywords
+			self.keywords_regex = self.Cplus_keywords_regex
 			self.highlight = self.C_highlight
 			self.commment_regex = re.compile(r"[//]")
 
 		elif (lang == "py"):
 			self.keywords = self.Py_keywords
+			self.keywords_regex = self.Py_keywords_regex
 			self.highlight = self.python_highlight
 			self.commment_regex = re.compile(r"[\#]")
 
@@ -75,6 +86,7 @@ class highlighter():
 			if (re.match(r"\n", char)):
 				return f"{line_no}.{i}"
 
+
 	def python_highlight(self, line_no ,line=None):
 		""" highlighting for python language """
 		if line == None:
@@ -93,10 +105,12 @@ class highlighter():
 		self.txt.tag_remove(self.theme["comments"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["operators"], last_separator, line_end_index)
 		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
-		
+
+
 		for i, current_char in enumerate(line, 0):
 			if (i == 0):
 				self.countingQuomarks = False
+
 			
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
@@ -129,11 +143,10 @@ class highlighter():
 					self.txt.tag_add(self.theme["functions"], last_separator, index)
 					self.txt.tag_add(self.theme["special_chars"], index)
 
-				elif (self.pattern in self.keywords):
+				elif (self.keywords_regex.match(self.pattern)): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
 					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
 			
-
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				self.pattern = ""
@@ -234,7 +247,7 @@ class highlighter():
 					self.txt.tag_add(self.theme["functions"], last_separator, index)
 					self.txt.tag_add(self.theme["special_chars"], index)
 
-				elif (self.pattern in self.keywords):
+				elif (self.keywords_regex.match(self.pattern)):
 					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
 			
