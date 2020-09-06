@@ -43,19 +43,16 @@ class highlighter():
 		#sets keywords accordingly to language
 		if (lang == "c"):
 			self.keywords = self.C_keywords
-			self.keywords_regex = self.C_keywords_regex
 			self.highlight = self.C_highlight
 			self.commment_regex = re.compile(r"[//]")
 
 		elif (lang == "cpp" or lang == "cc"):
 			self.keywords = self.Cplus_keywords
-			self.keywords_regex = self.Cplus_keywords_regex
 			self.highlight = self.C_highlight
 			self.commment_regex = re.compile(r"[//]")
 
 		elif (lang == "py"):
 			self.keywords = self.Py_keywords
-			self.keywords_regex = self.Py_keywords_regex
 			self.highlight = self.python_highlight
 			self.commment_regex = re.compile(r"[\#]")
 
@@ -143,7 +140,7 @@ class highlighter():
 					self.txt.tag_add(self.theme["functions"], last_separator, index)
 					self.txt.tag_add(self.theme["special_chars"], index)
 
-				elif (self.keywords_regex.match(self.pattern)): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
+				elif (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
 					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
 			
@@ -247,7 +244,7 @@ class highlighter():
 					self.txt.tag_add(self.theme["functions"], last_separator, index)
 					self.txt.tag_add(self.theme["special_chars"], index)
 
-				elif (self.keywords_regex.match(self.pattern)):
+				elif (self.pattern in self.keywords):
 					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
 			
