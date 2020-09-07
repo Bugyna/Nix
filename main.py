@@ -33,7 +33,7 @@ class win():
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
 			}
 		self.theme = self.theme_options["cake"]
-
+		
 		self.command_definition = {
 			"l" : "-get: gets last line number || -[LINE_NUMBER(.CHARACTER)]: puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)",
 			"highlighting" : "-on: turns highlighting on -off: turns highlighting off"
@@ -193,9 +193,9 @@ class win():
 		self.txt.bind("<MouseWheel>", self.scroll)
 		self.txt.bind("<Button-4>", self.scroll)
 		self.txt.bind("<Button-5>", self.scroll)
-		self.txt.bind("<Control-MouseWheel>", lambda arg: self.scroll(arg, multiplier=3))
-		self.txt.bind("<Control-Button-4>", lambda arg: self.scroll(arg, multiplier=3))
-		self.txt.bind("<Control-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Shift-MouseWheel>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Shift-Button-4>", lambda arg: self.scroll(arg, multiplier=3))
+		self.txt.bind("<Shift-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
 		self.txt.bind("<Button-3>", self.popup) #right click pop-up window
 
 		self.txt.bind("<Return>", self.set_tab_lock)
@@ -449,10 +449,12 @@ class win():
 		
 	def set_font_size(self, arg):
 		""" Changes font size and reconfigures(updates) widgets accordingly """
+		print(arg)
+		if (arg.delta > 120 or arg.delta < 120): arg.delta=0 
 		if (arg.keysym == "period" or arg.num == 4 or arg.delta > 0):
 			self.Font_size += 1
 			self.sFont_size += 1
-		else:
+		elif (arg.keysym == "comma" or arg.num == 5 or arg.delta < 0):
 			self.Font_size -= 1
 			self.sFont_size -= 1
 		
@@ -707,6 +709,8 @@ class win():
 				for key in self.theme_options.keys():
 					result += "  "+key
 				self.command_O(result)
+		else:
+			self.command_O("Command not found")
 
 
 		#append command to command history
