@@ -2,7 +2,7 @@ import os
 import tkinter
 from time import time
 
-class file_handler():
+class file_handler(object):
 	""" File opening and closing yes"""
 	def __init__(self, parent, root):
 		self.current_file = None
