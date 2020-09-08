@@ -268,13 +268,14 @@ class win(file_handler):
 		self.loading_label = tkinter.Label(root, text="", bg=self.theme["bg"], fg="#FFFFFF")
 		# self.loading_label.place(relx=0.52,rely=0.965, relheight=0.015)
 	
+		
+		self.theme_load()
+		self.update_buffer()
+
 		try:
 			self.load_file(filename=sys.argv[1])
 		except IndexError:
 			pass
-		
-		self.theme_load()
-		self.update_buffer()
 
 	def test_function(self, arg=None):
 		print("fuuuuuck")
