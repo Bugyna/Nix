@@ -35,10 +35,10 @@ class win(file_handler):
 	def __init__(self, root, file=None):
 		super().__init__(self, root)
 		self.theme_options = {
-			"cake": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"timelord": {"bg" : "#000099", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"muffin" : {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
-			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "var_types", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"cake": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "logical_keywords": "special_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"timelord": {"bg" : "#000099", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "logical_keywords": "special_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"muffin" : {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "logical_keywords": "special_chars", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
+			"toast" : {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "var_types", "functions": "modules", "logical_keywords": "special_chars", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
 			}
 		self.theme = self.theme_options["cake"]
@@ -109,6 +109,7 @@ class win(file_handler):
 		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1], slant=self.font_family[3])
 		self.font_bold = font.Font(family=self.font_family[0], size=self.Font_size, weight="bold", slant=self.font_family[3]) 
 		self.smaller_font = font.Font(family=self.font_family[0],size=self.sFont_size, weight=self.font_family[1])
+		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.sFont_size, weight="bold")
 		self.widget_font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
 
 
@@ -162,17 +163,19 @@ class win(file_handler):
 		self.file_dropdown.add_command(label="Save file as",command=self.save_file_as)
 
 		#tags for highlighting
+		#sick fucking colors #A500FF;
 		self.txt.tag_configure("sumn", foreground="#74091D")
 		self.txt.tag_configure("special_chars",foreground="#ff00bb")
-		self.txt.tag_configure("var_types",foreground="#01cdfe")
+		self.txt.tag_configure("var_types",foreground="#FF0000") #01cdfe
 		self.txt.tag_configure("keywords", foreground="#ff5500")
 		self.txt.tag_configure("operators", foreground="#f75f00")
 		self.txt.tag_configure("default", foreground="#302387")
-		self.txt.tag_configure("other_chars", foreground="#B71DDE")
+		self.txt.tag_configure("other_chars", foreground="#A500FF") #B71DDE
 		self.txt.tag_configure("modules", foreground="#3023DD")
 		self.txt.tag_configure("comments", foreground="#333333")
 		self.txt.tag_configure("tabs", background="#444444")
-		self.txt.tag_configure("quotes",foreground="#05ffa1")
+		self.txt.tag_configure("quotes",foreground="#00FDFD")
+		self.txt.tag_configure("logical_keywords", foreground="#345523")
 		self.txt.tag_configure("command_keywords", background="#FFFFFF")
 		self.txt.tag_configure("found", background="#145226")
 		self.txt.tag_configure("found_select", background="#FFFFFF")
@@ -250,10 +253,12 @@ class win(file_handler):
 		root.bind("<Alt-Left>", self.set_dimensions)
 		root.bind("<Alt-Up>", self.set_dimensions)
 		root.bind("<Alt-Down>", self.set_dimensions)
-		root.bind("<Control-Right>", self.set_dimensions)
-		root.bind("<Control-Left>", self.set_dimensions)
-		root.bind("<Control-Up>", self.set_dimensions)
-		root.bind("<Control-Down>", self.set_dimensions)
+		#root.bind("<Control-Right>", self.set_dimensions)
+		#root.bind("<Control-Left>", self.set_dimensions)
+		#root.bind("<Control-Up>", self.set_dimensions)
+		#root.bind("<Control-Down>", self.set_dimensions)
+		root.bind("<Control-Escape>", lambda arg: root.destroy())
+		root.bind("<Control-Shift-W>", lambda arg: root.destroy())
 		root.bind("<Configure>", lambda arg: self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")) #repositions the text widget to be placed correctly
 
 
@@ -287,7 +292,7 @@ class win(file_handler):
 		self.command_entry.configure(justify=tkinter.LEFT, font=self.font, bg=self.theme["bg"], fg="#555555",
 		 insertwidth=1, insertofftime=0, insertbackground="#CCCCCC", relief="flat", highlightthickness=0, bd=0)
 		self.command_out.configure(font=self.smaller_font, bg=self.theme["bg"], fg="#00df00")
-		self.find_entry.configure(font=self.font, bg="#555555", fg="#00df00", insertbackground=self.theme["fg"], relief="flat", highlightthickness=0)
+		self.find_entry.configure(font=self.smaller_font_bold, bg="#555555", fg="#00df00", insertbackground=self.theme["fg"], relief="flat", highlightthickness=0)
 		self.find_label.configure(font=self.font, bg=self.theme["bg"], fg="#00df00")
 		self.right_click_menu.configure(tearoff=0, font=self.smaller_font, bg=self.theme["bg"], fg="#ffffff")
 		self.file_menubar_label.configure(text="File" ,font=self.widget_font, bg=self.theme["bg"], fg="#999999")
@@ -441,7 +446,8 @@ class win(file_handler):
 			root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}+{root.winfo_rootx()}+{root.winfo_rooty()-margin-24}")
 		if (key == "Down"):
 			root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}")
-			
+					
+		return "break"	
 		
 	def set_font_size(self, arg):
 		""" Changes font size and reconfigures(updates) widgets accordingly """
@@ -500,32 +506,40 @@ class win(file_handler):
 
 	def scroll_through_found(self, arg=None):
 		result_count = len(self.found)
-		if (result_count == 0): self.find_label.configure(text=f" 0 found"); return
+		offset = 0
+		if (result_count == 0): self.command_O(f"found none"); return
 
 		if (arg):
 			self.command_out.place_forget()
 			if (arg.keysym == "Up"):
 				self.found_index -= 1
+				offset = -3
 				if (self.found_index < 0):
 					self.found_index = result_count-1
+					offset = 3
 
 			elif (arg.keysym == "Down"):
 				self.found_index += 1
+				offset = 3
 				if (self.found_index >= result_count):
 					self.found_index = 0
+					offset = -3
 
 		for index in self.found:
 			self.txt.tag_remove("found_select", index[0], index[1])
 			
-		self.txt.see(self.found[self.found_index][0])
-		self.find_label.configure(text=f" {self.found_index+1} out of {result_count} results : {self.found[self.found_index]}")
+		self.txt.see(float(self.found[self.found_index][0])+offset)
+		# self.find_label.configure(text=f" {self.found_index+1} out of {result_count} results : {self.found[self.found_index]}")
+		self.find_label.configure(text=f" {result_count} found")
+		self.command_O(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]}")
 		self.txt.tag_add("found_select", self.found[self.found_index][0], self.found[self.found_index][1])
+		self.txt.mark_set(tkinter.INSERT, self.found[self.found_index][0])
 
 
 	def find_place(self, arg=None, text=""):
-		self.find_entry.place(x=250, y=100, width=100)
+		self.find_entry.place(x=0, y=root.winfo_height()-40, relwidth=0.5, height=20, anchor="nw")
 		self.find_entry.insert("1", text)
-		self.find_label.place(x=350, y=100)
+		# self.find_label.place(relx=0., y=125, anchor="ne")
 		self.find_entry.focus_set()
 	
 	def find_unplace(self, arg=None):
@@ -671,7 +685,7 @@ class win(file_handler):
 			self.temperature_label.configure(text=self.get_temperature())
 			self.command_O("temperature changed")
 
-		elif (command[0] == "quit"):
+		elif (command[0] == "quit" or command[0] == "q"):
 			self.run = False
 
 		elif (command[0] == "sharpness"):
@@ -706,7 +720,7 @@ class win(file_handler):
 					result += "  "+key
 				self.command_O(result)
 		else:
-			self.command_O("Command not found")
+			self.command_O(f"Command {command} not found")
 
 
 		#append command to command history
