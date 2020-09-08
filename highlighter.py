@@ -3,11 +3,11 @@ import tkinter
 from itertools import chain
 
 
-
-
-class highlighter():
+class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
-	def __init__(self, text, theme, lang):
+	def __init__(self, parent, root):
+		self.lang = "NaN"
+		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt"]
 		self.Py_keywords = [
 			'False', 'await', 'else', 'import', 'pass', 'None', 'break', 'except', 'in',
 			'raise', 'True', 'class', 'finally', 'is', 'return', 'and', 'continue', 'for',
@@ -40,28 +40,9 @@ class highlighter():
 		
 		self.Cplus_keywords_regex = re.compile('|'.join(self.Cplus_keywords))
 
-		#sets keywords accordingly to language
-		if (lang == "c"):
-			self.keywords = self.C_keywords
-			self.highlight = self.C_highlight
-			self.commment_regex = re.compile(r"[//]")
 
-		elif (lang == "cpp" or lang == "cc"):
-			self.keywords = self.Cplus_keywords
-			self.highlight = self.C_highlight
-			self.commment_regex = re.compile(r"[//]")
-
-		elif (lang == "py"):
-			self.keywords = self.Py_keywords
-			self.highlight = self.python_highlight
-			self.commment_regex = re.compile(r"[\#]")
-
-		elif (lang == "NaN"):
-			self.commment_regex = re.compile(r"[\#]")
-			pass
-
-		self.txt = text
-		self.theme = theme
+		self.txt = parent.txt
+		self.theme = parent.theme
 
 		self.countingQuomarks = False
 		self.Quomark_count = 0
@@ -76,13 +57,42 @@ class highlighter():
 		self.R_bracket_regex = re.compile(r"[\)]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
+
+
+	def set_languague(self, arg=None):
+		self.lang = arg
+		if (self.lang == "c"):
+			self.keywords = self.C_keywords
+			self.highlight = self.C_highlight
+			self.comment_sign = "//"
+			self.highlight = self.C_highlight
+
+		elif (self.lang == "cpp" or self.lang == "cc"):
+			self.keywords = self.Cplus_keywords
+			self.highlight = self.C_highlight
+			self.comment_sign = "//"
+			self.highlight = self.C_highlight
+
+		elif (self.lang == "py"):
+			self.keywords = self.Py_keywords
+			self.highlight = self.python_highlight
+			self.comment_sign = "#"
+			self.highlight = self.python_highlight
+
+		elif (self.lang == "NaN" or self.lang == "txt"):
+			self.comment_sign = " "
+			self.highlight = self.no_highlight
 		
+		self.commment_regex = re.compile(rf"[{self.comment_sign}]")
+
 	def get_line_lenght(self, line_no):
 		""" gets the length of current line """
 		for i, char in enumerate(self.txt.get(float(line_no), "end"), 0):
 			if (re.match(r"\n", char)):
 				return f"{line_no}.{i}"
 
+	def no_highlight(self, line_no, line=None):
+		pass
 
 	def python_highlight(self, line_no ,line=None):
 		""" highlighting for python language """
