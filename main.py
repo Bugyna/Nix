@@ -1,21 +1,29 @@
-import random
+__author__ = "Bugy"
+__license__ = "MIT"
+__maintainer__ = "Bugy"
+__email__ = ["matejbugy@gmail.com", "achjoj5@gmail.com"]
+__status__ = "Production"
+
 import tkinter
-import asyncio
 from tkinter import ttk
 from tkinter import font
+from tkinter import filedialog
+
 import re
-import threading
+
 import os, sys
-import tqdm
 from datetime import datetime
 from time import sleep, time, localtime, strftime
-from tkinter import filedialog
-from functools import partial
+
 import requests
 from bs4 import BeautifulSoup
 
+import random
+import threading
+import tqdm
+
 from highlighter import highlighter
-from file_handler import file_handler
+from handlers import file_handler
 
 
 # for i in tqdm.tqdm(range(10)):
@@ -23,10 +31,9 @@ from file_handler import file_handler
 
 
 
-
 class win(file_handler):
 	def __init__(self, root, file=None):
-		super().__init__(root)
+		super().__init__(self, root)
 		self.theme_options = {
 			"cake": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
 			"timelord": {"bg" : "#000099", "fg": "#999999", "insertbg": "#CCCCCC", "selectbg": "#CCCCCC", "select_widget": "#FFFFFF", "keywords": "other_chars", "functions": "modules", "numbers": "var_types", "operators": "operators", "special_chars": "special_chars", "quotes": "quotes", "comments": "comments"},
@@ -41,12 +48,10 @@ class win(file_handler):
 			"highlighting" : "-on: turns highlighting on -off: turns highlighting off"
 		}
 
+		self.root = root
+
 		self.command_input_history = []
 		self.command_input_history_index = 0
-
-		self.current_file = None #open(f"{os.getcwd()}/untitled.txt", "w+") #stores path to currently opened file
-		self.current_file_name = None
-		self.content = ""
 
 		self.scroll_multiplier = 0
 
@@ -86,12 +91,10 @@ class win(file_handler):
 		root.tk.call("tk","scaling", self.sharpness)
 		root.geometry(f"600x400")
 		root.title(f"Nix: <None>")
-			
-
+		# self.file_handler = file_handler(self, root)
 
 
 		self.txt = tkinter.Text()
-
 		self.filename = filedialog
 
 		self.init()
@@ -250,6 +253,10 @@ class win(file_handler):
 		root.bind("<Alt-Left>", self.set_dimensions)
 		root.bind("<Alt-Up>", self.set_dimensions)
 		root.bind("<Alt-Down>", self.set_dimensions)
+		root.bind("<Control-Right>", self.set_dimensions)
+		root.bind("<Control-Left>", self.set_dimensions)
+		root.bind("<Control-Up>", self.set_dimensions)
+		root.bind("<Control-Down>", self.set_dimensions)
 		root.bind("<Configure>", lambda arg: self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")) #repositions the text widget to be placed correctly
 
 
@@ -438,6 +445,7 @@ class win(file_handler):
 	def set_dimensions(self, arg=None):
 		""" changes window size accordingly to keys pressed Alt-Curses """
 		key = arg.keysym
+		# print(hex(arg.state))
 		margin = 20
 		if (key == "Right"):
 			root.geometry(f"{root.winfo_width()+margin}x{root.winfo_height()}")
