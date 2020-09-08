@@ -9,11 +9,13 @@ class highlighter(object):
 		self.lang = "NaN"
 		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt"]
 		self.Py_keywords = [
-			'False', 'await', 'else', 'import', 'pass', 'None', 'break', 'except', 'in',
-			'raise', 'True', 'class', 'finally', 'is', 'return', 'and', 'continue', 'for',
-			'lambda', 'try', 'as', 'def', 'from', 'nonlocal', 'while', 'assert', 'del',
-			'global', 'not', 'with', 'async', 'elif', 'if', 'or', 'yield', "self"
+			'await', 'import', 'pass', 'break', 'in',
+			'raise', 'class', 'is', 'return', 'continue', 'lambda', 'as', 'def', 'from',
+			'nonlocal', 'assert', 'del', 'global', 'async', 'yield', "self"
 			]
+
+		self.Py_numerical_keywords = ['False', 'True', 'None']
+		self.Py_logical_keywords = ['and', 'or', 'not', 'if', 'elif', 'else', 'for', 'try', 'except', 'finally', 'while', 'with'] 
 		
 		self.Py_keywords_regex = re.compile('|'.join(self.Py_keywords))#(r'\b(?:\|)\b'.join(self.Py_keywords))
 
@@ -50,7 +52,7 @@ class highlighter(object):
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z]")
-		self.separator_regex = re.compile(r"[\s\.\,\:\(\)]")
+		self.separator_regex = re.compile(r"[\s\.\,\:\(\;\)]")
 		self.num_regex = re.compile(r"[0-9]")
 		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]]")
 		self.L_bracket_regex = re.compile(r"[\(]")
@@ -75,6 +77,8 @@ class highlighter(object):
 
 		elif (self.lang == "py"):
 			self.keywords = self.Py_keywords
+			self.numerical_keywords = self.Py_numerical_keywords
+			self.logical_keywords = self.Py_logical_keywords
 			self.highlight = self.python_highlight
 			self.comment_sign = "#"
 			self.highlight = self.python_highlight
@@ -153,6 +157,14 @@ class highlighter(object):
 				elif (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
 					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
+				
+				elif (self.pattern in self.logical_keywords):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add(self.theme["logical_keywords"], last_separator, index)
+
+				elif (self.pattern in self.numerical_keywords):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add(self.theme["numbers"], last_separator, index)
 			
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
