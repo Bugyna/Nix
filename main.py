@@ -67,7 +67,6 @@ class win(file_handler):
 		self.found = []
 		self.found_index = 0
 		
-		self.highlighter = None
 		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex (less than before tho))
 		self.command_highlighting = False
 
@@ -103,8 +102,6 @@ class win(file_handler):
 		""" a completely useless initialize function """
 		
 		self.update_win()
-		
-		self.set_highlighter("NaN")
 		root.wm_attributes("-alpha", 0.9)
 			
 
@@ -296,6 +293,7 @@ class win(file_handler):
 		self.file_menubar_label.configure(text="File" ,font=self.widget_font, bg=self.theme["bg"], fg="#999999")
 		self.settings_menubar_label.configure(text="Settings" ,font=self.widget_font, bg=self.theme["bg"], fg="#999999")
 		self.file_dropdown.configure(font=self.widget_font, tearoff=False,fg="#FFFFFF", bg=self.theme["bg"], bd=0)
+		self.highlighter = highlighter(self, root); self.set_highlighter("NaN")
 
 
 	def get_line_count(self):
@@ -305,24 +303,12 @@ class win(file_handler):
 
 	def set_highlighter(self, arg):
 		""" sets the highlighter accordingly to the current file extension """
-		self.highlighting = True
-
-		if (arg == "py"):
-			self.highlighter = highlighter(self.txt, self.theme, arg)
-			self.comment_sign = "#"
-
-		elif (arg == "c"):
-			self.highlighter = highlighter(self.txt, self.theme, arg)
-			self.comment_sign = "//"
-
-		elif (arg == "cpp" or arg == "cc"):
-			self.highlighter = highlighter(self.txt, self.theme, arg)
-			self.comment_sign = "//"
-
+		if (arg in self.highlighter.supported_languagues):
+			self.highlighting = True
+			self.highlighter.set_languague(arg)
 		else:
-			self.highlighter = highlighter(self.txt, self.theme, "NaN")
-			self.comment_sign = "#"
 			self.highlighting = False
+
 
 	def queue_make(self, arg=None):
 		self.queue = []
