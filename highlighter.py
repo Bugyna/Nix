@@ -52,6 +52,7 @@ class highlighter(object):
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z]")
+		self.abc_upcase_regex = re.compile(r"^[A-Z]+$")
 		self.separator_regex = re.compile(r"[\s\.\,\:\(\;\)]")
 		self.num_regex = re.compile(r"[0-9]")
 		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]]")
@@ -61,7 +62,7 @@ class highlighter(object):
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 
 
-	def set_languague(self, arg=None):
+	def set_languague(self, arg: str=None):
 		self.lang = arg
 		if (self.lang == "c"):
 			self.keywords = self.C_keywords
@@ -89,7 +90,7 @@ class highlighter(object):
 		
 		self.commment_regex = re.compile(rf"[{self.comment_sign}]")
 
-	def get_line_lenght(self, line_no):
+	def get_line_lenght(self, line_no: int):
 		""" gets the length of current line """
 		for i, char in enumerate(self.txt.get(float(line_no), "end"), 0):
 			if (re.match(r"\n", char)):
@@ -98,7 +99,7 @@ class highlighter(object):
 	def no_highlight(self, line_no, line=None):
 		pass
 
-	def python_highlight(self, line_no ,line=None):
+	def python_highlight(self, line_no: int ,line: str=None):
 		""" highlighting for python language """
 		if line == None:
 			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
@@ -165,6 +166,10 @@ class highlighter(object):
 				elif (self.pattern in self.numerical_keywords):
 					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["numbers"], last_separator, index)
+
+				elif (self.abc_upcase_regex.match(self.pattern)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add(self.theme["numbers"], last_separator, index)
 			
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -202,7 +207,7 @@ class highlighter(object):
 				continue
 				
 
-	def C_highlight(self, line_no, line=None):
+	def C_highlight(self, line_no: int, line: str=None):
 		""" highlighting for C and C++ languages """
 		if line == None:
 			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
@@ -269,6 +274,10 @@ class highlighter(object):
 				elif (self.pattern in self.keywords):
 					index = f"{line_no}.{i}"
 					self.txt.tag_add(self.theme["keywords"], last_separator, index)
+
+				elif (self.abc_upcase_regex.match(self.pattern)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add(self.theme["numbers"], last_separator, index)
 			
 
 				last_separator_index = i+1
@@ -303,7 +312,7 @@ class highlighter(object):
 				
 				
 
-	def unhighlight(self, line_no, line=None):
+	def unhighlight(self, line_no: int, line: str=None):
 		if line == None:
 			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
