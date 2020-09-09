@@ -341,8 +341,11 @@ class win(file_handler):
 
 	def undo(self, arg=None):
 		""" Control-Z """
+		chunk_size = self.get_line_count()
 		self.txt.event_generate("<<Undo>>")
-		self.highlight_chunk()
+		start_index = int(self.cursor_index[0])
+		stop_index = start_index + abs(chunk_size - self.get_line_count())
+		self.highlight_chunk(start_index=start_index, stop_index=stop_index)
 		return "break"
 
 	def redo(self, arg=None):
@@ -374,23 +377,27 @@ class win(file_handler):
 
 	def comment_line(self, arg=None):
 		""" I wish I knew what the fuck is going on in here I am depressed """
+		try:
+			root.selection_get()
+		except Exception: # if no text is selected root.selection_get() will throw an error
+			self.queue.clear()
 
 		if (self.queue): self.queue[0].sort(); start_index = self.queue[0][0]; stop_index = self.queue[0][1]+1
-		else: start_index = int(self.cursor_index[0])-1; stop_index = int(self.cursor_index[0])
-		
+		else: start_index = int(self.cursor_index[0]); stop_index = int(self.cursor_index[0])+1
+
 		for line_no in range(start_index, stop_index):
 			current_line = self.txt.get(float(line_no), self.highlighter.get_line_lenght(line_no))
 			for i, current_char in enumerate(current_line, 0):
 				if (self.highlighter.commment_regex.match(current_char)):
 
-					if (re.match(r"\s", self.txt.get(f"{line_no}.{i+len(self.comment_sign)}"))):
-						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.comment_sign)}")
+					if (re.match(r"\s", self.txt.get(f"{line_no}.{i+len(self.highlighter.comment_sign)}"))):
+						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.highlighter.comment_sign)}")
 					else:
-						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+len(self.comment_sign)}")
+						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+len(self.highlighter.comment_sign)}")
 					break
 
 				elif (self.highlighter.abc_regex.match(current_char)):
-					self.txt.insert(f"{line_no}.{i}", self.comment_sign+" ")
+					self.txt.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
 					break
 
 		self.highlight_chunk(start_index=start_index, stop_index=stop_index)
@@ -398,10 +405,13 @@ class win(file_handler):
 
 	def unindent(self, arg=None):
 		""" Checks if the first character in line is \t (tab) and deletes it accordingly """
-		
+		try:
+			root.selection_get()
+		except Exception: # if no text is selected root.selection_get() will throw an error
+			self.queue.clear()
+
 		if (self.queue): self.queue[0].sort(); start_index = self.queue[0][0]; stop_index = self.queue[0][1]+1
 		else: start_index = int(self.cursor_index[0]); stop_index = int(self.cursor_index[0])+1
-		
 
 		for line_no in range(start_index, stop_index):
 			if (re.match(r"\t", self.txt.get(f"{line_no}.0", f"{line_no}.1"))):
