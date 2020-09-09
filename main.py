@@ -10,6 +10,7 @@ from tkinter import font
 from tkinter import filedialog
 
 import re
+import inspect
 
 import os, sys
 from datetime import datetime
@@ -208,6 +209,10 @@ class win(file_handler):
 
 		self.txt.bind("<Control-S>", self.save_file)
 		self.txt.bind("<Control-s>", self.save_file)
+		self.txt.bind("<Control-Shift-S>", self.save_file_as)
+		self.txt.bind("<Control-Shift-s>", self.save_file_as)
+		self.txt.bind("<Control-N>", self.new_file)
+		self.txt.bind("<Control-n>", self.new_file)
 		self.txt.bind("<Control-F>", self.find_place)
 		self.txt.bind("<Control-f>", self.find_place)
 		self.txt.bind("<Control-V>", self.paste)
@@ -222,6 +227,9 @@ class win(file_handler):
 
 		self.txt.bind("<Shift-Up>", self.queue_make)
 		self.txt.bind("<Shift-Down>", self.queue_make)
+
+		self.txt.bind("<Control-Q>", self.test_function)
+		self.txt.bind("<Control-q>", self.test_function)
 
 	
 		self.find_entry.bind("<Return>", self.find)
@@ -277,8 +285,9 @@ class win(file_handler):
 		except IndexError:
 			pass
 
-	def test_function(self, arg=None):
-		print("fuuuuuck")
+	def test_function(self, arg=None):		
+		f = f"self.command_O({root.selection_get()}.__doc__)"
+		exec(f)
 		return "break"
 
 	def theme_load(self):
