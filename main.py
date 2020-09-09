@@ -350,8 +350,11 @@ class win(file_handler):
 
 	def redo(self, arg=None):
 		""" Control-Y """
+		chunk_size = self.get_line_count()
 		self.txt.event_generate("<<Redo>>")
-		self.highlight_chunk()
+		start_index = int(self.cursor_index[0])
+		stop_index = start_index + abs(chunk_size - self.get_line_count())
+		self.highlight_chunk(start_index=start_index, stop_index=stop_index)
 		return "break"
 
 	def copy(self, arg=None):
