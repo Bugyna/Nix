@@ -70,6 +70,8 @@ class win(file_handler):
 		
 		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex (less than before tho))
 		self.command_highlighting = False
+		
+		self.insert = True
 
 		self.loading = False
 		self.fullscreen = False
@@ -90,6 +92,7 @@ class win(file_handler):
 		root.resizable(True,True)
 		root.tk.call("tk","scaling", self.sharpness)
 		root.geometry(f"600x400")
+		print(root.winfo_geometry())
 		root.title(f"Nix: <None>")
 		# self.file_handler = file_handler(self, root)
 
@@ -231,6 +234,8 @@ class win(file_handler):
 		self.txt.bind("<Control-Q>", self.test_function)
 		self.txt.bind("<Control-q>", self.test_function)
 
+		self.txt.bind("<Insert>", self.set_cursor_mode)
+
 	
 		self.find_entry.bind("<Return>", self.find)
 		self.find_entry.bind("<Up>", self.scroll_through_found)
@@ -257,14 +262,14 @@ class win(file_handler):
 
 		root.bind("<Control-space>", self.command_entry_set)
 		root.bind("<F11>", self.set_fullscreen)
-		root.bind("<Alt-Right>", self.set_dimensions)
-		root.bind("<Alt-Left>", self.set_dimensions)
-		root.bind("<Alt-Up>", self.set_dimensions)
-		root.bind("<Alt-Down>", self.set_dimensions)
-		#root.bind("<Control-Right>", self.set_dimensions)
-		#root.bind("<Control-Left>", self.set_dimensions)
-		#root.bind("<Control-Up>", self.set_dimensions)
-		#root.bind("<Control-Down>", self.set_dimensions)
+		root.bind("<Mod1-Right>", self.set_dimensions)
+		root.bind("<Mod1-Left>", self.set_dimensions)
+		root.bind("<Mod1-Up>", self.set_dimensions)
+		root.bind("<Mod1-Down>", self.set_dimensions)
+		root.bind("<Mod1-Shift-Right>", self.set_dimensions)
+		root.bind("<Mod1-Shift-Left>", self.set_dimensions)
+		root.bind("<Mod1-Shift-Up>", self.set_dimensions)
+		root.bind("<Mod1-Shift-Down>", self.set_dimensions)
 		root.bind("<Control-Escape>", lambda arg: root.destroy())
 		root.bind("<Control-Shift-W>", lambda arg: root.destroy())
 		root.bind("<Configure>", lambda arg: self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")) #repositions the text widget to be placed correctly
@@ -293,9 +298,9 @@ class win(file_handler):
 	def theme_load(self):
 		root.config(bg=self.theme["bg"])
 		self.txt.configure(font=self.font,bg = self.theme["bg"],fg=self.theme["fg"], undo=True, maxundo=0, spacing1=2,
-			insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
+			insertwidth=1, insertofftime=0, insertontime=1, insertbackground=self.theme["insertbg"], selectbackground=self.theme["selectbg"],
 			borderwidth=0, relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="char", exportselection=True,
-			blockcursor=True, highlightthickness=0, insertborderwidth=0)
+			blockcursor=self.insert, highlightthickness=0, insertborderwidth=0)
 		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font,bg = self.theme["bg"],fg="#999999")
 		self.temperature_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font,bg = self.theme["bg"],fg="#999999")
 		self.line_no.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, bg = self.theme["bg"],fg="#999999")
@@ -386,6 +391,11 @@ class win(file_handler):
 		""" Control-A """
 		self.txt.event_generate("<<SelectAll>>")
 		return "break"	
+			
+	def set_cursor_mode(self, arg=None):
+		self.insert = not self.insert
+		self.txt.configure(blockcursor=self.insert)
+		return "break"
 
 	def comment_line(self, arg=None):
 		""" I wish I knew what the fuck is going on in here I am depressed """
@@ -456,20 +466,33 @@ class win(file_handler):
 		self.fullscreen = not self.fullscreen
 		root.attributes("-fullscreen", self.fullscreen)
 
-	def set_dimensions(self, arg=None):
+		return "break"
+
+	def set_dimensions(self, arg=None): # I do understand that this is a terrible, hideous thing but I couldn't come up with a better solution
 		""" changes window size accordingly to keys pressed Alt-Curses """
 		key = arg.keysym
-		# print(hex(arg.state))
-		margin = 20
-		if (key == "Right"):
-			root.geometry(f"{root.winfo_width()+margin}x{root.winfo_height()}")
-		if (key == "Left"):
-			root.geometry(f"{root.winfo_width()+margin}x{root.winfo_height()}+{root.winfo_rootx()-margin}+{root.winfo_rooty()-24}")
-		if (key == "Up"):
-			root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}+{root.winfo_rootx()}+{root.winfo_rooty()-margin-24}")
-		if (key == "Down"):
-			root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}")
-					
+		if (arg.state == 24):
+			margin = 20
+			if (key == "Right"):
+				root.geometry(f"{root.winfo_width()+margin}x{root.winfo_height()}")
+			if (key == "Left"):
+				root.geometry(f"{root.winfo_width()+margin}x{root.winfo_height()}+{root.winfo_rootx()-margin}+{root.winfo_rooty()-24}")
+			if (key == "Up"):
+				root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}+{root.winfo_rootx()}+{root.winfo_rooty()-margin-24}")
+			if (key == "Down"):
+				root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}")
+
+		elif (arg.state == 25):
+			margin = -20
+			if (key == "Right"):
+				root.geometry(f"{root.winfo_width()+margin}x{root.winfo_height()}+{root.winfo_rootx()-margin}+{root.winfo_rooty()-24}")
+			if (key == "Left"):
+				root.geometry(f"{root.winfo_width()+margin}x{root.winfo_height()}+{root.winfo_rootx()}+{root.winfo_rooty()-24}")
+			if (key == "Up"):
+				root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}+{root.winfo_rootx()}+{root.winfo_rooty()-24}")
+			if (key == "Down"):
+				root.geometry(f"{root.winfo_width()}x{root.winfo_height()+margin}+{root.winfo_rootx()}+{root.winfo_rooty()-margin-24}")
+				
 		return "break"	
 		
 	def set_font_size(self, arg):
