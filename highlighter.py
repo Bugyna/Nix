@@ -64,7 +64,7 @@ class highlighter(object):
 		self.abc_upcase_regex = re.compile(r"^[A-Z]+$")
 		self.separator_regex = re.compile(r"[\s\.\,\:\(\;\)]")
 		self.num_regex = re.compile(r"[0-9]")
-		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]]")
+		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]\@\$]")
 		self.L_bracket_regex = re.compile(r"[\(]")
 		self.R_bracket_regex = re.compile(r"[\)]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
@@ -150,6 +150,8 @@ class highlighter(object):
 		
 		self.txt.tag_remove("functions", last_separator, line_end_index)
 		self.txt.tag_remove("keywords", last_separator, line_end_index)
+		self.txt.tag_remove("logical_keywords", last_separator, line_end_index)
+		self.txt.tag_remove("numerical_keywords", last_separator, line_end_index)
 		self.txt.tag_remove("numbers", last_separator, line_end_index)
 		self.txt.tag_remove("special_chars", last_separator, line_end_index)
 		self.txt.tag_remove("comments", last_separator, line_end_index)
