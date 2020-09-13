@@ -44,9 +44,9 @@ class highlighter(object):
 			 "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
 		]
 
-		x = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
-		self.html_keywords = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
-		# self.html_keywords = ['<!-->', '<!DOCTYPE>', '<a>', '<abbr>', '<acronym>', '<address>', '<applet>', '<area>', '<article>', '<aside>', '<audio>', '<b>', '<base>', '<basefont>', '<bdi>', '<bdo>', '<big>', '<blockquote>', '<body>', '<br>', '<button>', '<canvas>', '<caption>', '<center>', '<cite>', '<code>', '<col>', '<colgroup>', '<data>', '<datalist>', '<dd>', '<del>', '<details>', '<dfn>', '<dialog>', '<dir>', '<div>', '<dl>', '<dt>', '<em>', '<embed>', '<fieldset>', '<figcaption>', '<figure>', '<font>', '<footer>', '<form>', '<frame>', '<frameset>', '<h1>', '<h2>', '<h3>', '<h4>', '<h5>', '<h6>', '<head>', '<header>', '<hr>', '<html>', '<i>', '<iframe>', '<img>', '<input>', '<ins>', '<kbd>', '<label>', '<legend>', '<li>', '<link>', '<main>', '<map>', '<mark>', '<meta>', '<meter>', '<nav>', '<noframes>', '<noscript>', '<object>', '<ol>', '<optgroup>', '<option>', '<output>', '<p>', '<param>', '<picture>', '<pre>', '<progress>', '<q>', '<rp>', '<rt>', '<ruby>', '<s>', '<samp>', '<script>', '<section>', '<select>', '<small>', '<source>', '<span>', '<strike>', '<strong>', '<style>', '<sub>', '<summary>', '<sup>', '<svg>', '<table>', '<tbody>', '<td>', '<template>', '<textarea>', '<tfoot>', '<th>', '<thead>', '<time>', '<title>', '<tr>', '<track>', '<tt>', '<u>', '<ul>', '<var>', '<video>', '<wbr>', '</!-->', '</!DOCTYPE>', '</a>', '</abbr>', '</acronym>', '</address>', '</applet>', '</area>', '</article>', '</aside>', '</audio>', '</b>', '</base>', '</basefont>', '</bdi>', '</bdo>', '</big>', '</blockquote>', '</body>', '</br>', '</button>', '</canvas>', '</caption>', '</center>', '</cite>', '</code>', '</col>', '</colgroup>', '</data>', '</datalist>', '</dd>', '</del>', '</details>', '</dfn>', '</dialog>', '</dir>', '</div>', '</dl>', '</dt>', '</em>', '</embed>', '</fieldset>', '</figcaption>', '</figure>', '</font>', '</footer>', '</form>', '</frame>', '</frameset>', '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>', '</head>', '</header>', '</hr>', '</html>', '</i>', '</iframe>', '</img>', '</input>', '</ins>', '</kbd>', '</label>', '</legend>', '</li>', '</link>', '</main>', '</map>', '</mark>', '</meta>', '</meter>', '</nav>', '</noframes>', '</noscript>', '</object>', '</ol>', '</optgroup>', '</option>', '</output>', '</p>', '</param>', '</picture>', '</pre>', '</progress>', '</q>', '</rp>', '</rt>', '</ruby>', '</s>', '</samp>', '</script>', '</section>', '</select>', '</small>', '</source>', '</span>', '</strike>', '</strong>', '</style>', '</sub>', '</summary>', '</sup>', '</svg>', '</table>', '</tbody>', '</td>', '</template>', '</textarea>', '</tfoot>', '</th>', '</thead>', '</time>', '</title>', '</tr>', '</track>', '</tt>', '</u>', '</ul>', '</var>', '</video>', '</wbr>']
+		# x = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
+		# self.html_keywords = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
+		self.html_keywords = ['<!-->', '<!DOCTYPE>', '<a>', '<abbr>', '<acronym>', '<address>', '<applet>', '<area>', '<article>', '<aside>', '<audio>', '<b>', '<base>', '<basefont>', '<bdi>', '<bdo>', '<big>', '<blockquote>', '<body>', '<br>', '<button>', '<canvas>', '<caption>', '<center>', '<cite>', '<code>', '<col>', '<colgroup>', '<data>', '<datalist>', '<dd>', '<del>', '<details>', '<dfn>', '<dialog>', '<dir>', '<div>', '<dl>', '<dt>', '<em>', '<embed>', '<fieldset>', '<figcaption>', '<figure>', '<font>', '<footer>', '<form>', '<frame>', '<frameset>', '<h1>', '<h2>', '<h3>', '<h4>', '<h5>', '<h6>', '<head>', '<header>', '<hr>', '<html>', '<i>', '<iframe>', '<img>', '<input>', '<ins>', '<kbd>', '<label>', '<legend>', '<li>', '<link>', '<main>', '<map>', '<mark>', '<meta>', '<meter>', '<nav>', '<noframes>', '<noscript>', '<object>', '<ol>', '<optgroup>', '<option>', '<output>', '<p>', '<param>', '<picture>', '<pre>', '<progress>', '<q>', '<rp>', '<rt>', '<ruby>', '<s>', '<samp>', '<script>', '<section>', '<select>', '<small>', '<source>', '<span>', '<strike>', '<strong>', '<style>', '<sub>', '<summary>', '<sup>', '<svg>', '<table>', '<tbody>', '<td>', '<template>', '<textarea>', '<tfoot>', '<th>', '<thead>', '<time>', '<title>', '<tr>', '<track>', '<tt>', '<u>', '<ul>', '<var>', '<video>', '<wbr>', '</!-->', '</!DOCTYPE>', '</a>', '</abbr>', '</acronym>', '</address>', '</applet>', '</area>', '</article>', '</aside>', '</audio>', '</b>', '</base>', '</basefont>', '</bdi>', '</bdo>', '</big>', '</blockquote>', '</body>', '</br>', '</button>', '</canvas>', '</caption>', '</center>', '</cite>', '</code>', '</col>', '</colgroup>', '</data>', '</datalist>', '</dd>', '</del>', '</details>', '</dfn>', '</dialog>', '</dir>', '</div>', '</dl>', '</dt>', '</em>', '</embed>', '</fieldset>', '</figcaption>', '</figure>', '</font>', '</footer>', '</form>', '</frame>', '</frameset>', '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>', '</head>', '</header>', '</hr>', '</html>', '</i>', '</iframe>', '</img>', '</input>', '</ins>', '</kbd>', '</label>', '</legend>', '</li>', '</link>', '</main>', '</map>', '</mark>', '</meta>', '</meter>', '</nav>', '</noframes>', '</noscript>', '</object>', '</ol>', '</optgroup>', '</option>', '</output>', '</p>', '</param>', '</picture>', '</pre>', '</progress>', '</q>', '</rp>', '</rt>', '</ruby>', '</s>', '</samp>', '</script>', '</section>', '</select>', '</small>', '</source>', '</span>', '</strike>', '</strong>', '</style>', '</sub>', '</summary>', '</sup>', '</svg>', '</table>', '</tbody>', '</td>', '</template>', '</textarea>', '</tfoot>', '</th>', '</thead>', '</time>', '</title>', '</tr>', '</track>', '</tt>', '</u>', '</ul>', '</var>', '</video>', '</wbr>']
 		
 		self.Cplus_keywords_regex = re.compile('|'.join(self.Cplus_keywords))
 
@@ -56,7 +56,7 @@ class highlighter(object):
 		self.theme = parent.theme
 
 		self.countingQuomarks = False
-		self.Quomark_count = 0
+		
 
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
@@ -71,9 +71,15 @@ class highlighter(object):
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		self.whitespace_regex = re.compile(r"[\t]")
 
-		self.html_separator_regex = re.compile(r"[\<\>\/\ ]")
-		self.html_abc_regex = re.compile(r"[A-Za-z0-9]")
-		self.html_comment_regex = re.compile(r"\[<!--]")
+		self.html_separator_regex = re.compile(r"[\;\ \=]")
+		self.html_tag_start_regex = re.compile(r"[\<]")
+		self.html_tag_end_regex = re.compile(r"[\>]")
+		self.html_num_regex = re.compile(r"\#*[0-9]")
+		self.html_L_bracket_regex = re.compile(r"[\{]")
+		self.html_R_bracket_regex = re.compile(r"[\}]")
+		self.html_color_num_regex = re.compile(r"^\#[0-9A-Fa-f]+$|^[0-9]+px$")
+		self.html_comment_start_regex = re.compile(r"<!--")
+		self.html_comment_end_regex = re.compile(r"-->")
 
 	def set_languague(self, arg: str=None):
 		self.lang = arg
@@ -136,7 +142,6 @@ class highlighter(object):
 					self.command_entry.tag_add("command_keywords", last_separator, index)
 				last_separator = f"1.{i}"
 
-
 	def python_highlight(self, line_no: int ,line: str=None):
 		""" highlighting for python language """
 		if line == None:
@@ -147,6 +152,7 @@ class highlighter(object):
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)}"
 		self.pattern = ""
+		self.countingQuomarks = False
 		
 		self.txt.tag_remove("functions", last_separator, line_end_index)
 		self.txt.tag_remove("keywords", last_separator, line_end_index)
@@ -160,17 +166,11 @@ class highlighter(object):
 
 
 		for i, current_char in enumerate(line, 0):
-			if (i == 0):
-				self.countingQuomarks = False
-
-			
+		
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("quotes", index)
-				if (self.countingQuomarks):
-					self.countingQuomarks = False
-				else:
-					self.countingQuomarks = True
+				self.countingQuomarks = not self.countingQuomarks
 				# self.countingQuomarks = not self.countingQuomarks
 
 			elif (self.countingQuomarks):
@@ -255,6 +255,7 @@ class highlighter(object):
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)}"
 		self.pattern = ""
+		self.countingQuomarks = False
 
 		self.txt.tag_remove("quotes", last_separator, line_end_index)
 		self.txt.tag_remove("functions", last_separator, line_end_index)
@@ -266,9 +267,6 @@ class highlighter(object):
 		
 		
 		for i, current_char in enumerate(line, 0):
-			if (i == 0):
-				self.countingQuomarks = False
-
 
 			try:
 				if (self.commment_regex.match(current_char+line[i+1])): #comments
@@ -348,38 +346,99 @@ class highlighter(object):
 				self.pattern = ""
 				
 	def html_highlight(self, line_no: int=None, line: str=None):
+		""" I am crying while looking at this hideous thing """
 		if line == None:
 			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
-		last_separator_index = 0
-		last_separator = f"{line_no}.{last_separator_index}"
-		line_end_index = f"{line_no}.{len(line)}"
-		self.pattern = ""
 
-		self.txt.tag_remove(["quotes"], last_separator, line_end_index)
-		self.txt.tag_remove(["functions"], last_separator, line_end_index)
-		self.txt.tag_remove(["keywords"], last_separator, line_end_index)
-		self.txt.tag_remove(["numbers"], last_separator, line_end_index)
-		self.txt.tag_remove(["special_chars"], last_separator, line_end_index)
-		self.txt.tag_remove(["comments"], last_separator, line_end_index)
-		self.txt.tag_remove(["operators"], last_separator, line_end_index)
+		tag_start_index = f""
+		tag_end_index = f""
+		last_separator_index = 0
+		last_separator = f"{line_no}.0"
+		line_end_index = f"{line_no}.{len(line)}"
+		in_tag = False
+		in_comment = False
+		in_special_tag = False
+		last_pattern = ""
+		self.pattern = ""
+		tag_argument_index = 0
+
+		self.txt.tag_remove("quotes", last_separator, line_end_index)
+		self.txt.tag_remove("functions", last_separator, line_end_index)
+		self.txt.tag_remove("keywords", last_separator, line_end_index)
+		self.txt.tag_remove("numbers", last_separator, line_end_index)
+		self.txt.tag_remove("special_chars", last_separator, line_end_index)
+		self.txt.tag_remove("comments", last_separator, line_end_index)
+		self.txt.tag_remove("operators", last_separator, line_end_index)
 		
 		
 		for i, current_char in enumerate(line, 0):
-			print(self.pattern)
 
-			if (self.html_abc_regex.match(current_char)):
-				self.pattern += current_char
+			# if (self.html_abc_regex.match(current_char)):
+			self.pattern += current_char
+
+			if (self.html_L_bracket_regex.match(current_char)):
+				index = f"{line_no}.{i-len(self.pattern+last_pattern)}"
+				index1 = f"{line_no}.{i}"
+				self.txt.tag_add("functions", index, index1)
 
 			if (self.html_separator_regex.match(current_char)):
-				index = f"{line_no}.{i}"
-				if (self.pattern in self.keywords):
-						index = f"{line_no}.{i}"
-						self.txt.tag_add(["keywords"], last_separator, index)
-
+				last_pattern = self.pattern
 				self.pattern = ""
-				last_separator_index = i+1
-				last_separator = f"{line_no}.{last_separator_index}"
+				last_separator_index = i
+				last_separator = f"{line_no}.{i}"
+				if (in_tag): tag_argument_index += 1
+
+			if (self.quote_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+				self.txt.tag_add("special_chars", index)
+				self.countingQuomarks = not self.countingQuomarks
+				# self.countingQuomarks = not self.countingQuomarks
+
+			elif (self.countingQuomarks):
+				index = f"{line_no}.{i}"
+				self.txt.tag_add("special_chars", index)
+				continue
+
+			elif (self.html_color_num_regex.match(self.pattern)):
+				index = f"{line_no}.{i-len(self.pattern)}"
+				index1 = f"{line_no}.{i+1}"
+				self.txt.tag_add("numbers", index, index1)
+
+			elif (self.html_comment_start_regex.match(self.pattern)):
+				index = f"{line_no}.{i+1}"
+				self.txt.tag_add("comments", tag_start_index, index)
+				in_comment = True
+
+			if (in_comment):
+				index = f"{line_no}.{i}"
+				self.txt.tag_add("comments", index)
+
+			if (self.html_comment_end_regex.match(self.pattern)):
+				in_comment = False
+
+			elif (self.html_tag_start_regex.match(current_char)):
+				tag_start_index = f"{line_no}.{i}"
+				index = f"{line_no}.{i+1}"
+				self.pattern = ""
+				self.pattern += current_char
+				last_separator_index = i
+				last_separator = f"{line_no}.{i}"
+				in_tag = True
+
+			elif (self.html_tag_end_regex.match(current_char)):
+				in_tag = False
+				self.pattern = ""
+				last_separator_index = i
+				last_separator = f"{line_no}.{i}"
+				tag_argument_index = 0
+
+			elif (in_tag):
+				index = f"{line_no}.{i}"
+				if (tag_argument_index == 0):
+					self.txt.tag_add("keywords", index)
+				elif (tag_argument_index == 1):
+					self.txt.tag_add("quotes", index)
 
 	def unhighlight(self, line_no: int, line: str=None):
 		if line == None:
@@ -392,7 +451,11 @@ class highlighter(object):
 		self.txt.tag_remove(["quotes"], last_separator, line_end_index)
 		self.txt.tag_remove(["functions"], last_separator, line_end_index)
 		self.txt.tag_remove(["keywords"], last_separator, line_end_index)
+		self.txt.tag_remove(["logical_keywords"], last_separator, line_end_index)
+		self.txt.tag_remove(["numerical_keywords"], last_separator, line_end_index)
 		self.txt.tag_remove(["numbers"], last_separator, line_end_index)
 		self.txt.tag_remove(["special_chars"], last_separator, line_end_index)
 		self.txt.tag_remove(["comments"], last_separator, line_end_index)
 		self.txt.tag_remove(["operators"], last_separator, line_end_index)
+		
+		
