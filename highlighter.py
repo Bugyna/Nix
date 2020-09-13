@@ -361,6 +361,7 @@ class highlighter(object):
 		in_special_tag = False
 		last_pattern = ""
 		self.pattern = ""
+		self.countingQuomarks = False
 		tag_argument_index = 0
 
 		self.txt.tag_remove("quotes", last_separator, line_end_index)
@@ -377,17 +378,18 @@ class highlighter(object):
 			# if (self.html_abc_regex.match(current_char)):
 			self.pattern += current_char
 
-			if (self.html_L_bracket_regex.match(current_char)):
-				index = f"{line_no}.{i-len(self.pattern+last_pattern)}"
-				index1 = f"{line_no}.{i}"
-				self.txt.tag_add("functions", index, index1)
+			# if (self.html_L_bracket_regex.match(current_char)):
+			# 	index = f"{line_no}.{i-len(self.pattern+last_pattern)}"
+			# 	index1 = f"{line_no}.{i}"
+			# 	self.txt.tag_add("functions", index, index1)
 
 			if (self.html_separator_regex.match(current_char)):
 				last_pattern = self.pattern
 				self.pattern = ""
 				last_separator_index = i
 				last_separator = f"{line_no}.{i}"
-				if (in_tag): tag_argument_index += 1
+				if (in_tag):
+					if (tag_argument_index < 1): tag_argument_index += 1
 
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
@@ -400,12 +402,12 @@ class highlighter(object):
 				self.txt.tag_add("special_chars", index)
 				continue
 
-			elif (self.html_color_num_regex.match(self.pattern)):
+			if (self.html_color_num_regex.match(self.pattern)):
 				index = f"{line_no}.{i-len(self.pattern)}"
 				index1 = f"{line_no}.{i+1}"
 				self.txt.tag_add("numbers", index, index1)
 
-			elif (self.html_comment_start_regex.match(self.pattern)):
+			if (self.html_comment_start_regex.match(self.pattern)):
 				index = f"{line_no}.{i+1}"
 				self.txt.tag_add("comments", tag_start_index, index)
 				in_comment = True
@@ -417,7 +419,7 @@ class highlighter(object):
 			if (self.html_comment_end_regex.match(self.pattern)):
 				in_comment = False
 
-			elif (self.html_tag_start_regex.match(current_char)):
+			if (self.html_tag_start_regex.match(current_char)):
 				tag_start_index = f"{line_no}.{i}"
 				index = f"{line_no}.{i+1}"
 				self.pattern = ""
