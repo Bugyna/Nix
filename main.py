@@ -36,7 +36,7 @@ class win(file_handler):
 	def __init__(self, root, file=None):
 		super().__init__(self, root)
 		self.theme_options = {
-			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords":"#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
 
 			"timelord": {"window": {"bg" : "#000099", "fg": "#AAAAAA", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
@@ -81,7 +81,8 @@ class win(file_handler):
 		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex (less than before tho))
 		self.command_highlighting = False
 		
-		self.insert = True
+		self.insert = False
+		self.trippy = True
 
 		self.loading = False
 		self.fullscreen = False
@@ -94,8 +95,6 @@ class win(file_handler):
 
 		self.Font_size = 11
 		self.sFont_size = self.Font_size - 2
-
-		self.trippy = False
 
 		#configuring main window
 		# root.overrideredirect(True)
@@ -182,7 +181,7 @@ class win(file_handler):
 
 		#tags for highlighting
 		#sick fucking colors #A500FF;
-		self.command_entry.tag_configure("command_keywords", foreground="#FF0000")
+		# self.command_entry.tag_configure("command_keywords", foreground="#FF0000")
 
 		# self.txt.tag_configure(key[0], foreground="#ff00bb")	
 		# self.txt.tag_configure("sumn", foreground="#74091D")
@@ -335,7 +334,7 @@ class win(file_handler):
 		self.txt.tag_configure("test", foreground=self.theme["window"]["bg"])
 		root.config(bg=self.theme["window"]["bg"])
 		self.txt.configure(font=self.font,bg = self.theme["window"]["bg"],fg=self.theme["window"]["fg"], undo=True, maxundo=0, spacing1=2,
-			 insertwidth=1, insertofftime=0, insertontime=1, insertbackground=self.theme["window"]["insertbg"],
+			 insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["window"]["insertbg"],
 			 selectbackground=self.theme["window"]["selectbg"], selectforeground=self.theme["window"]["selectfg"], borderwidth=0,
 			 relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="word", exportselection=True,
 			 blockcursor=self.insert, highlightthickness=0, insertborderwidth=0)
@@ -449,7 +448,7 @@ class win(file_handler):
 		# don't ask
 		self.txt.configure(insertwidth=1)
 		if (self.trippy): self.trippy = False; self.insert = False; self.txt.tag_delete("test")
-		elif (not self.insert): self.insert = True
+		elif (not self.insert): self.insert = True; self.txt.tag_configure("test", foreground=self.theme["window"]["bg"])
 		elif (self.insert): self.trippy = True; self.txt.configure(insertwidth=0); self.insert = False
 
 		self.txt.configure(blockcursor=self.insert)
@@ -976,7 +975,9 @@ class win(file_handler):
 
 			elif (self.trippy):
 				try:
-					self.txt.tag_configure("test", background=self.theme["highlighter"][self.txt.tag_names(self.txt.index(tkinter.INSERT))[0]], foreground=self.theme["window"]["bg"])
+					# print(self.txt.get(self.txt.index(tkinter.INSERT)), "x")
+					if (re.match(r"\n", self.txt.get(self.txt.index(tkinter.INSERT)))): self.txt.tag_configure("test", background=self.theme["window"]["bg"]); self.txt.configure(blockcursor=True)
+					else: self.txt.tag_configure("test", background=self.theme["highlighter"][self.txt.tag_names(self.txt.index(tkinter.INSERT))[0]], foreground=self.theme["window"]["bg"]); self.txt.configure(blockcursor=self.insert)
 				except Exception:
 					self.txt.tag_configure("test", background=self.theme["window"]["fg"], foreground=self.theme["window"]["bg"])
 			
