@@ -33,6 +33,7 @@ from handlers import file_handler
 
 
 class win(file_handler):
+	""" main object of Nix text editor"""
 	def __init__(self, root, file=None):
 		super().__init__(self, root)
 		self.theme_options = {
@@ -179,27 +180,8 @@ class win(file_handler):
 		self.file_dropdown.add_command(label="Save file",command=self.save_file)
 		self.file_dropdown.add_command(label="Save file as",command=self.save_file_as)
 
-		#tags for highlighting
+		# not anymore #tags for highlighting
 		#sick fucking colors #A500FF;
-		# self.command_entry.tag_configure("command_keywords", foreground="#FF0000")
-
-		# self.txt.tag_configure(key[0], foreground="#ff00bb")	
-		# self.txt.tag_configure("sumn", foreground="#74091D")
-		# self.txt.tag_configure("special_chars",foreground="#ff00bb")
-		# self.txt.tag_configure("var_types",foreground="#FF0000") #01cdfe
-		# self.txt.tag_configure("keywords", foreground="#ff5500")
-		# self.txt.tag_configure("operators", foreground="#f75f00")
-		# self.txt.tag_configure("default", foreground="#302387")
-		# self.txt.tag_configure("other_chars", foreground="#A500FF") #B71DDE
-		# self.txt.tag_configure("modules", foreground="#3023DD")
-		# self.txt.tag_configure("comments", foreground="#333333")
-		# self.txt.tag_configure("tabs", background="#444444")
-		# self.txt.tag_configure("quotes",foreground="#00FDFD")"#00FDFD""#FFFFFF"
-		# self.txt.tag_configure("logical_keywords", foreground="#345523")
-		# self.txt.tag_configure("command_keywords", background="#FFFFFF")
-		# self.txt.tag_configure("found", background="#145226")
-		# self.txt.tag_configure("found_select", background="#FFFFFF")
-		# self.txt.tag_configure("whitespace", background="#110011")
 
 		#command binding
 		self.command_entry.bind("<Return>", self.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
@@ -322,9 +304,13 @@ class win(file_handler):
 		# sw = tkinter.Tk()
 		# x = tkinter.Label(sw)
 		# x.pack()
-		self.definition_label.place(x=0, y=100)
-		f = f"self.definition_label.configure(text={root.selection_get()}.__doc__)"
-		exec(f)
+		# self.definition_label.place(x=0, y=100)
+		# f = f"self.definition_label.configure(text={root.selection_get()}.__doc__)"
+		f = f"self.command_O(arg={root.selection_get()}.__doc__)"
+		try:
+			exec(f)
+		except Exception:
+			self.command_O(arg="None")
 		return "break"
 
 	def theme_load(self):
@@ -747,7 +733,7 @@ class win(file_handler):
 	def command_O(self, arg):
 		""" sets the text in command output """
 		#(I have no idea why past me made this into a function when it doesn't really have to be a function)
-		self.command_out.place(relx=0, rely=0.99975, relwidth=1, height=20, anchor="sw")
+		self.command_out.place(relx=0, rely=0.99975, relwidth=1, anchor="sw")
 		self.command_out.configure(text=str(arg), anchor="w")
 
 
