@@ -7,7 +7,11 @@ class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
 	def __init__(self, parent, root):
 		self.lang = "NaN"
-		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt"]
+		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm"]
+
+		self.command_keywords = parent.command_keywords
+		print(self.command_keywords)
+
 		self.Py_keywords = [
 			'await', 'import', 'pass', 'break', 'in',
 			'raise', 'class', 'is', 'return', 'continue', 'lambda', 'as', 'def', 'from',
@@ -39,11 +43,16 @@ class highlighter(object):
 			 "struct", "switch", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename",
 			 "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
 		]
+
+		x = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
+		self.html_keywords = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
+		# self.html_keywords = ['<!-->', '<!DOCTYPE>', '<a>', '<abbr>', '<acronym>', '<address>', '<applet>', '<area>', '<article>', '<aside>', '<audio>', '<b>', '<base>', '<basefont>', '<bdi>', '<bdo>', '<big>', '<blockquote>', '<body>', '<br>', '<button>', '<canvas>', '<caption>', '<center>', '<cite>', '<code>', '<col>', '<colgroup>', '<data>', '<datalist>', '<dd>', '<del>', '<details>', '<dfn>', '<dialog>', '<dir>', '<div>', '<dl>', '<dt>', '<em>', '<embed>', '<fieldset>', '<figcaption>', '<figure>', '<font>', '<footer>', '<form>', '<frame>', '<frameset>', '<h1>', '<h2>', '<h3>', '<h4>', '<h5>', '<h6>', '<head>', '<header>', '<hr>', '<html>', '<i>', '<iframe>', '<img>', '<input>', '<ins>', '<kbd>', '<label>', '<legend>', '<li>', '<link>', '<main>', '<map>', '<mark>', '<meta>', '<meter>', '<nav>', '<noframes>', '<noscript>', '<object>', '<ol>', '<optgroup>', '<option>', '<output>', '<p>', '<param>', '<picture>', '<pre>', '<progress>', '<q>', '<rp>', '<rt>', '<ruby>', '<s>', '<samp>', '<script>', '<section>', '<select>', '<small>', '<source>', '<span>', '<strike>', '<strong>', '<style>', '<sub>', '<summary>', '<sup>', '<svg>', '<table>', '<tbody>', '<td>', '<template>', '<textarea>', '<tfoot>', '<th>', '<thead>', '<time>', '<title>', '<tr>', '<track>', '<tt>', '<u>', '<ul>', '<var>', '<video>', '<wbr>', '</!-->', '</!DOCTYPE>', '</a>', '</abbr>', '</acronym>', '</address>', '</applet>', '</area>', '</article>', '</aside>', '</audio>', '</b>', '</base>', '</basefont>', '</bdi>', '</bdo>', '</big>', '</blockquote>', '</body>', '</br>', '</button>', '</canvas>', '</caption>', '</center>', '</cite>', '</code>', '</col>', '</colgroup>', '</data>', '</datalist>', '</dd>', '</del>', '</details>', '</dfn>', '</dialog>', '</dir>', '</div>', '</dl>', '</dt>', '</em>', '</embed>', '</fieldset>', '</figcaption>', '</figure>', '</font>', '</footer>', '</form>', '</frame>', '</frameset>', '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>', '</head>', '</header>', '</hr>', '</html>', '</i>', '</iframe>', '</img>', '</input>', '</ins>', '</kbd>', '</label>', '</legend>', '</li>', '</link>', '</main>', '</map>', '</mark>', '</meta>', '</meter>', '</nav>', '</noframes>', '</noscript>', '</object>', '</ol>', '</optgroup>', '</option>', '</output>', '</p>', '</param>', '</picture>', '</pre>', '</progress>', '</q>', '</rp>', '</rt>', '</ruby>', '</s>', '</samp>', '</script>', '</section>', '</select>', '</small>', '</source>', '</span>', '</strike>', '</strong>', '</style>', '</sub>', '</summary>', '</sup>', '</svg>', '</table>', '</tbody>', '</td>', '</template>', '</textarea>', '</tfoot>', '</th>', '</thead>', '</time>', '</title>', '</tr>', '</track>', '</tt>', '</u>', '</ul>', '</var>', '</video>', '</wbr>']
 		
 		self.Cplus_keywords_regex = re.compile('|'.join(self.Cplus_keywords))
 
 
 		self.txt = parent.txt
+		self.command_entry = parent.command_entry
 		self.theme = parent.theme
 
 		self.countingQuomarks = False
@@ -60,7 +69,11 @@ class highlighter(object):
 		self.R_bracket_regex = re.compile(r"[\)]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
+		self.whitespace_regex = re.compile(r"[\t]")
 
+		self.html_separator_regex = re.compile(r"[\<\>\/\ ]")
+		self.html_abc_regex = re.compile(r"[A-Za-z0-9]")
+		self.html_comment_regex = re.compile(r"\[<!--]")
 
 	def set_languague(self, arg: str=None):
 		self.lang = arg
@@ -82,10 +95,14 @@ class highlighter(object):
 			self.logical_keywords = self.Py_logical_keywords
 			self.highlight = self.python_highlight
 			self.comment_sign = "#"
-			self.highlight = self.python_highlight
+
+		elif (self.lang == "html" or self.lang == "htm"):
+			self.keywords = self.html_keywords
+			self.highlight = self.html_highlight
+			self.comment_sign = "<!-->"
 
 		elif (self.lang == "NaN" or self.lang == "txt"):
-			self.comment_sign = " "
+			self.comment_sign = "\t"
 			self.highlight = self.no_highlight
 		
 		self.commment_regex = re.compile(rf"[{self.comment_sign}]")
@@ -99,6 +116,27 @@ class highlighter(object):
 	def no_highlight(self, line_no, line=None):
 		pass
 
+	def command_highlight(self, line: str=None):
+		last_separator = "1.0"
+		command_pattern = ""
+		if line == None:
+			line = self.command_entry.get("1.0", "end")
+
+		self.command_entry.tag_remove("command_keywords", "1.0", "end")
+
+		for i, current_char in enumerate(line, 0):
+			# print(i ,current_char)
+			if (self.abc_regex.match(current_char)):
+				command_pattern += current_char
+				continue
+
+			elif (self.separator_regex.match(current_char)):
+				if (command_pattern in self.command_keywords):
+					index = f"1.{i}"
+					self.command_entry.tag_add("command_keywords", last_separator, index)
+				last_separator = f"1.{i}"
+
+
 	def python_highlight(self, line_no: int ,line: str=None):
 		""" highlighting for python language """
 		if line == None:
@@ -110,13 +148,13 @@ class highlighter(object):
 		line_end_index = f"{line_no}.{len(line)}"
 		self.pattern = ""
 		
-		self.txt.tag_remove(self.theme["functions"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["keywords"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["numbers"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["special_chars"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["comments"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["operators"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
+		self.txt.tag_remove("functions", last_separator, line_end_index)
+		self.txt.tag_remove("keywords", last_separator, line_end_index)
+		self.txt.tag_remove("numbers", last_separator, line_end_index)
+		self.txt.tag_remove("special_chars", last_separator, line_end_index)
+		self.txt.tag_remove("comments", last_separator, line_end_index)
+		self.txt.tag_remove("operators", last_separator, line_end_index)
+		self.txt.tag_remove("quotes", last_separator, line_end_index)
 
 
 		for i, current_char in enumerate(line, 0):
@@ -126,7 +164,7 @@ class highlighter(object):
 			
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["quotes"], index)
+				self.txt.tag_add("quotes", index)
 				if (self.countingQuomarks):
 					self.countingQuomarks = False
 				else:
@@ -135,56 +173,24 @@ class highlighter(object):
 
 			elif (self.countingQuomarks):
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["quotes"], index)
+				self.txt.tag_add("quotes", index)
 				continue
 			
 			elif (self.abc_regex.match(current_char)):
 				self.pattern += current_char
 				# print(self.pattern)
 				continue
-			
-			elif (self.separator_regex.match(current_char)):
-				# print(self.pattern)
-
-				if (self.R_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["special_chars"], index)
-
-				if (self.L_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["functions"], last_separator, index)
-					self.txt.tag_add(self.theme["special_chars"], index)
-
-				elif (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["keywords"], last_separator, index)
-				
-				elif (self.pattern in self.logical_keywords):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["logical_keywords"], last_separator, index)
-
-				elif (self.pattern in self.numerical_keywords):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["numbers"], last_separator, index)
-
-				elif (self.abc_upcase_regex.match(self.pattern)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["numbers"], last_separator, index)
-			
-				last_separator_index = i+1
-				last_separator = f"{line_no}.{last_separator_index}"
-				self.pattern = ""
 				
 
 			elif (self.commment_regex.match(current_char)): #comments
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["comments"], index, line_end_index)
+				self.txt.tag_add("comments", index, line_end_index)
 				break
 
 			elif (self.num_regex.match(current_char)): #numbers
 				if (self.pattern == ""):
 					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["numbers"], index)
+					self.txt.tag_add("numbers", index)
 					self.pattern = ""
 				else:
 					self.pattern += current_char
@@ -192,7 +198,7 @@ class highlighter(object):
 			
 			elif (self.operator_regex.match(current_char)):
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["operators"], index)
+				self.txt.tag_add("operators", index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -200,12 +206,43 @@ class highlighter(object):
 			
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["special_chars"], index)
+				self.txt.tag_add("special_chars", index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
+
+			if (self.separator_regex.match(current_char)):
+				# print(self.pattern)
+
+				if (self.R_bracket_regex.match(current_char)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("special_chars", index)
+
+				if (self.L_bracket_regex.match(current_char)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("functions", last_separator, index)
+					self.txt.tag_add("special_chars", index)
+
+				elif (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("keywords", last_separator, index)
 				
+				elif (self.pattern in self.logical_keywords):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("logical_keywords", last_separator, index)
+
+				elif (self.pattern in self.numerical_keywords):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("numbers", last_separator, index)
+
+				elif (self.abc_upcase_regex.match(self.pattern)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("numbers", last_separator, index)
+			
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				self.pattern = ""
 
 	def C_highlight(self, line_no: int, line: str=None):
 		""" highlighting for C and C++ languages """
@@ -217,13 +254,13 @@ class highlighter(object):
 		line_end_index = f"{line_no}.{len(line)}"
 		self.pattern = ""
 
-		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["functions"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["keywords"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["numbers"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["special_chars"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["comments"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["operators"], last_separator, line_end_index)
+		self.txt.tag_remove("quotes", last_separator, line_end_index)
+		self.txt.tag_remove("functions", last_separator, line_end_index)
+		self.txt.tag_remove("keywords", last_separator, line_end_index)
+		self.txt.tag_remove("numbers", last_separator, line_end_index)
+		self.txt.tag_remove("special_chars", last_separator, line_end_index)
+		self.txt.tag_remove("comments", last_separator, line_end_index)
+		self.txt.tag_remove("operators", last_separator, line_end_index)
 		
 		
 		for i, current_char in enumerate(line, 0):
@@ -234,7 +271,7 @@ class highlighter(object):
 			try:
 				if (self.commment_regex.match(current_char+line[i+1])): #comments
 					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["comments"], index, line_end_index)
+					self.txt.tag_add("comments", index, line_end_index)
 					break
 
 			except Exception:
@@ -242,7 +279,7 @@ class highlighter(object):
 
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["quotes"], index)
+				self.txt.tag_add("quotes", index)
 				if (self.countingQuomarks):
 					self.countingQuomarks = False
 				else:
@@ -251,44 +288,18 @@ class highlighter(object):
 
 			elif (self.countingQuomarks):
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["quotes"], index)
+				self.txt.tag_add("quotes", index)
 				continue
 			
 			elif (self.abc_regex.match(current_char)):
 				self.pattern += current_char
 				# print(self.pattern)
-				continue
-			
-			elif (self.separator_regex.match(current_char)):
-				# print(self.pattern)
-
-				if (self.R_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["special_chars"], index)
-
-				if (self.L_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["functions"], last_separator, index)
-					self.txt.tag_add(self.theme["special_chars"], index)
-
-				elif (self.pattern in self.keywords):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["keywords"], last_separator, index)
-
-				elif (self.abc_upcase_regex.match(self.pattern)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["numbers"], last_separator, index)
-			
-
-				last_separator_index = i+1
-				last_separator = f"{line_no}.{last_separator_index}"
-				self.pattern = ""
-				
+				continue	
 
 			elif (self.num_regex.match(current_char)): #numbers
 				if (self.pattern == ""):
 					index = f"{line_no}.{i}"
-					self.txt.tag_add(self.theme["numbers"], index)
+					self.txt.tag_add("numbers", index)
 					self.pattern = ""
 				else:
 					self.pattern += current_char
@@ -296,7 +307,7 @@ class highlighter(object):
 			
 			elif (self.operator_regex.match(current_char)):
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["operators"], index)
+				self.txt.tag_add("operators", index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -304,13 +315,69 @@ class highlighter(object):
 			
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
 				index = f"{line_no}.{i}"
-				self.txt.tag_add(self.theme["special_chars"], index)
+				self.txt.tag_add("special_chars", index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
+
+			if (self.separator_regex.match(current_char)):
+				# print(self.pattern)
+
+				if (self.R_bracket_regex.match(current_char)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("special_chars", index)
+
+				elif (self.L_bracket_regex.match(current_char)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("functions", last_separator, index)
+					self.txt.tag_add("special_chars", index)
+
+				elif (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("keywords", last_separator, index)
+
+				elif (self.abc_upcase_regex.match(self.pattern)):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("numbers", last_separator, index)
+			
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				self.pattern = ""
 				
-				
+	def html_highlight(self, line_no: int=None, line: str=None):
+		if line == None:
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
+
+		last_separator_index = 0
+		last_separator = f"{line_no}.{last_separator_index}"
+		line_end_index = f"{line_no}.{len(line)}"
+		self.pattern = ""
+
+		self.txt.tag_remove(["quotes"], last_separator, line_end_index)
+		self.txt.tag_remove(["functions"], last_separator, line_end_index)
+		self.txt.tag_remove(["keywords"], last_separator, line_end_index)
+		self.txt.tag_remove(["numbers"], last_separator, line_end_index)
+		self.txt.tag_remove(["special_chars"], last_separator, line_end_index)
+		self.txt.tag_remove(["comments"], last_separator, line_end_index)
+		self.txt.tag_remove(["operators"], last_separator, line_end_index)
+		
+		
+		for i, current_char in enumerate(line, 0):
+			print(self.pattern)
+
+			if (self.html_abc_regex.match(current_char)):
+				self.pattern += current_char
+
+			if (self.html_separator_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+				if (self.pattern in self.keywords):
+						index = f"{line_no}.{i}"
+						self.txt.tag_add(["keywords"], last_separator, index)
+
+				self.pattern = ""
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
 
 	def unhighlight(self, line_no: int, line: str=None):
 		if line == None:
@@ -320,10 +387,10 @@ class highlighter(object):
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)}"
 		
-		self.txt.tag_remove(self.theme["quotes"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["functions"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["keywords"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["numbers"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["special_chars"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["comments"], last_separator, line_end_index)
-		self.txt.tag_remove(self.theme["operators"], last_separator, line_end_index)
+		self.txt.tag_remove(["quotes"], last_separator, line_end_index)
+		self.txt.tag_remove(["functions"], last_separator, line_end_index)
+		self.txt.tag_remove(["keywords"], last_separator, line_end_index)
+		self.txt.tag_remove(["numbers"], last_separator, line_end_index)
+		self.txt.tag_remove(["special_chars"], last_separator, line_end_index)
+		self.txt.tag_remove(["comments"], last_separator, line_end_index)
+		self.txt.tag_remove(["operators"], last_separator, line_end_index)
