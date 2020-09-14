@@ -6,6 +6,7 @@ class file_handler(object):
 	""" File opening and closing yes"""
 	def __init__(self, parent, root):
 		self. supported_filetypes = ["TXT files", "*.txt *.py *.c *.cpp *.cc  *.html *.htm"]
+		self.current_dir = os.getcwd()
 		self.current_file = None
 		self.current_file_name = None
 		self.content = ""
@@ -22,6 +23,7 @@ class file_handler(object):
 		self.current_file_name = name
 		self.current_file = open(self.current_file_name, "w+")
 		self.parent.txt.delete("1.0", "end")
+		self.current_dir = os.path.dirname(self.current_file.name)
 		self.root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
 		
 		self.parent.set_highlighter()
@@ -38,6 +40,7 @@ class file_handler(object):
 			self.parent.set_highlighter()
 
 			self.current_file.close()
+			self.current_dir = os.path.dirname(self.current_file.name)
 			self.root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.parent.command_O(f"total of {self.parent.get_line_count()} lines saved")
 			
@@ -50,15 +53,15 @@ class file_handler(object):
 		""" saves current text into a new file """
 		if (self.current_file_name != None):
 			try:
-				tmp = self.parent.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
+				tmp = self.parent.filename.asksaveasfilename(initialdir=f'{self.current_dir}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
 			except TypeError: #throws an error when closing the menu without choosing anything
 				pass
 			os.rename(self.current_file_name, tmp)
 			self.current_file_name = tmp
 		else:
-			self.current_file_name = self.parent.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
+			self.current_file_name = self.parent.filename.asksaveasfilename(initialdir=f'{self.current_dir}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
 
-
+		self.current_dir = os.path.dirname(self.current_file.name)
 		self.root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 		self.save_file()
 		self.parent.unhighlight_chunk()
@@ -72,7 +75,7 @@ class file_handler(object):
 		
 		elif (filename == None): #if the filename argument is not provided open a file menu to provide a filename
 			try:
-				self.current_file_name = self.parent.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(self.supported_filetypes, ("all files","*.*")))
+				self.current_file_name = self.parent.filename.askopenfilename(initialdir=f"{self.current_dir}/", title="Select file", filetypes=(self.supported_filetypes, ("all files","*.*")))
 			except TypeError: #throws an error when closing the menu without choosing anything
 				pass
 			
@@ -83,7 +86,7 @@ class file_handler(object):
 			self.parent.command_O(e)
 			return
 
-
+		self.current_dir = os.path.dirname(self.current_file.name)
 		self.root.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
 		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
 
