@@ -17,6 +17,7 @@ import os, sys
 from datetime import datetime
 from time import sleep, time, localtime, strftime
 
+import lyricwikia
 import requests
 from bs4 import BeautifulSoup
 
@@ -38,16 +39,16 @@ class win(file_handler):
 		super().__init__(self, root)
 		self.theme_options = {
 			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords":"#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
 
 			"timelord": {"window": {"bg" : "#000099", "fg": "#AAAAAA", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords":"#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
 
 			"muffin" : {"window": {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "selectfg": "#FFFFFF", "widget_fg": "#000000", "select_widget": "#000000", "select_widget_fg": "#FFFFFF"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords":"#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
 
 			"toast" : {"window": {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords":"#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
 
 			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
 			}
@@ -182,6 +183,7 @@ class win(file_handler):
 
 		# not anymore #tags for highlighting
 		#sick fucking colors #A500FF;
+		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
 
 		#command binding
 		self.command_entry.bind("<Return>", self.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
@@ -207,7 +209,7 @@ class win(file_handler):
 		self.txt.bind("<Shift-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
 		self.txt.bind("<Button-3>", self.popup) #right click pop-up window
 
-		self.txt.bind("<Return>", self.set_tab_lock)
+		self.txt.bind("<Return>", self.keep_indent)
 		self.txt.bind("<Control-slash>", self.comment_line) #self.comment_line)
 
 		self.txt.bind("<Control-S>", self.save_file)
@@ -237,6 +239,8 @@ class win(file_handler):
 		self.txt.bind("<Control-q>", self.test_function)
 
 		self.txt.bind("<Insert>", self.set_cursor_mode)
+		self.txt.bind("<Home>", self.home)
+		self.txt.bind("<Shift-Home>", self.home_select)
 
 	
 		self.find_entry.bind("<Return>", self.find)
@@ -428,6 +432,30 @@ class win(file_handler):
 		""" Control-A """
 		self.txt.event_generate("<<SelectAll>>")
 		return "break"
+		
+	def home(self, arg=None):
+		index = ""
+		for i, char in enumerate(self.current_line, 0):
+			if (not re.match(r"\s", char)): index = f"{self.cursor_index[0]}.{i}"; break
+		
+		if (self.txt.index(tkinter.INSERT) == index): self.txt.event_generate("<<LineStart>>")
+		else: self.txt.mark_set(tkinter.INSERT, index)
+		return "break"
+
+	def home_select(self, arg=None):
+		index = ""
+		for i, char in enumerate(self.current_line, 0):
+			if (not re.match(r"\t", char)): index = f"{self.cursor_index[0]}.{i}"; break
+
+		if (self.txt.index(tkinter.INSERT) == index):
+			self.txt.event_generate("<<SelectLineStart>>")
+		
+		elif (self.txt.index(tkinter.INSERT) != index):
+			self.txt.event_generate("<<SelectLineStart>>")
+			[self.txt.event_generate("<<SelectNextChar>>") for i in range(i)]
+			
+		return "break"
+
 			
 	def set_cursor_mode(self, arg=None):
 		""" Insert """
@@ -497,10 +525,6 @@ class win(file_handler):
 			self.txt.insert(f"{line_no}.{index}", "\t")
 
 		return "break"
-
-	def set_tab_lock(self, arg):
-		"""  """
-		self.tab_lock = False
 		
 
 	def detach_widget(self, arg):
@@ -734,7 +758,7 @@ class win(file_handler):
 		""" sets the text in command output """
 		#(I have no idea why past me made this into a function when it doesn't really have to be a function)
 		self.command_out.place(relx=0, rely=0.99975, relwidth=1, anchor="sw")
-		self.command_out.configure(text=str(arg), anchor="w")
+		self.command_out.configure(text=str(arg), anchor="c")
 
 
 	def cmmand(self, arg):
@@ -743,7 +767,7 @@ class win(file_handler):
 		command = self.command_entry.get("1.0", "end-1c").split()#turns command into a list of arguments
 		
 		if (not command): self.command_entry_unset(); return #if no input/argument were provided hide the command entry widget and break function
-
+		
 		#help command
 		if (command[0] == "help"):
 			try:
@@ -773,8 +797,7 @@ class win(file_handler):
 			self.txt.see(float(command[0])+2)
 			self.command_O(f"moved to: {float(command[0])}")
 
-		elif (command[0][0] == "l"):
-			print(command[0][0])
+		elif (re.match(r"^l[0-9]+$|^lget$", command[0])):
 			for i, pnum in enumerate(command[0][1:], 1):
 				print(pnum)
 				if (re.search("[0-9]", pnum)): 
@@ -796,6 +819,16 @@ class win(file_handler):
 		elif (command[0] == "find"):
 			self.find_place(text=command[1])
 			self.find(command[1])
+
+		elif (command[0] == "lyrics"):
+			print(command)
+			command1 = ""
+			for word in command[1:]:
+				command1 += " "+word
+			command1 = command1.split(",")
+			print(command1)
+			lyrics = lyricwikia.get_lyrics(command1[0], command1[1])
+			self.command_O(lyrics)
 
 		elif (command[0] == "temp"):
 			self.temperature_label.configure(text=self.get_temperature())
@@ -953,8 +986,6 @@ class win(file_handler):
 				self.current_line = self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(self.cursor_index[0]))+"\n"
 				if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
 					self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
-					if (not self.tab_lock): #if tab has not been pressed on current line yet: 
-						self.keep_indent()
 
 			if (root.focus_displayof() == self.command_entry):
 				self.highlighter.command_highlight()
@@ -971,26 +1002,22 @@ class win(file_handler):
 			self.txt.tag_add("test", self.txt.index(tkinter.INSERT))
 
 			
-	def keep_indent(self):
+	def keep_indent(self, arg=None):
 		""" gets the amount of tabs in the last line and puts them at the start of a new one """
 		#this functions gets called everytime Enter/Return has been pressed or rather everytime a \n (newline) character has been found
-		if (self.txt.get(f"{self.cursor_index[0]}.{int(self.cursor_index[1])-1}") == "\n"): #no idea actually
-			offset_string = ""
-			line = self.txt.get(f"{int(self.cursor_index[0])-1}.0", self.highlighter.get_line_lenght(self.cursor_index[0]))
-			for current_char in line:
-				if (re.match(r"[\t]",  current_char)):
-					offset_string += "\t"
-				elif (self.highlighter.commment_regex.match(current_char)):
-					pass
-				else:
-					break
-			try:
-				if (re.match(r"[\:\{]", line[-2])): offset_string += "\t"
-			except Exception:
-				pass
-			
-			self.txt.insert(self.txt.index(tkinter.INSERT), offset_string) #insert the tabs at the start of the line
-			self.tab_lock = True
+		for offset, current_char in enumerate(self.current_line, 0):
+			if (not re.match(r"\t",  current_char) or self.highlighter.commment_regex.match(current_char)):
+				break
+
+		try:
+			if (re.match(r"[\:\{\[]", self.current_line[int(self.cursor_index[1])-1])): offset += 1
+		except IndexError:
+			pass
+
+
+		self.txt.insert(self.txt.index(tkinter.INSERT), "\n")
+		[self.txt.insert(self.txt.index(tkinter.INSERT), "\t") for i in range(offset)]#insert the tabs at the start of the line
+		return "break"
 
 	def highlight_chunk(self, arg=None, start_index=None, stop_index=None):
 		if (not start_index): start_index = 1
