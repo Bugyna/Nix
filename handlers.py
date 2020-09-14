@@ -5,6 +5,7 @@ from time import time
 class file_handler(object):
 	""" File opening and closing yes"""
 	def __init__(self, parent, root):
+		self. supported_filetypes = ["TXT files", "*.txt *.py *.c *.cpp *.cc  *.html *.htm"]
 		self.current_file = None
 		self.current_file_name = None
 		self.content = ""
@@ -20,9 +21,10 @@ class file_handler(object):
 
 		self.current_file_name = name
 		self.current_file = open(self.current_file_name, "w+")
+		self.parent.txt.delete("1.0", "end")
 		self.root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
 		
-		self.parent.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
+		self.parent.set_highlighter()
 
 	def save_file(self, arg = None):
 		""" saves current text into opened file """
@@ -33,7 +35,7 @@ class file_handler(object):
 			self.current_file = open(self.current_file_name, "w")
 			self.current_file.write(self.content)
 			
-			self.parent.set_highlighter(os.path.basename(self.current_file.name).split(".")[1])
+			self.parent.set_highlighter()
 
 			self.current_file.close()
 			self.root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
@@ -44,17 +46,17 @@ class file_handler(object):
 			self.save_file()
 
 
-	def save_file_as(self):
+	def save_file_as(self, arg=None):
 		""" saves current text into a new file """
 		if (self.current_file_name != None):
 			try:
-				tmp = self.parent.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
+				tmp = self.parent.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
 			except TypeError: #throws an error when closing the menu without choosing anything
 				pass
 			os.rename(self.current_file_name, tmp)
 			self.current_file_name = tmp
 		else:
-			self.current_file_name = self.parent.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
+			self.current_file_name = self.parent.filename.asksaveasfilename(initialdir=f'{os.getcwd()}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
 
 
 		self.root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
@@ -70,13 +72,16 @@ class file_handler(object):
 		
 		elif (filename == None): #if the filename argument is not provided open a file menu to provide a filename
 			try:
-				self.current_file_name = self.parent.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(["TXT files", "*.txt *.py *.c *.cpp *.cc"],("all files","*.*")))
+				self.current_file_name = self.parent.filename.askopenfilename(initialdir=f"{os.getcwd()}/", title="Select file", filetypes=(self.supported_filetypes, ("all files","*.*")))
 			except TypeError: #throws an error when closing the menu without choosing anything
 				pass
-
-		self.current_file = open(self.current_file_name, "r+") #opens the file
-
-		self.parent.set_highlighter(os.path.basename(self.current_file.name).split(".")[1]) #takes the file extension and passes it to the set_highlighter function to highlight the file accordingly
+			
+		try:
+			self.current_file = open(self.current_file_name, "r+") #opens the file
+			self.parent.set_highlighter() #takes the file extension and passes it to the set_highlighter function to highlight the file accordingly
+		except Exception as e:
+			self.parent.command_O(e)
+			return
 
 
 		self.root.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
@@ -95,3 +100,8 @@ class file_handler(object):
 		t1 = time() # timer| gets current time in miliseconds
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		self.parent.command_O(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
+							
+							
+class launcher:
+	def __init__(self):
+		pass
