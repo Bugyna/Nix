@@ -126,19 +126,14 @@ class win(file_handler):
 		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.sFont_size, weight="bold")
 		self.widget_font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
 
-
-
 		self.time_label = tkinter.Label()
 		self.time_label.place(x=root.winfo_width()-250,y=5, anchor="nw")
-		# self.time_label.place(relx=0.60, y=20, height=15, anchor="sw")
 		
 		self.temperature_label = tkinter.Label(text="("+self.get_rand_temperature()+")")
 		self.temperature_label.place(x=root.winfo_width()-200,y=5, anchor="nw")
-		# self.temperature_label.place(relx=0.725, y=20, width=55, height=15, anchor="sw")
 
 		self.line_no = tkinter.Label()
 		self.line_no.place(x=root.winfo_width()-100,y=10, anchor="nw")
-		# self.line_no.place(relx=0.825, y=20, height=15, anchor="sw")
 		
 		self.find_entry = tkinter.Entry()
 
@@ -201,6 +196,10 @@ class win(file_handler):
 		self.txt.bind("<Down>", self.move)
 		self.txt.bind("<Left>", self.move)
 		self.txt.bind("<Right>", self.move)
+		self.txt.bind("<Control-Up>", self.move)
+		self.txt.bind("<Control-Down>", self.move)
+		self.txt.bind("<Control-Left>", self.move)
+		self.txt.bind("<Control-Right>", self.move)
 
 		self.txt.bind("<MouseWheel>", self.scroll)
 		self.txt.bind("<Button-4>", self.scroll)
@@ -399,21 +398,25 @@ class win(file_handler):
 
 	def move(self, arg=None):
 		key = arg.keysym
-		# print(arg, key)
+		suffix = ["Line", "Char"]
+		
+		if (arg.state == 20):
+			suffix = ["Para", "Word"]
+
 		if (key == "Up"):
-			self.txt.event_generate("<<PrevLine>>")
+			self.txt.event_generate(f"<<Prev{suffix[0]}>>")
 			self.queue = []
 			self.selection_start_index = None
 		elif (key == "Down"):
-			self.txt.event_generate("<<NextLine>>")
+			self.txt.event_generate(f"<<Next{suffix[0]}>>")
 			self.queue = []
 			self.selection_start_index = None
 		elif (key == "Left"):
-			self.txt.event_generate("<<PrevChar>>")
+			self.txt.event_generate(f"<<Prev{suffix[1]}>>")
 			self.queue = []
 			self.selection_start_index = None
 		elif (key == "Right"):
-			self.txt.event_generate("<<NextChar>>")
+			self.txt.event_generate(f"<<Next{suffix[1]}>>")
 			self.queue = []
 			self.selection_start_index = None
 
@@ -1053,7 +1056,7 @@ class win(file_handler):
 			if (len(self.content) != len(self.txt.get("1.0", "end-1c"))): #if a character has been typed into the text widget call the udpate buffer function
 				self.update_buffer()
 
-			if (root.focus_displayof() != self.command_entry):
+			if (root.focus_displayof() == self.command_entry):
 				self.highlighter.command_highlight()
 
 			if (self.trippy):
@@ -1079,7 +1082,6 @@ class win(file_handler):
 			if (re.match(r"[\:\{\[]", self.current_line[int(self.cursor_index[1])-1])): offset += 1
 		except IndexError:
 			pass
-
 
 		self.txt.insert(self.txt.index(tkinter.INSERT), "\n")
 		[self.txt.insert(self.txt.index(tkinter.INSERT), "\t") for i in range(offset)]#insert the tabs at the start of the line
