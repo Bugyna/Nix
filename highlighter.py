@@ -77,7 +77,7 @@ class highlighter(object):
 		self.html_num_regex = re.compile(r"\#*[0-9]")
 		self.html_L_bracket_regex = re.compile(r"[\{]")
 		self.html_R_bracket_regex = re.compile(r"[\}]")
-		self.html_color_num_regex = re.compile(r"^\#[0-9A-Fa-f]+$|^[0-9]+px$")
+		self.html_color_num_regex = re.compile(r"^\#[0-9A-Fa-f]+$|^\-*[0-9]+[a-z]*$|^[0-9]*deg$")
 		self.html_comment_start_regex = re.compile(r"<!--")
 		self.html_comment_end_regex = re.compile(r"-->")
 
@@ -105,7 +105,7 @@ class highlighter(object):
 		elif (self.lang == "html" or self.lang == "htm"):
 			self.keywords = self.html_keywords
 			self.highlight = self.html_highlight
-			self.comment_sign = "<!-->"
+			self.comment_sign = "<!--"
 
 		elif (self.lang == "NaN" or self.lang == "txt"):
 			self.comment_sign = "\t"
@@ -249,7 +249,7 @@ class highlighter(object):
 	def C_highlight(self, line_no: int, line: str=None):
 		""" highlighting for C and C++ languages """
 		if line == None:
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -348,7 +348,7 @@ class highlighter(object):
 	def html_highlight(self, line_no: int=None, line: str=None):
 		""" I am crying while looking at this hideous thing """
 		if line == None:
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
 
 
 		tag_start_index = f""
@@ -405,7 +405,12 @@ class highlighter(object):
 			if (self.html_color_num_regex.match(self.pattern)):
 				index = f"{line_no}.{i-len(self.pattern)}"
 				index1 = f"{line_no}.{i+1}"
+				try:
+					self.txt.tag_configure(self.pattern, background=self.pattern)
+				except Exception:
+					pass
 				self.txt.tag_add("numbers", index, index1)
+				self.txt.tag_add(self.pattern, index)
 
 			if (self.html_comment_start_regex.match(self.pattern)):
 				index = f"{line_no}.{i+1}"
