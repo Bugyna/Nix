@@ -27,10 +27,15 @@ import threading
 from highlighter import highlighter
 from handlers import file_handler
 
+try:
+	import platform, ctypes
 
-# for i in tqdm.tqdm(range(10)):
-#	sleep(0.01)
+	if int(platform.release()) >= 8:
+		ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
+	CONTROL_KEYSYM = 262156
+except Exception:
+	pass
 
 
 class win(file_handler):
@@ -400,7 +405,7 @@ class win(file_handler):
 		key = arg.keysym
 		suffix = ["Line", "Char"]
 		
-		if (arg.state == 20):
+		if (arg.state == CONTROL_KEYSYM or arg.state == 20):
 			suffix = ["Para", "Word"]
 
 		if (key == "Up"):
@@ -544,14 +549,18 @@ class win(file_handler):
 		for line_no in range(start_index, stop_index):
 			current_line = self.txt.get(float(line_no), self.highlighter.get_line_lenght(line_no))
 			for i, current_char in enumerate(current_line, 0):
-				if (self.highlighter.commment_regex.match(current_char+current_line[i+1])):
-					if (re.search(r"\s", self.txt.get(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.highlighter.comment_sign)}"))):
-						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.highlighter.comment_sign)}")
-					else:
-						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+len(self.highlighter.comment_sign)}")
-					break
+				try:
+					if (self.highlighter.commment_regex.match(current_char+current_line[i+1])):
+						if (re.search(r"\s", self.txt.get(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.highlighter.comment_sign)}"))):
+							self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.highlighter.comment_sign)}")
+						else:
+							self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+len(self.highlighter.comment_sign)}")
+						break
 
-				elif (self.highlighter.abc_regex.match(current_char)):
+					elif (self.highlighter.abc_regex.match(current_char)):
+						self.txt.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
+						break
+				except IndexError:
 					self.txt.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
 					break
 
