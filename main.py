@@ -544,9 +544,8 @@ class win(file_handler):
 		for line_no in range(start_index, stop_index):
 			current_line = self.txt.get(float(line_no), self.highlighter.get_line_lenght(line_no))
 			for i, current_char in enumerate(current_line, 0):
-				if (self.highlighter.commment_regex.match(current_char)):
-
-					if (re.match(r"\s", self.txt.get(f"{line_no}.{i+len(self.highlighter.comment_sign)}"))):
+				if (self.highlighter.commment_regex.match(current_char+current_line[i+1])):
+					if (re.search(r"\s", self.txt.get(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.highlighter.comment_sign)}"))):
 						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+1+len(self.highlighter.comment_sign)}")
 					else:
 						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+len(self.highlighter.comment_sign)}")
@@ -919,7 +918,6 @@ class win(file_handler):
 
 		elif (command[0] == "open"):
 			self.load_file(filename=command[1])
-			#self.command_O(f"file saved")
 			
 		elif (command[0] == "ls"):
 			x = ""
@@ -1094,6 +1092,7 @@ class win(file_handler):
 		if (type(stop_index) == str): stop_index = float(stop_index) #this
 		if (type(start_index) == float): start_index = int(start_index)	#shit
 		if (type(stop_index) == float): stop_index = int(stop_index) #am out
+		print(range(start_index, stop_index))
 		if self.highlighting:
 			for i in range(start_index, stop_index): #+1 because the last line doesn't get highlighted
 				self.highlighter.highlight(i)
