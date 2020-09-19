@@ -70,6 +70,8 @@ class highlighter(object):
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		self.whitespace_regex = re.compile(r"[\t]")
+		# self.C_preprocessor_regex = re.compile(r"^\#[A-Za-z]+$")
+		self.C_preprocessor_regex = re.compile(r"\#")
 
 		self.html_separator_regex = re.compile(r"[\;\ \=]")
 		self.html_tag_start_regex = re.compile(r"[\<]")
@@ -105,13 +107,13 @@ class highlighter(object):
 		elif (self.lang == "html" or self.lang == "htm"):
 			self.keywords = self.html_keywords
 			self.highlight = self.html_highlight
-			self.comment_sign = "<!--"
+			self.comment_sign = "<!-- -->"
 
 		elif (self.lang == "NaN" or self.lang == "txt"):
 			self.comment_sign = "\t"
 			self.highlight = self.no_highlight
 		
-		self.commment_regex = re.compile(rf"[{self.comment_sign}]")
+		self.commment_regex = re.compile(rf"{self.comment_sign}")
 
 	def get_line_lenght(self, line_no: int):
 		""" gets the length of current line """
@@ -214,7 +216,7 @@ class highlighter(object):
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
 
-			if (self.separator_regex.match(current_char)):
+			elif (self.separator_regex.match(current_char)):
 				# print(self.pattern)
 
 				if (self.R_bracket_regex.match(current_char)):
@@ -226,7 +228,7 @@ class highlighter(object):
 					self.txt.tag_add("functions", last_separator, index)
 					self.txt.tag_add("special_chars", index)
 
-				elif (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
+				if (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
 					index = f"{line_no}.{i}"
 					self.txt.tag_add("keywords", last_separator, index)
 				
@@ -256,6 +258,7 @@ class highlighter(object):
 		line_end_index = f"{line_no}.{len(line)}"
 		self.pattern = ""
 		self.countingQuomarks = False
+		special_highlighting_mode = 0
 
 		self.txt.tag_remove("quotes", last_separator, line_end_index)
 		self.txt.tag_remove("functions", last_separator, line_end_index)
@@ -276,6 +279,18 @@ class highlighter(object):
 
 			except Exception:
 				pass
+
+			if (self.C_preprocessor_regex.match(current_char)):
+				if (special_highlighting_mode == 0): special_highlighting_mode = 1
+			
+			if (special_highlighting_mode != 0):
+				index = f"{line_no}.{i}"
+				if (re.match(r" ", current_char) and special_highlighting_mode == 1): special_highlighting_mode = 2
+				if (special_highlighting_mode == 1):
+					self.txt.tag_add("functions", index)
+				elif (special_highlighting_mode == 2):
+					self.txt.tag_add("quotes", index)
+				continue
 
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
@@ -328,7 +343,7 @@ class highlighter(object):
 					index = f"{line_no}.{i}"
 					self.txt.tag_add("special_chars", index)
 
-				elif (self.L_bracket_regex.match(current_char)):
+				if (self.L_bracket_regex.match(current_char)):
 					index = f"{line_no}.{i}"
 					self.txt.tag_add("functions", last_separator, index)
 					self.txt.tag_add("special_chars", index)
