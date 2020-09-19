@@ -49,6 +49,7 @@ class win(file_handler):
 			"timelord": {"window": {"bg" : "#000099", "fg": "#AAAAAA", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
 
+
 			"muffin" : {"window": {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "selectfg": "#FFFFFF", "widget_fg": "#000000", "select_widget": "#000000", "select_widget_fg": "#FFFFFF"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
 
@@ -197,6 +198,8 @@ class win(file_handler):
 		self.txt.bind("<Control-Button-4>", self.set_font_size)
 		self.txt.bind("<Control-Button-5>", self.set_font_size)
 
+		self.txt.bind("<Prior>", self.del_selection)
+		self.txt.bind("<Next>", self.del_selection)
 		self.txt.bind("<Up>", self.move)
 		self.txt.bind("<Down>", self.move)
 		self.txt.bind("<Left>", self.move)
@@ -311,6 +314,10 @@ class win(file_handler):
 		except IndexError:
 			pass
 
+	def del_selection(self, arg=None):
+		self.selection_start_index = None
+		self.queue = []
+
 	def test_function(self, arg=None):		
 		# sw = tkinter.Tk()
 		# x = tkinter.Label(sw)
@@ -333,7 +340,7 @@ class win(file_handler):
 		self.txt.configure(font=self.font,bg = self.theme["window"]["bg"],fg=self.theme["window"]["fg"], undo=True, maxundo=0, spacing1=2,
 			 insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["window"]["insertbg"],
 			 selectbackground=self.theme["window"]["selectbg"], selectforeground=self.theme["window"]["selectfg"], borderwidth=0,
-			 relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="word", exportselection=True,
+			 relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="none", exportselection=True,
 			 blockcursor=self.insert, highlightthickness=0, insertborderwidth=0)
 
 		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font,bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
@@ -358,9 +365,9 @@ class win(file_handler):
 	def reposition_widgets(self, arg=None):
 		if (self.command_entry.winfo_viewable()): self.command_entry.place(x=-1, y=root.winfo_height()+1, width=root.winfo_width()+2, height=22, anchor="sw")
 		self.txt.place(x=0,y=25,relwidth=1, height=root.winfo_height()-25, anchor="nw")
-		self.time_label.place(x=self.temperature_label.winfo_x()-self.time_label.winfo_width(),y=5, anchor="nw")
-		self.temperature_label.place(x=self.line_no.winfo_x()-self.temperature_label.winfo_width()-10,y=5, anchor="nw")
-		self.line_no.place(x=root.winfo_width()-self.line_no.winfo_width()-10,y=5, anchor="nw")
+		self.time_label.place(x=self.temperature_label.winfo_x()-self.time_label.winfo_width(), y=5, height=20, anchor="nw")
+		self.temperature_label.place(x=self.line_no.winfo_x()-self.temperature_label.winfo_width()-10, y=5, height=20, anchor="nw")
+		self.line_no.place(x=root.winfo_width()-self.line_no.winfo_width()-10, y=5, height=20, anchor="nw")
 
 	def get_line_count(self):
 		""" returns total amount of lines in opened text """
@@ -396,7 +403,6 @@ class win(file_handler):
 			if (arg.keysym == "Down"): stop_index = int(float(self.cursor_index[0]))+1
 			elif (arg.keysym == "Up"): stop_index = int(float(self.cursor_index[0]))-1
 			self.queue.append([start_index, stop_index])
-			print(self.queue)
 		except Exception as e:
 			pass
 
@@ -426,7 +432,7 @@ class win(file_handler):
 			self.selection_start_index = None
 
 		if (root.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
-
+		self.command_out.place_forget()
 		return "break"
 
 	#text manipulation bindings
@@ -650,7 +656,8 @@ class win(file_handler):
 		
 	def set_font_size(self, arg):
 		""" Changes font size and reconfigures(updates) widgets accordingly """
-		if (arg.delta > 120 or arg.delta < 120): arg.delta=0 
+		print(arg)
+		if (arg.delta > 120 or arg.delta < -120): arg.delta=0 
 		if (arg.keysym == "period" or arg.num == 4 or arg.delta > 0):
 			self.Font_size += 1
 			self.sFont_size += 1
@@ -1020,7 +1027,6 @@ class win(file_handler):
 		""" updates some of the widgets when a character is typed in """
 		if (self.current_file_name): root.title(f"Nix: <*{os.path.basename(self.current_file_name)}>") #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
 		# len(self.content) != len(self.txt.get("1.0", "end-1c")) and
-		
 		
 		if (root.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
