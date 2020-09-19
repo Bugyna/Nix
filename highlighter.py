@@ -62,11 +62,10 @@ class highlighter(object):
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z]")
 		self.abc_upcase_regex = re.compile(r"^[A-Z]+$")
-		self.separator_regex = re.compile(r"[\s\.\,\:\(\;\)]")
+		self.separator_regex = re.compile(r"[\s\.\,\:\;]")
 		self.num_regex = re.compile(r"[0-9]")
-		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]\@\$]")
+		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]\@\$\(\)]")
 		self.L_bracket_regex = re.compile(r"[\(]")
-		self.R_bracket_regex = re.compile(r"[\)]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		self.whitespace_regex = re.compile(r"[\t]")
@@ -87,12 +86,16 @@ class highlighter(object):
 		self.lang = arg
 		if (self.lang == "c"):
 			self.keywords = self.C_keywords
+			self.numerical_keywords = []
+			self.logical_keywords = []
 			self.highlight = self.C_highlight
 			self.comment_sign = "//"
 			self.highlight = self.C_highlight
 
 		elif (self.lang == "cpp" or self.lang == "cc"):
 			self.keywords = self.Cplus_keywords
+			self.numerical_keywords = []
+			self.logical_keywords = []
 			self.highlight = self.C_highlight
 			self.comment_sign = "//"
 			self.highlight = self.C_highlight
@@ -143,6 +146,21 @@ class highlighter(object):
 					index = f"1.{i}"
 					self.command_entry.tag_add("command_keywords", last_separator, index)
 				last_separator = f"1.{i}"
+				
+				
+	def highlight_keyword(self, last_separator, index):
+		if (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
+			self.txt.tag_add("keywords", last_separator, index)
+		
+		elif (self.pattern in self.logical_keywords):
+			self.txt.tag_add("logical_keywords", last_separator, index)
+
+		elif (self.pattern in self.numerical_keywords):
+			self.txt.tag_add("numbers", last_separator, index)
+
+		elif (self.abc_upcase_regex.match(self.pattern)):
+			self.txt.tag_add("numbers", last_separator, index)
+					
 
 	def python_highlight(self, line_no: int ,line: str=None):
 		""" highlighting for python language """
@@ -203,6 +221,7 @@ class highlighter(object):
 			elif (self.operator_regex.match(current_char)):
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("operators", index)
+				self.highlight_keyword(last_separator, index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -211,38 +230,17 @@ class highlighter(object):
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("special_chars", index)
+				if (self.L_bracket_regex.match(current_char)):
+					self.txt.tag_add("functions", last_separator, index)
+				else: self.highlight_keyword(last_separator, index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
 
 			elif (self.separator_regex.match(current_char)):
-				# print(self.pattern)
-
-				if (self.R_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("special_chars", index)
-
-				if (self.L_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("functions", last_separator, index)
-					self.txt.tag_add("special_chars", index)
-
-				if (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("keywords", last_separator, index)
-				
-				elif (self.pattern in self.logical_keywords):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("logical_keywords", last_separator, index)
-
-				elif (self.pattern in self.numerical_keywords):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("numbers", last_separator, index)
-
-				elif (self.abc_upcase_regex.match(self.pattern)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("numbers", last_separator, index)
+				index = f"{line_no}.{i}"
+				self.highlight_keyword(last_separator, index)
 			
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -323,6 +321,7 @@ class highlighter(object):
 			elif (self.operator_regex.match(current_char)):
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("operators", index)
+				self.highlight_keyword(last_separator, index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -331,30 +330,20 @@ class highlighter(object):
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("special_chars", index)
+				
+				if (self.L_bracket_regex.match(current_char)):
+					self.txt.tag_add("functions", last_separator, index)
+
+				else: self.highlight_keyword(last_separator, index)
+
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
 
 			if (self.separator_regex.match(current_char)):
-				# print(self.pattern)
-
-				if (self.R_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("special_chars", index)
-
-				if (self.L_bracket_regex.match(current_char)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("functions", last_separator, index)
-					self.txt.tag_add("special_chars", index)
-
-				elif (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("keywords", last_separator, index)
-
-				elif (self.abc_upcase_regex.match(self.pattern)):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("numbers", last_separator, index)
+				index = f"{line_no}.{i}"
+				self.highlight_keyword(last_separator, index)
 			
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
