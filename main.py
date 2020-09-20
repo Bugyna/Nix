@@ -60,12 +60,15 @@ class win(file_handler):
 			}
 		self.theme = self.theme_options["cake"]
 
-		self.command_keywords = ["l", "lget", "highlighting", "q", "quit", "temp", "sharpness", "alpha", "save", "open", "find", "theme"]
+		self.command_keywords = ["l", "lget", "highlighting", "q", "quit", "temp", "sharpness", "alpha", "convert", "save", "saveas", "open", "find", "theme"]
+		self.commands = {
+			"lget":"gets total amount of lines", "l":"use: l[number|number.number] :: puts your cursor on line[number]",
+			"q":"quits", "quit":"quits", "temp":"updates temperature", "alpha": "use: alpha [number] \n sets how see through your window is \n 0 is completely transparent :: 100 is completely opaque",
+			"convert": "use: convert [number] (decimal|hex|binary) \n converts [number] into decimal, hex and binary", "save":"saves your current file",
+			"saveas":"use: saveas [name] :: saves your current file as [name]", "open":"use:  open [name] :: opens file with name[name]", "theme": "use: theme [themename] :: sets theme"
+			}
 		
-		self.command_definition = {
-			"l" : "-get: gets last line number || -[LINE_NUMBER(.CHARACTER)]: puts you to line number (eg. 120(by default starts at column 0 but you can specify the column like: 120.5)",
-			"highlighting" : "-on: turns highlighting on -off: turns highlighting off"
-		}
+		
 
 		self.root = root
 
@@ -284,9 +287,10 @@ class win(file_handler):
 		self.settings_menubar_label.bind("<Right>", lambda arg: self.window_select("text"))
 		self.settings_menubar_label.bind("<Left>", lambda arg: self.window_select("file_menu"))
 
-		self.txt.bind("<Control-space>", self.command_entry_set)
+		# self.txt.bind("<Control-space>", self.command_entry_set)
 		self.bindable_widgets = [self.txt, self.file_menubar_label, self.settings_menubar_label, self.find_entry, self.command_entry]
 		for widget in self.bindable_widgets:
+			widget.bind("<Control-space>", self.command_entry_set)
 			widget.bind("<F11>", self.set_fullscreen)
 			widget.bind("<Alt-Right>", lambda arg: self.set_dimensions(arg, True))
 			widget.bind("<Alt-Left>", lambda arg: self.set_dimensions(arg, True))
@@ -590,6 +594,8 @@ class win(file_handler):
 		for line_no in range(start_index, stop_index):
 			if (re.match(r"\t", self.txt.get(f"{line_no}.0", f"{line_no}.1"))):
 				self.txt.delete(f"{line_no}.0", f"{line_no}.1")
+		
+		return "break"
 
 	def indent(self, arg=None):
 		""" Tab """
@@ -795,11 +801,13 @@ class win(file_handler):
 		self.command_entry.place(x=-1, y=root.winfo_height()+1, width=root.winfo_width()+2, height=22, anchor="sw")
 		self.command_out.place_forget()
 		self.command_entry.focus_set()
+		return "break"
 
 	def command_entry_unset(self, arg=None):
 		""" hides command entry widget 'tis a kinda useless function"""
 		self.command_entry.place_forget()
 		self.txt.focus_set()
+		return "break"
 
 	def command_history(self, arg=None):
 		""" scroll through used commands with Up and Down arrows(?) """
@@ -851,10 +859,12 @@ class win(file_handler):
 		#help command
 		if (command[0] == "help"):
 			try:
-				if (command[1] != None):
-					self.help_win(command[1])
+				self.command_O(f"{self.commands[command[1]]}")
 			except IndexError:
-				self.help_win()
+				x = ""
+				for item in self.command_keywords:
+					x += "\n"+item
+				self.command_O(x)
 				
 		elif (command[0] == "test"):
 			self.txt.event_generate("<<Return>>")
@@ -1086,7 +1096,6 @@ class win(file_handler):
 
 	def main(self):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
-		#basically the main function
 		self.txt.mark_set(tkinter.INSERT, "1.0")
 		while (self.run):
 			self.update_win()
@@ -1102,7 +1111,7 @@ class win(file_handler):
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
 				self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
 
-			if (len(self.content) != len(self.txt.get("1.0", "end-1c"))): #if a character has been typed into the text widget call the udpate buffer function
+			if (len(self.content) != len(self.txt.get("1.0", "end-1c")) and root.focus_displayof() == self.txt): #if a character has been typed into the text widget call the udpate buffer function
 				self.update_buffer()
 
 			if (root.focus_displayof() == self.command_entry):
