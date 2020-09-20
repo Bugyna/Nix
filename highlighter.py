@@ -7,7 +7,7 @@ class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
 	def __init__(self, parent, root):
 		self.lang = "NaN"
-		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm"]
+		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm", "java", "jsp", "class"]
 
 		self.command_keywords = parent.command_keywords
 		print(self.command_keywords)
@@ -22,6 +22,16 @@ class highlighter(object):
 		self.Py_logical_keywords = ['and', 'or', 'not', 'if', 'elif', 'else', 'for', 'try', 'except', 'finally', 'while', 'with'] 
 		
 		self.Py_keywords_regex = re.compile('|'.join(self.Py_keywords))#(r'\b(?:\|)\b'.join(self.Py_keywords))
+
+		self.Java_keywords = [
+			 'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class', 'const', 'continue',
+			 'default', 'do', 'double', 'else', 'enum', 'extends', 'final', 'finally', 'float', 'for', 'goto', 'if',
+			 'implements', 'import', 'instanceof', 'int', 'interface', 'long', 'native', 'new', 'package', 'private',
+			 'protected', 'public', 'return', 'short', 'static', 'strictfp', 'super', 'switch', 'synchronized', 'this', 'throw',
+			 'throws', 'transient', 'try', 'void', 'volatile', 'while', 'true', 'false', 'null'
+			]
+
+		self.Java_keywords_regex = re.compile('|'.join(self.Java_keywords))
 
 
 		self.C_keywords = [
@@ -60,10 +70,11 @@ class highlighter(object):
 
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
-		self.abc_regex = re.compile(r"[a-zA-Z]")
-		self.abc_upcase_regex = re.compile(r"^[A-Z]+$")
+		self.abc_regex = re.compile(r"[a-zA-Z_]")
+		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$")
 		self.separator_regex = re.compile(r"[\s\.\,\:\;]")
 		self.num_regex = re.compile(r"[0-9]")
+		self.hex_regex = re.compile(r"^[0-9]+x[0-9a-fA-F]+$")
 		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]\@\$\(\)]")
 		self.L_bracket_regex = re.compile(r"[\(]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
@@ -98,7 +109,6 @@ class highlighter(object):
 			self.logical_keywords = []
 			self.highlight = self.C_highlight
 			self.comment_sign = "//"
-			self.highlight = self.C_highlight
 
 		elif (self.lang == "py"):
 			self.keywords = self.Py_keywords
@@ -111,6 +121,13 @@ class highlighter(object):
 			self.keywords = self.html_keywords
 			self.highlight = self.html_highlight
 			self.comment_sign = "<!-- -->"
+
+		elif (self.lang == "java" or self.lang == "jsp" or self.lang == "class"):
+			self.keywords = self.Java_keywords
+			self.numerical_keywords = []
+			self.logical_keywords = []
+			self.highlight = self.C_highlight
+			self.comment_sign = "//"
 
 		elif (self.lang == "NaN" or self.lang == "txt"):
 			self.comment_sign = "\t"
@@ -159,6 +176,9 @@ class highlighter(object):
 			self.txt.tag_add("numbers", last_separator, index)
 
 		elif (self.abc_upcase_regex.match(self.pattern)):
+			self.txt.tag_add("numbers", last_separator, index)
+
+		elif (self.hex_regex.match(self.pattern)):
 			self.txt.tag_add("numbers", last_separator, index)
 					
 
@@ -210,12 +230,9 @@ class highlighter(object):
 				break
 
 			elif (self.num_regex.match(current_char)): #numbers
-				if (self.pattern == ""):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("numbers", index)
-					self.pattern = ""
-				else:
-					self.pattern += current_char
+				index = f"{line_no}.{i}"
+				self.pattern += current_char
+				self.txt.tag_add("numbers", index)
 				continue
 			
 			elif (self.operator_regex.match(current_char)):
@@ -310,12 +327,10 @@ class highlighter(object):
 				continue	
 
 			elif (self.num_regex.match(current_char)): #numbers
-				if (self.pattern == ""):
-					index = f"{line_no}.{i}"
-					self.txt.tag_add("numbers", index)
-					self.pattern = ""
-				else:
-					self.pattern += current_char
+				self.pattern += current_char	
+				index = f"{line_no}.{i}"
+				self.highlight_keyword(last_separator, index)
+				self.txt.tag_add("numbers", index)
 				continue
 			
 			elif (self.operator_regex.match(current_char)):
