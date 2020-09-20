@@ -2,7 +2,6 @@ import re
 import tkinter
 from itertools import chain
 
-
 class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
 	def __init__(self, parent, root):
@@ -74,7 +73,7 @@ class highlighter(object):
 		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$")
 		self.separator_regex = re.compile(r"[\s\.\,\:\;]")
 		self.num_regex = re.compile(r"[0-9]")
-		self.hex_regex = re.compile(r"^[0-9]+x[0-9a-fA-F]+$")
+		self.special_num_regex = re.compile(r"^0b+[0-1]+$|^0x+[0-9a-fA-F]+$")
 		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]\@\$\(\)]")
 		self.L_bracket_regex = re.compile(r"[\(]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
@@ -178,7 +177,7 @@ class highlighter(object):
 		elif (self.abc_upcase_regex.match(self.pattern)):
 			self.txt.tag_add("numbers", last_separator, index)
 
-		elif (self.hex_regex.match(self.pattern)):
+		elif (self.special_num_regex.match(self.pattern)):
 			self.txt.tag_add("numbers", last_separator, index)
 					
 
@@ -222,17 +221,18 @@ class highlighter(object):
 				self.pattern += current_char
 				# print(self.pattern)
 				continue
-				
 
 			elif (self.commment_regex.match(current_char)): #comments
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("comments", index, line_end_index)
 				break
-
+			
 			elif (self.num_regex.match(current_char)): #numbers
-				index = f"{line_no}.{i}"
+				if (not self.pattern):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("numbers", index)
 				self.pattern += current_char
-				self.txt.tag_add("numbers", index)
+				self.highlight_keyword(last_separator, index)
 				continue
 			
 			elif (self.operator_regex.match(current_char)):
@@ -327,10 +327,11 @@ class highlighter(object):
 				continue	
 
 			elif (self.num_regex.match(current_char)): #numbers
-				self.pattern += current_char	
-				index = f"{line_no}.{i}"
+				if (not self.pattern):
+					index = f"{line_no}.{i}"
+					self.txt.tag_add("numbers", index)
+				self.pattern += current_char
 				self.highlight_keyword(last_separator, index)
-				self.txt.tag_add("numbers", index)
 				continue
 			
 			elif (self.operator_regex.match(current_char)):
