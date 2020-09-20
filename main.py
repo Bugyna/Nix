@@ -927,6 +927,19 @@ class win(file_handler):
 			root.wm_attributes("-alpha", int(command[1])/100)
 			self.command_O(f"alpha: {command[1]}")
 
+		elif (command[0] == "convert"):
+			try:
+				if (command[1][:2] == "0x"):
+					decimal = int(command[1], 16)
+				elif (command[1][:2] == "0b"):
+					decimal = int(command[1], 2)
+				else:
+					decimal = int(command[1], 10)
+
+				self.command_O(f"DECIMAL: {decimal}, HEXADECIMAL: {hex(decimal)}, BINARY: {bin(decimal)}")
+			except ValueError:
+				self.command_O("Error: wrong format; please, add prefix (0x | 0b)")
+		
 		elif (command[0] == "resize"):
 			self.update_win()
 			root.geometry(f"{int(command[1])}x{int(command[2])}")
