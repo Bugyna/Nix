@@ -15,10 +15,10 @@ class file_handler(object):
 		
 	def new_file(self, name=""):
 		i = 0
-		name = f"{os.getcwd()}/untitled_{i}.txt"
+		name = f"{self.current_dir}/untitled_{i}.txt"
 		while (os.path.isfile(name)):
 			i += 1
-			name = f"{os.getcwd()}/untitled_{i}.txt"
+			name = f"{self.current_dir}/untitled_{i}.txt"
 
 		self.current_file_name = name
 		self.current_file = open(self.current_file_name, "w+")
@@ -49,17 +49,19 @@ class file_handler(object):
 			self.save_file()
 
 
-	def save_file_as(self, arg=None):
+	def save_file_as(self, arg=None, tmp=None):
 		""" saves current text into a new file """
-		if (self.current_file_name != None):
-			try:
-				tmp = self.parent.filename.asksaveasfilename(initialdir=f'{self.current_dir}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
-			except TypeError: #throws an error when closing the menu without choosing anything
-				pass
-			os.rename(self.current_file_name, tmp)
-			self.current_file_name = tmp
+		if (self.current_file_name):
+			if (not tmp):
+				try:
+					tmp = self.parent.filename.asksaveasfilename(initialdir=f'{self.current_dir}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
+				except TypeError: #throws an error when closing the menu without choosing anything
+					pass
 		else:
 			self.current_file_name = self.parent.filename.asksaveasfilename(initialdir=f'{self.current_dir}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
+
+		os.rename(self.current_file_name, tmp)
+		self.current_file_name = tmp
 
 		self.current_dir = os.path.dirname(self.current_file.name)
 		self.root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
@@ -71,7 +73,7 @@ class file_handler(object):
 		""" opens a file and loads it's content into the text widget """
 
 		if (filename): #if the filename arguments is given: set the current filename to be the argument (pretty self explanatory)
-			self.current_file_name = filename
+			self.current_file_name = f"{self.current_dir}/{filename}"
 		
 		elif (filename == None): #if the filename argument is not provided open a file menu to provide a filename
 			try:
