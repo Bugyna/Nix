@@ -228,8 +228,8 @@ class highlighter(object):
 				break
 			
 			elif (self.num_regex.match(current_char)): #numbers
-				if (not self.pattern):
-					index = f"{line_no}.{i}"
+				index = f"{line_no}.{i}"
+				if (not self.pattern or self.num_regex.match(self.pattern)):
 					self.txt.tag_add("numbers", index)
 				self.pattern += current_char
 				self.highlight_keyword(last_separator, index)
@@ -327,8 +327,8 @@ class highlighter(object):
 				continue	
 
 			elif (self.num_regex.match(current_char)): #numbers
-				if (not self.pattern):
-					index = f"{line_no}.{i}"
+				index = f"{line_no}.{i}"
+				if (not self.pattern or self.num_regex.match(self.pattern)):
 					self.txt.tag_add("numbers", index)
 				self.pattern += current_char
 				self.highlight_keyword(last_separator, index)
