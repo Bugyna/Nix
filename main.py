@@ -35,7 +35,7 @@ try:
 
 	CONTROL_KEYSYM = 262156
 except Exception:
-	pass
+	CONTROL_KEYSYM = None
 
 
 class win(file_handler):
@@ -92,6 +92,7 @@ class win(file_handler):
 		
 		self.insert = False
 		self.trippy = True
+		self.insert_offtime = 0; self.insert_ontime = 1
 
 		self.loading = False
 		self.fullscreen = False
@@ -108,6 +109,7 @@ class win(file_handler):
 		root.resizable(True,True)
 		root.tk.call("tk","scaling", self.sharpness)
 		root.geometry(f"600x400")
+		root.wm_minsize(20, 20)
 		self.update_win()
 		root.geometry(root.winfo_geometry())
 		root.title(f"Nix: <None>")
@@ -155,10 +157,11 @@ class win(file_handler):
 		
 		#right click pop-up menu
 		self.right_click_menu = tkinter.Menu()
-		self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
-		self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
-		self.right_click_menu.add_command(label="aaaaa", font=self.smaller_font)
-		self.right_click_menu.add_separator()
+		self.right_click_menu.add_command(label="Copy            Control-C", font=self.smaller_font, command=self.copy)
+		self.right_click_menu.add_command(label="Paste           Control-V", font=self.smaller_font, command=self.paste)
+		self.right_click_menu.add_command(label="Cut             Control-X", font=self.smaller_font, command=self.cut)
+		self.right_click_menu.add_command(label="Show definition Control-Q", font=self.smaller_font, command=self.test_function)
+		# self.right_click_menu.add_separator()
 
 		#menubar
 		self.file_menubar_label = tkinter.Label(root)
@@ -338,7 +341,7 @@ class win(file_handler):
 		self.txt.tag_configure("test", foreground=self.theme["window"]["bg"])
 		root.config(bg=self.theme["window"]["bg"])
 		self.txt.configure(font=self.font,bg = self.theme["window"]["bg"],fg=self.theme["window"]["fg"], undo=True, maxundo=0, spacing1=2,
-			 insertwidth=0, insertofftime=0, insertontime=1, insertbackground=self.theme["window"]["insertbg"],
+			 insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertbackground=self.theme["window"]["insertbg"],
 			 selectbackground=self.theme["window"]["selectbg"], selectforeground=self.theme["window"]["selectfg"], borderwidth=0,
 			 relief="ridge", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="none", exportselection=True,
 			 blockcursor=self.insert, highlightthickness=0, insertborderwidth=0)
@@ -403,7 +406,7 @@ class win(file_handler):
 			if (arg.keysym == "Down"): stop_index = int(float(self.cursor_index[0]))+1
 			elif (arg.keysym == "Up"): stop_index = int(float(self.cursor_index[0]))-1
 			self.queue.append([start_index, stop_index])
-		except Exception as e:
+		except Exception:
 			pass
 
 
@@ -931,6 +934,9 @@ class win(file_handler):
 		elif (command[0] == "save"):
 			self.save_file()
 			self.loading = True
+		
+		elif (command[0] == "saveas"):
+			self.save_file_as(tmp=command[1])
 
 		elif (command[0] == "open"):
 			self.load_file(filename=command[1])
@@ -941,8 +947,25 @@ class win(file_handler):
 				if (i % 3 == 0): x += f"{file}\n"
 				else: x += f"{file} | "
 			self.command_O(f"{x}")
-			# self.command_O(f"{os.listdir(self.current_dir)}")
 		
+		elif (command[0] == "cd"):
+			try:
+				os.chdir(command[1])
+				self.current_dir = os.getcwd()
+				self.command_O(arg=f"current directory: {self.current_dir}")
+			except FileNotFoundError:
+				self.command_O(arg=f"Error: File/Directory not found")
+
+		# elif (command[0] == "blink"):
+		# 	if (command[1] == "on"):
+		# 		self.insert_offtime = 300; self.insert_ontime = 600
+		# 		self.txt.configure(insertofftime=self.insert_offtime, insertontime=self.insert_ontime)
+		# 	elif (command[1] == "off"):
+		# 		self.insert_offtime = 0; self.insert_ontime = 1
+		# 		self.txt.configure(insertofftime=self.insert_offtime, insertontime=self.insert_ontime)
+
+		# 	self.command_out.configure(text="blinking turned on")
+				
 		elif (command[0] == "theme"):
 			try:
 				self.unhighlight_chunk()
