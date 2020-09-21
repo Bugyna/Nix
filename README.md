@@ -1,7 +1,7 @@
 # Nix-editor
 Text editor made with python(3), tkinter and a bunch of other stuff
 
-It can load and highlight a python file with ~700 lines in ~0.08 (0.12 if you use windows) seconds
+It can load and highlight a python file(~1200 lines) in an "instant". It takes around 0.5 seconds to highlight the whole file, but since it's multithreaded, there is no lag and the first few lines you see are highlighted very fast.
 
 I added a clock for whatever reason I think it's kinda nice since windows doesn't really show you seconds and I also added temperature (it's random at first but it gets the current temperature(Stockholm) in max 10 minutes)
 
