@@ -4,7 +4,7 @@ from itertools import chain
 
 class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
-	def __init__(self, parent, root):
+	def __init__(self, parent):
 		self.lang = "NaN"
 		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm", "java", "jsp", "class"]
 
