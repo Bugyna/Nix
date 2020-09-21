@@ -1055,12 +1055,15 @@ class win(tkinter.Tk):
 
 	def get_temperature(self):
 		""" scrapes the current temperature of Stockholm """
-		try: 
-			url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
-			html = requests.get(url).content #gets the html of the url
-			return "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)" #returns the scraped temperature
-		except Exception: #dunno if it won't crash the app if there's no internet connection
-			pass
+		def temp():
+			try: 
+				url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
+				html = requests.get(url).content #gets the html of the url
+				self.temperature_label.configure(text="("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)") #returns the scraped temperature
+			except Exception: #dunno if it won't crash the app if there's no internet connection
+				pass
+
+		threading.Thread(target=temp).start()
 
 	def get_time(self):
 		""" gets time and parses to make it look the way I want it to """
@@ -1084,7 +1087,7 @@ class win(tkinter.Tk):
 
 		
 		if (d_time.minute % 10 == 0 and d_time.second == 10 and d_time.microsecond >= 51000 and d_time.microsecond <= 52000): #checks if it's time for updating the temperature
-			self.temperature_label.configure(text=self.get_temperature())
+			self.get_temperature()
 			self.command_O("temperature changed")
 
 		return time
@@ -1176,8 +1179,10 @@ class win(tkinter.Tk):
 		if (type(start_index) == float): start_index = int(start_index)	#shit
 		if (type(stop_index) == float): stop_index = int(stop_index) #am out
 		def highlight():
+			t0 = time() # timer| gets current time in miliseconds
 			if self.highlighting: [self.highlighter.highlight(i) for i in range(start_index, stop_index)]
-
+			t1 = time() # timer| gets current time in miliseconds
+			print(t1-t0)
 		threading.Thread(target=highlight).start()
 		
 
