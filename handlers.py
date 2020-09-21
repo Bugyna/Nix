@@ -4,13 +4,12 @@ from time import time
 
 class file_handler(object):
 	""" File opening and closing yes"""
-	def __init__(self, parent, root):
+	def __init__(self, parent):
 		self. supported_filetypes = ["TXT files", "*.txt *.py *.c *.cpp *.cc  *.html *.htm"]
 		self.current_dir = os.getcwd()
 		self.current_file = None
 		self.current_file_name = None
 		self.content = ""
-		self.root = root
 		self.parent = parent
 		
 	def new_file(self, name=""):
@@ -24,7 +23,7 @@ class file_handler(object):
 		self.current_file = open(self.current_file_name, "w+")
 		self.parent.txt.delete("1.0", "end")
 		self.current_dir = os.path.dirname(self.current_file.name)
-		self.root.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
+		self.parent.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
 		
 		self.parent.set_highlighter()
 
@@ -41,7 +40,7 @@ class file_handler(object):
 
 			self.current_file.close()
 			self.current_dir = os.path.dirname(self.current_file.name)
-			self.root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
+			self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.parent.command_O(f"total of {self.parent.get_line_count()} lines saved")
 			
 		elif (not self.current_file_name):
@@ -64,7 +63,7 @@ class file_handler(object):
 		self.current_file_name = tmp
 
 		self.current_dir = os.path.dirname(self.current_file.name)
-		self.root.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
+		self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 		self.save_file()
 		self.parent.unhighlight_chunk()
 		self.parent.highlight_chunk()
@@ -88,22 +87,23 @@ class file_handler(object):
 			self.parent.command_O(e)
 			return
 
+
 		self.current_dir = os.path.dirname(self.current_file.name)
-		self.root.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
+		self.parent.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
 		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
 
-		self.parent.content = self.current_file.read() #self.content is the variable storing all of the files text
+		self.content = self.current_file.read() #self.content is the variable storing all of the files text
 		self.current_file.close() #closes current file
 
 		t0 = time() # timer| gets current time in miliseconds
 		self.parent.txt.insert("1.0", self.content) #puts all of the file's text in the text widget
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
 		self.parent.txt.see(tkinter.INSERT) #puts the cursor at the start of the file
-
 		
 		self.parent.highlight_chunk() #highlights the text in the text widget
 		t1 = time() # timer| gets current time in miliseconds
 		elapsed_time = round(t1-t0, 3) #elapsed time
+		print(t1-t0)
 		self.parent.command_O(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
 							
 							
