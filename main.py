@@ -994,6 +994,9 @@ class win(tkinter.Tk):
 
 		elif (command[0] == "open"):
 			self.file_handler.load_file(filename=command[1])
+
+		elif (command[0] == "reload"):
+			self.file_handler.load_file(filename=self.file_handler.current_file.name)
 			
 		elif (command[0] == "ls"):
 			x = ""
@@ -1090,7 +1093,7 @@ class win(tkinter.Tk):
 			self.get_temperature()
 			self.command_O("temperature changed")
 
-		return time
+		self.time_label.config(text=time) #updates the time label/widget to show current time
 
 
 	def update_buffer(self):
@@ -1111,9 +1114,8 @@ class win(tkinter.Tk):
 	def update_win(self):
 		""" updates the window whole window (all of it's widgets)"""
 		try:
-			if self.run:
-				self.update()
-				self.update_idletasks()
+			self.update()
+			self.update_idletasks()
 		except Exception: #when exiting window it throws an error because self wasn't properly destroyed
 			self.run = False
 			self.quit()
@@ -1122,35 +1124,37 @@ class win(tkinter.Tk):
 	def main(self):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
 		self.txt.mark_set(tkinter.INSERT, "1.0")
-		self.update_win()
-		if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"])
-		
-		self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
-		self.current_line = self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(int(self.cursor_index[0])))+"\n"
-		self.time_label.config(text=self.get_time()) #updates the time label/widget to show current time
-		self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]") #updates the line&column widget to show current cursor index/position
+		while (True):
+			self.update_win()
+			if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"])
+			
+			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
+			self.current_line = self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(int(self.cursor_index[0])))+"\n"
 
-		if (self.selection_start_index): self.line_no.configure(text=f"[{self.selection_start_index}][{self.txt.index(tkinter.INSERT)}]")
+			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]") #updates the line&column widget to show current cursor index/position
+			if (self.selection_start_index): self.line_no.configure(text=f"[{self.selection_start_index}][{self.txt.index(tkinter.INSERT)}]")
 
-		if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-			self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
+			self.get_time()
 
-		if (len(self.file_handler.content) != len(self.txt.get("1.0", "end-1c")) and self.focus_displayof() == self.txt): #if a character has been typed into the text widget call the udpate buffer function
-			self.update_buffer()
+			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
+				self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
 
-		if (self.focus_displayof() == self.command_entry):
-			self.highlighter.command_highlight()
+			if (len(self.file_handler.content) != len(self.txt.get("1.0", "end-1c")) and self.focus_displayof() == self.txt): #if a character has been typed into the text widget call the udpate buffer function
+				self.update_buffer()
 
-		if (self.trippy):
-			try:
-				# print(self.txt.get(self.txt.index(tkinter.INSERT)), "x")
-				if (re.match(r"\n", self.txt.get(self.txt.index(tkinter.INSERT)))): self.txt.tag_configure("test", background=self.theme["window"]["bg"]); self.txt.configure(blockcursor=True)
-				else: self.txt.tag_configure("test", background=self.theme["highlighter"][self.txt.tag_names(self.txt.index(tkinter.INSERT))[0]], foreground=self.theme["window"]["bg"]); self.txt.configure(blockcursor=self.insert)
-			except Exception:
-				self.txt.tag_configure("test", background=self.theme["window"]["fg"], foreground=self.theme["window"]["bg"])
-		
-		self.txt.tag_remove("test", "1.0", "end")
-		self.txt.tag_add("test", self.txt.index(tkinter.INSERT))
+			if (self.focus_displayof() == self.command_entry):
+				self.highlighter.command_highlight()
+
+			if (self.trippy):
+				try:
+					# print(self.txt.get(self.txt.index(tkinter.INSERT)), "x")
+					if (re.match(r"\n", self.txt.get(self.txt.index(tkinter.INSERT)))): self.txt.tag_configure("test", background=self.theme["window"]["bg"]); self.txt.configure(blockcursor=True)
+					else: self.txt.tag_configure("test", background=self.theme["highlighter"][self.txt.tag_names(self.txt.index(tkinter.INSERT))[0]], foreground=self.theme["window"]["bg"]); self.txt.configure(blockcursor=self.insert)
+				except Exception:
+					self.txt.tag_configure("test", background=self.theme["window"]["fg"], foreground=self.theme["window"]["bg"])
+			
+			self.txt.tag_remove("test", "1.0", "end")
+			self.txt.tag_add("test", self.txt.index(tkinter.INSERT))
 
 			
 	def keep_indent(self, arg=None):
@@ -1201,7 +1205,6 @@ class win(tkinter.Tk):
 
 
 
-# self = tkinter.Tk()
 main_win = win()
 
 if __name__ == '__main__':
