@@ -2,6 +2,8 @@ import os
 import tkinter
 from time import time
 
+from widgets import BUFFER_TAB, TEXT
+
 class file_handler(object):
 	""" File opening and closing yes"""
 	def __init__(self, parent):
@@ -9,10 +11,40 @@ class file_handler(object):
 		self.current_dir = os.getcwd()
 		self.current_file = None
 		self.current_file_name = None
-		self.content = ""
+		self.current_buffer = ""
+		self.buffers = {}
 		self.parent = parent
-		
-	def new_file(self, name=""):
+
+	def init(self):
+		self.current_buffer = "<~NONE>"
+		self.buffers[self.current_buffer] = TEXT(self.parent)
+
+	def new_buffer(self, buffer_name: str):
+		try: self.buffers[buffer_name]; return # Checks for existing buffers
+		except KeyError: pass
+		self.parent.txt.place_forget()
+		self.current_buffer = buffer_name
+		self.buffers[buffer_name] = TEXT(self.parent)
+		self.parent.txt = self.buffers[buffer_name]
+		self.parent.buffer_tabs.append(BUFFER_TAB(buffer_name, self.parent))
+		self.parent.theme_load()
+
+	def del_buffer(self, buffer_name: str=None):
+		last_buffer = None
+		for buffer in self.parent.buffer_tabs:
+			if (buffer.name == buffer_name): self.parent.buffer_tabs[buffer.index].place_forget(); self.parent.buffer_tabs.pop(buffer.index); break
+			last_buffer = buffer
+			
+		self.buffers.pop(buffer_name)
+		self.current_buffer = last_buffer.name
+		self.load_buffer(last_buffer.name)
+
+	def load_buffer(self, buffer_name: str):
+		self.parent.txt.place_forget()
+		self.current_buffer = buffer_name; self.parent.txt = self.buffers[buffer_name]
+		self.parent.txt.place(x=0,y=40,relwidth=1, height=self.parent.winfo_height()-25, anchor="nw")
+
+	def new_file(self, name: str=""):
 		i = 0
 		name = f"{self.current_dir}/untitled_{i}.txt"
 		while (os.path.isfile(name)):
@@ -21,6 +53,8 @@ class file_handler(object):
 
 		self.current_file_name = name
 		self.current_file = open(self.current_file_name, "w+")
+		print(self.current_file.name)
+		self.new_buffer(os.path.basename(self.current_file.name))
 		self.parent.txt.delete("1.0", "end")
 		self.current_dir = os.path.dirname(self.current_file.name)
 		self.parent.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
@@ -29,12 +63,12 @@ class file_handler(object):
 
 	def save_file(self, arg = None):
 		""" saves current text into opened file """
-		self.content = str(self.parent.txt.get("1.0", "end-1c"))
+		self.buffer = str(self.parent.txt.get("1.0", "end-1c"))
 		
 		
 		if (self.current_file_name):
 			self.current_file = open(self.current_file_name, "w")
-			self.current_file.write(self.content)
+			self.current_file.write(self.buffer)
 			
 			self.parent.set_highlighter()
 
@@ -59,7 +93,7 @@ class file_handler(object):
 		else:
 			self.current_file_name = self.parent.filename.asksaveasfilename(initialdir=f'{self.current_dir}', title="Save file as", defaultextension=".txt" ,filetypes=(self.supported_filetypes, ("all files","*.*")))
 
-		os.rename(self.current_file_name, tmp)
+		os.rename(self.current_file.name, tmp)
 		self.current_file_name = tmp
 
 		self.current_dir = os.path.dirname(self.current_file.name)
@@ -87,18 +121,16 @@ class file_handler(object):
 			self.parent.command_O(e)
 			return
 
-
+		self.new_buffer(os.path.basename(self.current_file.name))
 		self.current_dir = os.path.dirname(self.current_file.name)
 		self.parent.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
 		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
 
-		self.content = self.current_file.read() #self.content is the variable storing all of the files text
-		self.current_file.close() #closes current file
-
 		t0 = time() # timer| gets current time in miliseconds
-		self.parent.txt.insert("1.0", self.content) #puts all of the file's text in the text widget
+		self.parent.txt.insert("1.0", self.current_file.read()) #puts all of the file's text in the text widget
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
 		self.parent.txt.see(tkinter.INSERT) #puts the cursor at the start of the file
+		self.current_file.close() #closes current file
 		
 		self.parent.highlight_chunk() #highlights the text in the text widget
 		t1 = time() # timer| gets current time in miliseconds
