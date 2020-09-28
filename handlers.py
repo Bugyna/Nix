@@ -26,8 +26,8 @@ class file_handler(object):
 		self.current_buffer = buffer_name
 		self.buffers[buffer_name] = TEXT(self.parent)
 		self.parent.txt = self.buffers[buffer_name]
-		self.parent.buffer_tabs.append(BUFFER_TAB(buffer_name, self.parent))
-		self.parent.theme_load()
+		self.parent.buffer_tabs.append(BUFFER_TAB(buffer_name, self.parent)); self.parent.theme_load()
+		self.parent.title(f"Nix: <{os.path.basename(self.current_buffer)}>")
 
 	def del_buffer(self, buffer_name: str=None):
 		last_buffer = None
@@ -43,11 +43,12 @@ class file_handler(object):
 		self.parent.txt.place_forget()
 		self.current_buffer = buffer_name; self.parent.txt = self.buffers[buffer_name]
 		self.parent.txt.place(x=0,y=40,relwidth=1, height=self.parent.winfo_height()-25, anchor="nw")
+		self.parent.title(f"Nix: <{os.path.basename(self.current_buffer)}>")
 
 	def new_file(self, name: str=""):
 		i = 0
 		name = f"{self.current_dir}/untitled_{i}.txt"
-		while (os.path.isfile(name)):
+  		while (os.path.isfile(name)):
 			i += 1
 			name = f"{self.current_dir}/untitled_{i}.txt"
 
@@ -67,8 +68,8 @@ class file_handler(object):
 		
 		
 		if (self.current_file_name):
-			self.current_file = open(self.current_file_name, "w")
-			self.current_file.write(self.buffer)
+			self.current_file = open(self.current_buffer, "w")
+			self.current_file.write(self.parent.txt.get("1.0", "end"))
 			
 			self.parent.set_highlighter()
 
