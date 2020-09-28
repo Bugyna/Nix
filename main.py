@@ -3,6 +3,7 @@ __license__ = "MIT"
 __maintainer__ = "Bugy"
 __email__ = ["matejbugy@gmail.com", "achjoj5@gmail.com"]
 __status__ = "Production"
+"""bugajma20"""
 
 x = 55555555555
 xx = 0x5000000000
@@ -22,7 +23,7 @@ import os, sys
 from datetime import datetime
 from time import sleep, time, localtime, strftime
 
-import lyricwikia
+# import lyricwikia
 import requests
 from bs4 import BeautifulSoup
 
@@ -122,19 +123,22 @@ class win(tkinter.Tk):
 		self.geometry(self.winfo_geometry())
 		self.title(f"Nix: <None>")
 
-
-		self.txt = tkinter.Text()
 		self.filename = filedialog
 		self.file_handler = file_handler(self)
+		self.file_handler.init()
+		self.txt = self.file_handler.buffers[self.file_handler.current_buffer]
+		self.canvas = tkinter.Canvas(bg=self.theme["window"]["bg"], bd=0, relief="flat", highlightthickness=0)
 
 		self.init()
 
 	def init(self):
 		""" a completely useless initialize function """
-		
+		# widget.cget("text")
 		self.update_win()
 		self.wm_attributes("-alpha", 1)
-			
+		# self.canvas.create_line(0, 20, 2000, 20, fill="#FFFFFF", smooth=1)
+		self.canvas.place(x=0, y=0, width=self.winfo_width(), height=41)
+		# self.canvas.create_line(0, 40, 2000, 40, fill="#FFFFFF", smooth=1)
 
 		self.font_family = ["Consolas", "bold", "normal", "roman"]
 		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1], slant=self.font_family[3])
@@ -144,13 +148,8 @@ class win(tkinter.Tk):
 		self.widget_font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
 
 		self.time_label = tkinter.Label()
-		self.time_label.place(x=self.winfo_width()-250,y=5, anchor="nw")
-		
 		self.temperature_label = tkinter.Label(text="("+self.get_rand_temperature()+")")
-		self.temperature_label.place(x=self.winfo_width()-200,y=5, anchor="nw")
-
 		self.line_no = tkinter.Label()
-		self.line_no.place(x=self.winfo_width()-100,y=10, anchor="nw")
 		
 		self.find_entry = tkinter.Entry()
 
@@ -177,13 +176,13 @@ class win(tkinter.Tk):
 		# self.file_separator_label = tkinter.Label(self, text="----" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=0, y=15, height=2, anchor="nw")
 		self.file_menubar_label.bind("<Button-1>", 
 			lambda event: self.file_menu_popup("file_menu"))
-		self.file_menubar_label.place(x=0, y=5, height=20, anchor="nw")
+		self.file_menubar_label.place(x=0, y=0, height=20, anchor="nw")
 
 		self.settings_menubar_label = tkinter.Label(self)
 		# self.settings_separator_label = tkinter.Label(self, text="--------" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=60, y=15, height=2, anchor="nw")
 		self.settings_menubar_label.bind("<Button-1>",
 			lambda event: self.file_menu_popup("settings_menu"))
-		self.settings_menubar_label.place(x=60, y=5, height=20, anchor="nw")
+		self.settings_menubar_label.place(x=60, y=0, height=20, anchor="nw")
 
 
 		#dropdown for menubar
@@ -192,6 +191,8 @@ class win(tkinter.Tk):
 		self.file_dropdown.add_command(label="Open file",command=self.file_handler.load_file)
 		self.file_dropdown.add_command(label="Save file",command=self.file_handler.save_file)
 		self.file_dropdown.add_command(label="Save file as",command=self.file_handler.save_file_as)
+
+		self.buffer_tabs = []
 
 		# not anymore #tags for highlighting
 		#sick fucking colors #A500FF;
@@ -203,74 +204,6 @@ class win(tkinter.Tk):
 		self.command_entry.bind("<Down>", self.command_history)
 		self.command_entry.bind("<Escape>", self.command_entry_unset)
 		self.command_entry.bind("<Insert>", self.set_cursor_mode)
-	
-		self.txt.bind("<Control-period>", self.set_font_size)
-		self.txt.bind("<Control-comma>", self.set_font_size)
-		self.txt.bind("<Control-MouseWheel>", self.set_font_size)
-		self.txt.bind("<Control-Button-4>", self.set_font_size)
-		self.txt.bind("<Control-Button-5>", self.set_font_size)
-
-		self.txt.bind("<Prior>", self.del_queue)
-		self.txt.bind("<Next>", self.del_queue)
-		self.txt.bind("<Up>", self.move)
-		self.txt.bind("<Down>", self.move)
-		self.txt.bind("<Left>", self.move)
-		self.txt.bind("<Right>", self.move)
-		self.txt.bind("<Control-Up>", self.move)
-		self.txt.bind("<Control-Down>", self.move)
-		self.txt.bind("<Control-Left>", self.move)
-		self.txt.bind("<Control-Right>", self.move)
-
-		self.txt.bind("<MouseWheel>", self.scroll)
-		self.txt.bind("<Button-4>", self.scroll)
-		self.txt.bind("<Button-5>", self.scroll)
-		self.txt.bind("<Shift-MouseWheel>", lambda arg: self.scroll(arg, multiplier=3))
-		self.txt.bind("<Shift-Button-4>", lambda arg: self.scroll(arg, multiplier=3))
-		self.txt.bind("<Shift-Button-5>", lambda arg: self.scroll(arg, multiplier=3))
-		self.txt.bind("<Button-3>", self.popup) #right click pop-up window
-
-		self.txt.bind("<Return>", self.keep_indent)
-		self.txt.bind("<Control-slash>", self.comment_line) #self.comment_line)
-
-		self.txt.bind("<Control-S>", self.file_handler.save_file)
-		self.txt.bind("<Control-s>", self.file_handler.save_file)
-		self.txt.bind("<Control-Shift-S>", self.file_handler.save_file_as)
-		self.txt.bind("<Control-Shift-s>", self.file_handler.save_file_as)
-		self.txt.bind("<Control-N>", self.file_handler.new_file)
-		self.txt.bind("<Control-n>", self.file_handler.new_file)
-		self.txt.bind("<Control-F>", self.find_place)
-		self.txt.bind("<Control-f>", self.find_place)
-		self.txt.bind("<Control-V>", self.paste)
-		self.txt.bind("<Control-v>", self.paste)
-
-		self.txt.bind("<Control-Z>", self.undo)
-		self.txt.bind("<Control-z>", self.undo)
-		self.txt.bind("<Control-Y>", self.redo)
-		self.txt.bind("<Control-y>", self.redo)
-		self.txt.bind("<Control-A>", self.select_all)
-		self.txt.bind("<Control-a>", self.select_all)
-		self.txt.bind("<Control-L>", lambda arg: self.change_case("lower"))
-		self.txt.bind("<Control-l>", lambda arg: self.change_case("lower"))
-		self.txt.bind("<Control-Shift-L>", lambda arg: self.change_case("upper"))
-		self.txt.bind("<Control-Shift-l>", lambda arg: self.change_case("upper"))
-		self.txt.bind("<Tab>", self.indent)
-
-		self.txt.bind("<Shift-Up>", self.queue_make)
-		self.txt.bind("<Shift-Down>", self.queue_make)
-		self.txt.bind("<Shift-Left>", self.queue_make)
-		self.txt.bind("<Shift-Right>", self.queue_make)
-		self.txt.bind("<Shift-Return>", lambda arg: subprocess.call("./open.sh"))
-
-		self.txt.bind("<Control-Q>", self.test_function)
-		self.txt.bind("<Control-q>", self.test_function)
-		# self.txt.bind("<Shift_L>", self.Qq)
-
-		self.txt.bind("<Insert>", self.set_cursor_mode)
-		self.txt.bind("<Home>", self.home)
-		self.txt.bind("<Shift-Home>", self.home_select)
-		self.txt.bind("<End>", self.end)
-		self.txt.bind("<Shift-End>", self.end_select)
-
 	
 		self.find_entry.bind("<Return>", self.find)
 		self.find_entry.bind("<Up>", self.scroll_through_found)
@@ -294,9 +227,9 @@ class win(tkinter.Tk):
 		self.settings_menubar_label.bind("<Control-Tab>", lambda arg: self.window_select("text"))
 		self.settings_menubar_label.bind("<Right>", lambda arg: self.window_select("text"))
 		self.settings_menubar_label.bind("<Left>", lambda arg: self.window_select("file_menu"))
-
+	
 		# self.txt.bind("<Control-space>", self.command_entry_set)
-		self.bindable_widgets = [self.txt, self.file_menubar_label, self.settings_menubar_label, self.find_entry, self.command_entry]
+		self.bindable_widgets = [self.file_menubar_label, self.settings_menubar_label, self.find_entry, self.command_entry]
 		for widget in self.bindable_widgets:
 			widget.bind("<Control-space>", self.command_entry_set)
 			widget.bind("<F11>", self.set_fullscreen)
@@ -346,8 +279,9 @@ class win(tkinter.Tk):
 		for key in self.theme["highlighter"].items():
 			if (key[0][-2:] == "bg"): self.txt.tag_configure(key[0], background=key[1])
 			else: self.txt.tag_configure(key[0], foreground=key[1])
+		self.configure(bg=self.theme["window"]["bg"])
+
 		self.txt.tag_configure("test", foreground=self.theme["window"]["bg"])
-		self.config(bg=self.theme["window"]["bg"])
 		self.txt.configure(font=self.font,bg = self.theme["window"]["bg"],fg=self.theme["window"]["fg"], undo=True, maxundo=0, spacing1=2,
 			 insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertbackground=self.theme["window"]["insertbg"],
 			 selectbackground=self.theme["window"]["selectbg"], selectforeground=self.theme["window"]["selectfg"], borderwidth=0,
@@ -367,7 +301,7 @@ class win(tkinter.Tk):
 		self.find_label.configure(font=self.font, bg=self.theme["window"]["bg"], fg="#00df00")
 		self.definition_label.configure(font=self.font, bg=self.theme["window"]["selectfg"], fg="#00df00")
 		self.right_click_menu.configure(tearoff=0, font=self.smaller_font, bg=self.theme["window"]["bg"], fg="#ffffff")
-		self.file_menubar_label.configure(text="File" ,font=self.widget_font, bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
+		self.file_menubar_label.configure(text="File", font=self.widget_font, bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
 		self.settings_menubar_label.configure(text="Settings" ,font=self.widget_font, bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
 		self.file_dropdown.configure(font=self.widget_font, tearoff=False,fg="#FFFFFF", bg=self.theme["window"]["bg"], bd=0)
 		self.highlighter = highlighter(self); self.set_highlighter()
@@ -376,10 +310,10 @@ class win(tkinter.Tk):
 
 	def reposition_widgets(self, arg=None):
 		if (self.command_entry.winfo_viewable()): self.command_entry.place(x=-1, y=self.winfo_height()+1, width=self.winfo_width()+2, height=22, anchor="sw")
-		self.txt.place(x=0,y=25,relwidth=1, height=self.winfo_height()-25, anchor="nw")
-		self.time_label.place(x=self.temperature_label.winfo_x()-self.time_label.winfo_width(), y=5, height=20, anchor="nw")
-		self.temperature_label.place(x=self.line_no.winfo_x()-self.temperature_label.winfo_width()-10, y=5, height=20, anchor="nw")
-		self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=5, height=20, anchor="nw")
+		self.txt.place(x=0,y=40,relwidth=1, height=self.winfo_height()-25, anchor="nw")
+		self.time_label.place(x=self.temperature_label.winfo_x()-self.time_label.winfo_width(), y=0, height=20, anchor="nw")
+		self.temperature_label.place(x=self.line_no.winfo_x()-self.temperature_label.winfo_width()-10, y=0, height=20, anchor="nw")
+		self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=20, anchor="nw")
 
 	def get_line_count(self):
 		""" returns total amount of lines in opened text """
@@ -677,22 +611,22 @@ class win(tkinter.Tk):
 			if (key == "Right"):
 				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}")
 			if (key == "Left"):
-				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_rootx()-margin}+{self.winfo_rooty()-24}")
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()-margin}+{self.winfo_y()}")
 			if (key == "Up"):
-				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_rootx()}+{self.winfo_rooty()-margin-24}")
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-margin}")
 			if (key == "Down"):
 				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}")
 
 		elif (not expand):
 			margin = -20
 			if (key == "Right"):
-				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_rootx()-margin}+{self.winfo_rooty()-24}")
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()-margin}+{self.winfo_y()}")
 			if (key == "Left"):
-				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_rootx()}+{self.winfo_rooty()-24}")
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()}+{self.winfo_y()}")
 			if (key == "Up"):
-				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_rootx()}+{self.winfo_rooty()-24}")
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()}")
 			if (key == "Down"):
-				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_rootx()}+{self.winfo_rooty()-margin-24}")
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-margin}")
 				
 		return "break"	
 		
@@ -787,7 +721,7 @@ class win(tkinter.Tk):
 		self.find_entry.place(x=0, y=self.winfo_height()-40, relwidth=0.5, height=20, anchor="nw")
 		self.find_entry.insert("1", text)
 		# self.find_label.place(relx=0., y=125, anchor="ne")
-		self.find_entry.focus_set()
+		self.find_entry.tkraise(); self.find_entry.focus_set()
 	
 	def find_unplace(self, arg=None):
 		for index in self.found:
@@ -824,16 +758,16 @@ class win(tkinter.Tk):
 	def file_menu_popup(self, widget):
 		""" places a dropdown menu accordingly to menubar option clicked """
 		if (widget == "file_menu"): 
-			self.file_dropdown.tk_popup(self.winfo_rootx(), self.winfo_rooty()+25)
+			self.file_dropdown.tk_popup(self.file_menubar_label.winfo_rootx(), self.file_menubar_label.winfo_rooty()+self.file_menubar_label.winfo_height())
 		
 		elif (widget == "settings_menu"):
-			self.file_dropdown.tk_popup(self.winfo_rootx()+63, self.winfo_rooty()+25)
+			self.file_dropdown.tk_popup(self.settings_menubar_label.winfo_rootx(), self.settings_menubar_label.winfo_rooty()+self.settings_menubar_label.winfo_height())
 
 	def command_entry_set(self, arg=None):
 		""" Shows command entry widget """
 		self.command_entry.place(x=-1, y=self.winfo_height()+1, width=self.winfo_width()+2, height=22, anchor="sw")
 		self.command_out.place_forget()
-		self.command_entry.focus_set()
+		self.command_entry.tkraise(); self.command_entry.focus_set()
 		return "break"
 
 	def command_entry_unset(self, arg=None):
@@ -1096,10 +1030,11 @@ class win(tkinter.Tk):
 		self.time_label.config(text=time) #updates the time label/widget to show current time
 
 
-	def update_buffer(self):
+	def update_buffer(self, arg=None):
 		""" updates some of the widgets when a character is typed in """
 		if (self.file_handler.current_file_name): self.title(f"Nix: <*{os.path.basename(self.file_handler.current_file_name)}>") #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
 		# len(self.content) != len(self.txt.get("1.0", "end-1c")) and
+		# self.file_handler.buffers[self.file_handler.current_buffer] = self.txt.get("1.0", "end")
 
 		if (self.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
@@ -1127,7 +1062,7 @@ class win(tkinter.Tk):
 		while (True):
 			self.update_win()
 			if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"])
-			
+			# print(self.buffer_tabs)
 			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
 			self.current_line = self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(int(self.cursor_index[0])))+"\n"
 
@@ -1139,8 +1074,8 @@ class win(tkinter.Tk):
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
 				self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
 
-			if (len(self.file_handler.content) != len(self.txt.get("1.0", "end-1c")) and self.focus_displayof() == self.txt): #if a character has been typed into the text widget call the udpate buffer function
-				self.update_buffer()
+			# if (len(self.file_handler.buffers[self.file_handler.current_buffer]) != len(self.txt.get("1.0", "end-1c")) and self.focus_displayof() == self.txt): #if a character has been typed into the text widget call the udpate buffer function
+			# self.update_buffer()
 
 			if (self.focus_displayof() == self.command_entry):
 				self.highlighter.command_highlight()
