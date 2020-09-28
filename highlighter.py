@@ -70,7 +70,7 @@ class highlighter(object):
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z_]")
-		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$")
+		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$|^[A-Z]+_[A-Za-z0-9]+")
 		self.separator_regex = re.compile(r"[\s\.\,\:\;]")
 		self.num_regex = re.compile(r"[0-9]")
 		self.special_num_regex = re.compile(r"^0b+[0-1]+$|^0x+[0-9a-fA-F]+$")
@@ -174,7 +174,7 @@ class highlighter(object):
 		elif (self.pattern in self.numerical_keywords):
 			self.txt.tag_add("numbers", last_separator, index)
 
-		elif (self.abc_upcase_regex.match(self.pattern)):
+		elif (self.abc_upcase_regex.match(self.pattern) and len(self.pattern) > 1):
 			self.txt.tag_add("numbers", last_separator, index)
 
 		elif (self.special_num_regex.match(self.pattern)):
@@ -205,16 +205,12 @@ class highlighter(object):
 
 
 		for i, current_char in enumerate(line, 0):
-		
 			if (self.quote_regex.match(current_char)):
-				index = f"{line_no}.{i}"
-				self.txt.tag_add("quotes", index)
+				self.txt.tag_add("quotes", f"{line_no}.{i}")
 				self.countingQuomarks = not self.countingQuomarks
-				# self.countingQuomarks = not self.countingQuomarks
 
 			elif (self.countingQuomarks):
-				index = f"{line_no}.{i}"
-				self.txt.tag_add("quotes", index)
+				self.txt.tag_add("quotes", f"{line_no}.{i}")
 				continue
 			
 			elif (self.abc_regex.match(current_char)):
