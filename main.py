@@ -73,10 +73,6 @@ class win(tkinter.Tk):
 			"convert": "use: convert [number] (decimal|hex|binary) \n converts [number] into decimal, hex and binary", "save":"saves your current file",
 			"saveas":"use: saveas [name] :: saves your current file as [name]", "open":"use:  open [name] :: opens file with name[name]", "theme": "use: theme [themename] :: sets theme"
 			}
-		
-		
-
-		
 
 		self.command_input_history = []
 		self.command_input_history_index = 0
@@ -210,15 +206,6 @@ class win(tkinter.Tk):
 		self.find_entry.bind("<Down>", self.scroll_through_found)
 		self.find_entry.bind("<Escape>", self.find_unplace)
 
-
-		try: #linux bindings that throw errors on windows
-			self.txt.bind("<Shift-ISO_Left_Tab>", self.unindent)
-			self.command_entry.bind("<KP_Enter>", self.cmmand)
-		except Exception:
-			self.txt.bind("<Shift-Tab>", self.unindent)
-
-
-		self.txt.bind("<Control-Tab>", lambda arg: self.window_select("file_menu"))
 		self.file_menubar_label.bind("<Return>", lambda arg: self.file_menu_popup("file_menu"))
 		self.file_menubar_label.bind("<Control-Tab>", lambda arg: self.window_select("settings_menu"))
 		self.file_menubar_label.bind("<Right>", lambda arg: self.window_select("settings_menu"))
@@ -256,9 +243,9 @@ class win(tkinter.Tk):
 		
 		self.theme_load()
 		self.update_buffer()
-
 		try:
-			self.file_handler.load_file(filename=sys.argv[1])
+			for arg in sys.argv[1:]:
+				self.file_handler.load_file(filename=arg)
 		except IndexError:
 			pass
 
@@ -610,11 +597,11 @@ class win(tkinter.Tk):
 			margin = 20
 			if (key == "Right"):
 				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}")
-			if (key == "Left"):
+			elif (key == "Left"):
 				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()-margin}+{self.winfo_y()}")
-			if (key == "Up"):
+			elif (key == "Up"):
 				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-margin}")
-			if (key == "Down"):
+			elif (key == "Down"):
 				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}")
 
 		elif (not expand):
@@ -1061,8 +1048,8 @@ class win(tkinter.Tk):
 		self.txt.mark_set(tkinter.INSERT, "1.0")
 		while (True):
 			self.update_win()
-			if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"])
-			# print(self.buffer_tabs)
+			if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"]); self.txt.see(tkinter.INSERT)
+			
 			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
 			self.current_line = self.txt.get(float(self.cursor_index[0]), self.highlighter.get_line_lenght(int(self.cursor_index[0])))+"\n"
 
