@@ -80,6 +80,14 @@ class TEXT(tkinter.Text):
 		self.bind("<Control-Shift-L>", lambda arg: self.parent.change_case("upper"))
 		self.bind("<Control-Shift-l>", lambda arg: self.parent.change_case("upper"))
 		self.bind("<Tab>", self.parent.indent)
+		try: #linux bindings that throw errors on windows
+			self.bind("<Shift-ISO_Left_Tab>", self.parent.unindent)
+			self.parent.command_entry.bind("<KP_Enter>", self.parent.cmmand)
+		except Exception:
+			self.bind("<Shift-Tab>", self.parent.unindent)
+
+
+		self.bind("<Control-Tab>", lambda arg: self.parent.window_select("file_menu"))
 
 		self.bind("<Shift-Up>", self.parent.queue_make)
 		self.bind("<Shift-Down>", self.parent.queue_make)
@@ -108,3 +116,5 @@ class TEXT(tkinter.Text):
 		self.bind("<Alt-Shift-Left>", lambda arg: self.parent.set_dimensions(arg, False))
 		self.bind("<Alt-Shift-Up>", lambda arg: self.parent.set_dimensions(arg, False))
 		self.bind("<Alt-Shift-Down>", lambda arg: self.parent.set_dimensions(arg, False))
+
+		self.bind("<F1>", lambda arg: self.bell())
