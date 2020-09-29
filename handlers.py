@@ -48,7 +48,7 @@ class file_handler(object):
 	def new_file(self, name: str=""):
 		i = 0
 		name = f"{self.current_dir}/untitled_{i}.txt"
-  		while (os.path.isfile(name)):
+		while (os.path.isfile(name)):
 			i += 1
 			name = f"{self.current_dir}/untitled_{i}.txt"
 
