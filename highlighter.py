@@ -6,7 +6,7 @@ class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
 	def __init__(self, parent):
 		self.lang = "NaN"
-		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm", "java", "jsp", "class"]
+		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm", "java", "jsp", "class", "css"]
 
 		self.command_keywords = parent.command_keywords
 		print(self.command_keywords)
@@ -14,11 +14,12 @@ class highlighter(object):
 		self.Py_keywords = [
 			'await', 'import', 'pass', 'break', 'in',
 			'raise', 'class', 'is', 'return', 'continue', 'lambda', 'as', 'def', 'from',
-			'nonlocal', 'assert', 'del', 'global', 'async', 'yield', "self"
+			'nonlocal', 'assert', 'del', 'global', 'async', 'yield'
 			]
 
 		self.Py_numerical_keywords = ['False', 'True', 'None']
-		self.Py_logical_keywords = ['and', 'or', 'not', 'if', 'elif', 'else', 'for', 'try', 'except', 'finally', 'while', 'with'] 
+		self.Py_logical_keywords = ['and', 'or', 'not', 'if', 'elif', 'else', 'for', 'try', 'except', 'finally',
+		 'while', 'with', 'self'] 
 		
 		self.Py_keywords_regex = re.compile('|'.join(self.Py_keywords))#(r'\b(?:\|)\b'.join(self.Py_keywords))
 
@@ -70,7 +71,7 @@ class highlighter(object):
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z_]")
-		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$|^[A-Z]+_[A-Za-z0-9]+")
+		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$") #|^[A-Z]+_[A-Za-z0-9]+")
 		self.separator_regex = re.compile(r"[\s\.\,\:\;]")
 		self.num_regex = re.compile(r"[0-9]")
 		self.special_num_regex = re.compile(r"^0b+[0-1]+$|^0x+[0-9a-fA-F]+$")
@@ -116,7 +117,7 @@ class highlighter(object):
 			self.highlight = self.python_highlight
 			self.comment_sign = "#"
 
-		elif (self.lang == "html" or self.lang == "htm"):
+		elif (self.lang == "html" or self.lang == "htm" or self.lang == "css"):
 			self.keywords = self.html_keywords
 			self.highlight = self.html_highlight
 			self.comment_sign = "<!-- -->"
@@ -379,26 +380,34 @@ class highlighter(object):
 		self.pattern = ""
 		self.countingQuomarks = False
 		tag_argument_index = 0
+		
+		# self.html_separator_regex = re.compile(r"[\;\ \=]")
+		# self.html_tag_start_regex = re.compile(r"[\<]")
+		# self.html_tag_end_regex = re.compile(r"[\>]")
+		# self.html_num_regex = re.compile(r"\#*[0-9]")
+		# self.html_L_bracket_regex = re.compile(r"[\{]")
+		# self.html_R_bracket_regex = re.compile(r"[\}]")
+		# self.html_color_num_regex = re.compile(r"^\#[0-9A-Fa-f]+$|^\-*[0-9]+[a-z]*$|^[0-9]*deg$")
+		# self.html_comment_start_regex = re.compile(r"<!--")
+		# self.html_comment_end_regex = re.compile(r"-->")
 
 		self.txt.tag_remove("quotes", last_separator, line_end_index)
 		self.txt.tag_remove("functions", last_separator, line_end_index)
 		self.txt.tag_remove("keywords", last_separator, line_end_index)
 		self.txt.tag_remove("numbers", last_separator, line_end_index)
 		self.txt.tag_remove("special_chars", last_separator, line_end_index)
-		self.txt.tag_remove("comments", last_separator, line_end_index)
 		self.txt.tag_remove("operators", last_separator, line_end_index)
+		self.txt.tag_remove("comments", last_separator, line_end_index)
 		
+		
+		for i, current_char in enumerate(line, 0):
+			self.pattern += current_char
+			
 		
 		for i, current_char in enumerate(line, 0):
 
 			# if (self.html_abc_regex.match(current_char)):
 			self.pattern += current_char
-
-			# if (self.html_L_bracket_regex.match(current_char)):
-			# 	index = f"{line_no}.{i-len(self.pattern+last_pattern)}"
-			# 	index1 = f"{line_no}.{i}"
-			# 	self.txt.tag_add("functions", index, index1)
-
 			if (self.html_separator_regex.match(current_char)):
 				last_pattern = self.pattern
 				self.pattern = ""
@@ -421,7 +430,7 @@ class highlighter(object):
 			if (self.html_color_num_regex.match(self.pattern)):
 				index = f"{line_no}.{i-len(self.pattern)}"
 				index1 = f"{line_no}.{i+1}"
-				try:
+				try:  
 					self.txt.tag_configure(self.pattern, background=self.pattern)
 				except Exception:
 					pass
@@ -482,3 +491,5 @@ class highlighter(object):
 		self.txt.tag_remove(["operators"], last_separator, line_end_index)
 		
 		
+
+
