@@ -1,32 +1,62 @@
 import tkinter
-
+import os
 
 class BUFFER_TAB(tkinter.Label):
 	def __init__(self, name: str, parent):
 		super().__init__(parent)
 		self.parent = parent
 		self.name = name
-		self.index = len(self.parent.buffer_tabs)
-		self.configure(text="~"+self.name, font=self.parent.widget_font, bg=self.parent.theme["window"]["widget_fg"], fg=self.parent.theme["window"]["bg"], highlightcolor=self.parent.theme["window"]["widget_fg"])
+		self.index = len(self.parent.file_handler.buffers)
+		self.configure(text=os.path.basename(self.name), font=self.parent.widget_font, 
+		bg="#111111", fg=self.parent.theme["window"]["widget_fg"],
+		 highlightcolor=self.parent.theme["window"]["widget_fg"])
 		# self.configure(command=lambda: self.parent.file_handler.load_buffer(buffer_name=self.name))
-		if (not self.parent.buffer_tabs): self.place(x=0, y=21, height=18)
-		else: self.place(x=self.parent.buffer_tabs[-1].winfo_x()+self.parent.buffer_tabs[-1].winfo_width()+3, y=21, height=18)
+		
+		if (self.index > 1):
+			self.reposition(list(self.parent.file_handler.buffers.values())[self.index-1][1])
+		elif (self.index == 1):
+			self.reposition()
 
 		self.menu = tkinter.Menu(self.parent)
 		self.menu.configure(font=self.parent.widget_font, tearoff=False,fg="#FFFFFF", bg=self.parent.theme["window"]["bg"], bd=0)
 		self.menu.add_command(label="Close", command=lambda: self.parent.file_handler.del_buffer(buffer_name=self.name))
 
+		self.hover_info = tkinter.Label(self.parent)
+		self.hover_info.configure(text=self.name, font=self.parent.widget_font, fg="#FFFFFF", bg=self.parent.theme["window"]["bg"], bd=1)
+		# self.hover_info.place(x=self.winfo_rootx(), y=self.winfo_rooty()+self.winfo_height())
+		# self.hover_info.pack()
 		# self.destroy_label = tkinter.Label(self, text="X"); self.destroy_label.place(relx=1, y=0, width=10, height=10, anchor="ne")
 		# self.destroy_label.bind("<Button-1>", lambda arg: self.parent.file_handler.del_buffer(buffer_name=self.name))
 
-		self.bind("<Button-1>", lambda arg: self.focus_set())
+		self.bind("<Button-1>", self.load_buffer)
+		# self.bind("<Enter>", lambda arg: self.hover_info.place(x=self.winfo_x(), y=self.winfo_y()+self.winfo_height()), print("aa"))
+		self.bind("<Enter>", lambda arg: self.parent.command_O(self.name))
+		# self.bind("<Leave>", lambda arg: self.hover_info.place_forget())
 		self.bind("<Button-3>", lambda arg: self.menu.tk_popup(self.winfo_rootx(), self.winfo_rooty()+self.winfo_height()))
-		self.bind("<FocusIn>", lambda arg: self.parent.file_handler.load_buffer(buffer_name=self.name))
+		# self.bind("<FocusIn>", lambda arg: self.parent.file_handler.load_buffer(buffer_name=self.name))
+
+	def reposition(self, last_buffer_tab=None):
+		if (not last_buffer_tab or self.index == 1):
+			self.place(x=0, y=24, height=18)
+		else:
+			self.place(x=last_buffer_tab.winfo_x()+last_buffer_tab.winfo_width()+3, y=24, height=18)
+
+	def change_name(self, new_name: str):
+		self.name = new_name
+		self.configure(text="~"+os.path.basename(new_name))
+
+	def load_buffer(self, arg=None):
+		self.focus_set()
+		self.parent.file_handler.load_buffer(buffer_name=self.name)
+		self.parent.file_handler.buffer_tab_index = self.index
+
 
 class TEXT(tkinter.Text):
 	def __init__(self, parent):
 		super().__init__(parent)
 		self.parent = parent
+		# self.name = name
+
 
 		self.bind("<Key>", self.parent.update_buffer)
 
@@ -105,7 +135,7 @@ class TEXT(tkinter.Text):
 		self.bind("<End>", self.parent.end)
 		self.bind("<Shift-End>", self.parent.end_select)
 
-		self.bind("<KeyPress>", lambda arg: self.parent.update_buffer())
+		# self.bind("<KeyPress>", lambda arg: self.parent.update_buffer())
 		self.bind("<Control-space>", self.parent.command_entry_set)
 		self.bind("<F11>", self.parent.set_fullscreen)
 		self.bind("<Alt-Right>", lambda arg: self.parent.set_dimensions(arg, True))
