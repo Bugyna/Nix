@@ -1,5 +1,6 @@
 import os
 import tkinter
+from pygame import mixer
 from time import time
 
 from widgets import BUFFER_TAB, TEXT
@@ -7,57 +8,72 @@ from widgets import BUFFER_TAB, TEXT
 class file_handler(object):
 	""" File opening and closing yes"""
 	def __init__(self, parent):
-		self. supported_filetypes = ["TXT files", "*.txt *.py *.c *.cpp *.cc  *.html *.htm"]
+		self.supported_filetypes = ["TXT files", "*.txt *.py *.c *.cpp *.cc *.html *.htm *.css"]
 		self.current_dir = os.getcwd()
 		self.current_file = None
 		self.current_file_name = None
 		self.current_buffer = ""
 		self.buffers = {}
+		self.buffer_tab_index = None
 		self.parent = parent
 
 	def init(self):
 		self.current_buffer = "<~NONE>"
 		self.buffers[self.current_buffer] = TEXT(self.parent)
 
+	def rename_buffer(self, buffer_name: str, new_buffer_name: str):
+		for buffer in self.parent.buffer_tabs:
+			if (buffer_name == buffer.name): buffer.change_name(new_buffer_name); break
+
+		self.buffers[new_buffer_name] = self.buffers.pop(buffer_name)
+		self.current_buffer = new_buffer_name
+
+
 	def new_buffer(self, buffer_name: str):
 		try: self.buffers[buffer_name]; return # Checks for existing buffers
 		except KeyError: pass
 		self.parent.txt.place_forget()
-		self.current_buffer = buffer_name
-		self.buffers[buffer_name] = TEXT(self.parent)
-		self.parent.txt = self.buffers[buffer_name]
-		self.parent.buffer_tabs.append(BUFFER_TAB(buffer_name, self.parent)); self.parent.theme_load()
+		self.current_file_name = self.current_buffer = buffer_name
+		self.buffers[buffer_name] = [TEXT(self.parent), BUFFER_TAB(buffer_name, self.parent)]
+		self.parent.txt = self.buffers[buffer_name][0]
+		self.parent.theme_load()
 		self.parent.title(f"Nix: <{os.path.basename(self.current_buffer)}>")
 
 	def del_buffer(self, buffer_name: str=None):
-		last_buffer = None
-		for buffer in self.parent.buffer_tabs:
-			if (buffer.name == buffer_name): self.parent.buffer_tabs[buffer.index].place_forget(); self.parent.buffer_tabs.pop(buffer.index); break
-			last_buffer = buffer
-			
+		self.buffers[buffer_name][1].place_forget()
 		self.buffers.pop(buffer_name)
-		self.current_buffer = last_buffer.name
-		self.load_buffer(last_buffer.name)
+
+		last_buffer_tab = None
+		for buffer in list(self.buffers.values())[1:]:
+			buffer[1].reposition(last_buffer_tab)
+			last_buffer_tab = buffer[1]
 
 	def load_buffer(self, buffer_name: str):
 		self.parent.txt.place_forget()
-		self.current_buffer = buffer_name; self.parent.txt = self.buffers[buffer_name]
+		self.current_file_name = self.current_buffer = buffer_name; self.parent.highlighter.txt = self.parent.txt = self.buffers[buffer_name][0]
+		self.current_dir = os.path.dirname(self.current_file_name)
 		self.parent.txt.place(x=0,y=40,relwidth=1, height=self.parent.winfo_height()-25, anchor="nw")
 		self.parent.title(f"Nix: <{os.path.basename(self.current_buffer)}>")
 
+	def del_file(self, filename:str=""):
+		if (not filename): filename=self.current_file_name
+		if (os.path.isfile(filename)): os.remove(filename); self.parent.command_O(f"File ({filename}) was deleted")
+		else: self.parent.command_O(f"File ({filename}) does not exist")
+
 	def new_file(self, name: str=""):
-		i = 0
-		name = f"{self.current_dir}/untitled_{i}.txt"
-		while (os.path.isfile(name)):
-			i += 1
+		if (not name):
+			i = 0
 			name = f"{self.current_dir}/untitled_{i}.txt"
+			while (os.path.isfile(name)):
+				i += 1
+				name = f"{self.current_dir}/untitled_{i}.txt"
 
 		self.current_file_name = name
 		self.current_file = open(self.current_file_name, "w+")
 		print(self.current_file.name)
-		self.new_buffer(os.path.basename(self.current_file.name))
+		self.new_buffer(self.current_file.name)
 		self.parent.txt.delete("1.0", "end")
-		self.current_dir = os.path.dirname(self.current_file.name)
+		# self.current_dir = os.path.dirname(self.current_file.name)
 		self.parent.title(f"Nix: <{os.path.basename(self.current_file.name)}>")
 		
 		self.parent.set_highlighter()
@@ -66,9 +82,8 @@ class file_handler(object):
 		""" saves current text into opened file """
 		self.buffer = str(self.parent.txt.get("1.0", "end-1c"))
 		
-		
 		if (self.current_file_name):
-			self.current_file = open(self.current_buffer, "w")
+			self.current_file = open(self.current_file_name, "w")
 			self.current_file.write(self.parent.txt.get("1.0", "end"))
 			
 			self.parent.set_highlighter()
@@ -96,6 +111,7 @@ class file_handler(object):
 
 		os.rename(self.current_file.name, tmp)
 		self.current_file_name = tmp
+		self.rename_buffer(self.current_buffer, tmp)
 
 		self.current_dir = os.path.dirname(self.current_file.name)
 		self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
@@ -107,7 +123,8 @@ class file_handler(object):
 		""" opens a file and loads it's content into the text widget """
 
 		if (filename): #if the filename arguments is given: set the current filename to be the argument (pretty self explanatory)
-			self.current_file_name = f"{self.current_dir}/{filename}"
+			if (os.path.dirname(filename)): self.current_file_name = f"{filename}"
+			else: self.current_file_name = f"{self.current_dir}/{filename}"
 		
 		elif (filename == None): #if the filename argument is not provided open a file menu to provide a filename
 			try:
@@ -119,10 +136,11 @@ class file_handler(object):
 			self.current_file = open(self.current_file_name, "r+") #opens the file
 			self.parent.set_highlighter() #takes the file extension and passes it to the set_highlighter function to highlight the file accordingly
 		except Exception as e:
-			self.parent.command_O(e)
+			self.new_file(filename)
+			self.parent.command_O("new file")
 			return
 
-		self.new_buffer(os.path.basename(self.current_file.name))
+		self.new_buffer(self.current_file.name)
 		self.current_dir = os.path.dirname(self.current_file.name)
 		self.parent.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
 		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
@@ -138,8 +156,40 @@ class file_handler(object):
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		print(t1-t0)
 		self.parent.command_O(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
-							
-							
+
+class music_player:
+	def __init__(self, parent):
+		self.parent = parent
+		self.volume = 1
+		self.paused = False
+		mixer.init()
+		mixer.music.set_volume(self.volume)
+		
+	def load_song(self, name: str):
+		try:
+			mixer.music.load(*name)
+			mixer.music.play()
+		except Exception as e:
+			print(e)
+			self.parent.command_O("invalid file")
+		
+	def play_song(self, time: int = 0):
+		mixer.music.play(start=time)
+		
+	def pause_song(self, unpause=False):
+		if (not self.paused):
+			self.paused = True
+			mixer.music.pause()
+		elif (self.paused or unpause):
+			self.paused = False
+			mixer.music.unpause()
+		
+	def stop_song(self):
+		mixer.music.stop()
+		
+	def queue(self):
+		pass
+														
 class launcher:
 	def __init__(self):
 		pass
