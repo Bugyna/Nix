@@ -51,14 +51,25 @@ class BUFFER_TAB(tkinter.Label):
 		self.parent.file_handler.buffer_tab_index = self.index
 
 
+class MENUBAR_LABEL(tkinter.Label):
+	def __init__(self, parent, name):
+		super().__init__(parent)
+		self.parent = parent
+		self.name = name
+
+		self.bind("<Button-1>", lambda event: self.parent.file_menu_popup(self.name))
+		self.bind("<Return>", lambda arg: self.parent.file_menu_popup(self.name))
+		self.bind("<Alt_L>", lambda arg: self.parent.window_select("text", arg))
+		self.bind("<Alt_R>", lambda arg: self.parent.window_select("text", arg))
+		self.bind("<Escape>", lambda arg: self.parent.window_select("text", arg))
+
+
 class TEXT(tkinter.Text):
 	def __init__(self, parent):
 		super().__init__(parent)
 		self.parent = parent
-		# self.name = name
 
-
-		self.bind("<Key>", self.parent.update_buffer)
+		self.bind("<KeyRelease>", self.parent.update_buffer)
 
 		self.bind("<Control-period>", self.parent.set_font_size)
 		self.bind("<Control-comma>", self.parent.set_font_size)
@@ -117,7 +128,8 @@ class TEXT(tkinter.Text):
 			self.bind("<Shift-Tab>", self.parent.unindent)
 
 
-		self.bind("<Control-Tab>", lambda arg: self.parent.window_select("file_menu"))
+		self.bind("<Control-Tab>", self.switch_buffer)
+		self.bind("<Control-Shift-ISO_Left_Tab>", lambda arg: self.switch_buffer(next=False))
 
 		self.bind("<Shift-Up>", self.parent.queue_make)
 		self.bind("<Shift-Down>", self.parent.queue_make)
@@ -147,4 +159,18 @@ class TEXT(tkinter.Text):
 		self.bind("<Alt-Shift-Up>", lambda arg: self.parent.set_dimensions(arg, False))
 		self.bind("<Alt-Shift-Down>", lambda arg: self.parent.set_dimensions(arg, False))
 
+		self.bind("<Control-Alt_L>", lambda arg: self.parent.window_select("file_menu"))
+		self.bind("<Control-Alt_R>", lambda arg: self.parent.window_select("file_menu"))
+
 		self.bind("<F1>", lambda arg: self.bell())
+
+	def switch_buffer(self, arg=None, next = True):
+		if (next): buffer_tab_index = self.parent.file_handler.buffer_tab_index+1
+		elif (not next): buffer_tab_index = self.parent.file_handler.buffer_tab_index-1
+		if (buffer_tab_index >= len(self.parent.file_handler.buffers)): buffer_tab_index = 1
+		elif (buffer_tab_index < 1): buffer_tab_index = len(self.parent.file_handler.buffers)-1
+		buffer_name = list(self.parent.file_handler.buffers.values())[buffer_tab_index][1].name
+		print(buffer_name, buffer_tab_index)
+		self.parent.file_handler.load_buffer(buffer_name=buffer_name)
+
+		return "break"
