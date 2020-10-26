@@ -35,6 +35,7 @@ class file_handler(object):
 		self.parent.txt.place_forget()
 		self.current_file_name = self.current_buffer = buffer_name
 		self.buffers[buffer_name] = [TEXT(self.parent), BUFFER_TAB(buffer_name, self.parent)]
+		self.buffer_tab_index = self.buffers[self.current_buffer][1].index
 		self.parent.txt = self.buffers[buffer_name][0]
 		self.parent.theme_load()
 		self.parent.title(f"Nix: <{os.path.basename(self.current_buffer)}>")
@@ -51,6 +52,7 @@ class file_handler(object):
 	def load_buffer(self, buffer_name: str):
 		self.parent.txt.place_forget()
 		self.current_file_name = self.current_buffer = buffer_name; self.parent.highlighter.txt = self.parent.txt = self.buffers[buffer_name][0]
+		self.buffer_tab_index = self.buffers[self.current_buffer][1].index
 		self.current_dir = os.path.dirname(self.current_file_name)
 		self.parent.txt.place(x=0,y=40,relwidth=1, height=self.parent.winfo_height()-25, anchor="nw")
 		self.parent.title(f"Nix: <{os.path.basename(self.current_buffer)}>")
@@ -147,6 +149,7 @@ class file_handler(object):
 
 		t0 = time() # timer| gets current time in miliseconds
 		self.parent.txt.insert("1.0", self.current_file.read()) #puts all of the file's text in the text widget
+		self.parent.text_len = len(self.parent.txt.get("1.0", "end"))
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
 		self.parent.txt.see(tkinter.INSERT) #puts the cursor at the start of the file
 		self.current_file.close() #closes current file
