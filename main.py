@@ -17,7 +17,7 @@ from tkinter import font
 from tkinter import filedialog
 
 import re
-import inspect
+import json
 
 import subprocess
 import os, sys
@@ -33,6 +33,7 @@ import threading
 
 from highlighter import highlighter
 from handlers import file_handler, music_player
+from widgets import MENUBAR_LABEL
 
 try:
 	import platform, ctypes
@@ -41,8 +42,10 @@ try:
 		ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
 	CONTROL_KEYSYM = 262156
+	WINDOW_MARGIN = 0
 except Exception:
 	CONTROL_KEYSYM = None
+	WINDOW_MARGIN = 24
 
 
 class win(tkinter.Tk):
@@ -51,22 +54,8 @@ class win(tkinter.Tk):
 		super().__init__()
 		# "cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 		# 	 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-		self.theme_options = {
-			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-
-			"timelord": {"window": {"bg" : "#000099", "fg": "#AAAAAA", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-
-
-			"muffin" : {"window": {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "selectfg": "#FFFFFF", "widget_fg": "#000000", "select_widget": "#000000", "select_widget_fg": "#FFFFFF"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-
-			"toast" : {"window": {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-
-			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
-			}
+		with open("config.nix", "r") as config:
+			self.theme_options = json.load(config)["themes"]
 		self.theme = self.theme_options["cake"]
 
 		self.command_keywords = ["l", "lget", "highlighting", "q", "quit", "temp", "sharpness", "alpha", "convert", "save", "saveas", "open", "find", "theme"]
@@ -94,6 +83,7 @@ class win(tkinter.Tk):
 		self.cursor_index = ["1", "0"]
 		self.current_line = ""
 		self.last_index = "0.0"
+		self.text_len = 0
 		
 		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex (less than before tho))
 		self.command_highlighting = False
@@ -111,17 +101,21 @@ class win(tkinter.Tk):
 		self.sFont_size = self.Font_size - 2
 
 		#configuring main window
-		# self.overrideredirect(True)
 		# self.title_bar = tkinter.Frame(bg="blue", relief='raised', bd=2)
 
+		# self.wm_attributes("-type", "splash")
 		self.resizable(True,True)
 		self.tk.call("tk","scaling", self.sharpness)
+		print(self.winfo_geometry())
 		self.geometry(f"600x400")
 		self.wm_minsize(20, 20)
 		self.update_win()
 		self.geometry(self.winfo_geometry())
 		self.title(f"Nix: <None>")
+		print(self.winfo_geometry())
+		# self.wm_attributes("-type", "normal")
 
+		
 		self.filename = filedialog
 		self.file_handler = file_handler(self)
 		self.file_handler.init()
@@ -176,16 +170,12 @@ class win(tkinter.Tk):
 		# self.right_click_menu.add_separator()
 
 		#menubar
-		self.file_menubar_label = tkinter.Label(self)
+		self.file_menubar_label = MENUBAR_LABEL(self, "file_menu")
 		# self.file_separator_label = tkinter.Label(self, text="----" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=0, y=15, height=2, anchor="nw")
-		self.file_menubar_label.bind("<Button-1>", 
-			lambda event: self.file_menu_popup("file_menu"))
 		self.file_menubar_label.place(x=0, y=0, height=20, anchor="nw")
 
-		self.settings_menubar_label = tkinter.Label(self)
+		self.settings_menubar_label = MENUBAR_LABEL(self, "settings_menu")
 		# self.settings_separator_label = tkinter.Label(self, text="--------" ,font=self.font, bg=self.theme["bg"], fg="#999999").place(x=60, y=15, height=2, anchor="nw")
-		self.settings_menubar_label.bind("<Button-1>",
-			lambda event: self.file_menu_popup("settings_menu"))
 		self.settings_menubar_label.place(x=60, y=0, height=20, anchor="nw")
 
 
@@ -214,12 +204,8 @@ class win(tkinter.Tk):
 		self.find_entry.bind("<Down>", self.scroll_through_found)
 		self.find_entry.bind("<Escape>", self.find_unplace)
 
-		self.file_menubar_label.bind("<Return>", lambda arg: self.file_menu_popup("file_menu"))
-		self.file_menubar_label.bind("<Control-Tab>", lambda arg: self.window_select("settings_menu"))
 		self.file_menubar_label.bind("<Right>", lambda arg: self.window_select("settings_menu"))
 		self.file_menubar_label.bind("<Left>", lambda arg: self.window_select("text"))
-		self.settings_menubar_label.bind("<Return>", lambda arg: self.file_menu_popup("settings_menu"))
-		self.settings_menubar_label.bind("<Control-Tab>", lambda arg: self.window_select("text"))
 		self.settings_menubar_label.bind("<Right>", lambda arg: self.window_select("text"))
 		self.settings_menubar_label.bind("<Left>", lambda arg: self.window_select("file_menu"))
 	
@@ -240,29 +226,14 @@ class win(tkinter.Tk):
 		self.bind("<Control-Escape>", lambda arg: self.destroy())
 		self.bind("<Control-Shift-W>", lambda arg: self.destroy())
 		self.bind("<Configure>", self.reposition_widgets) #repositions the text widget to be placed correctly
-
-
-		# self.a=""
-		# self.loading_label_background = tkinter.Label(self, bg="#999999", fg="#FFFFFF")
-		# self.loading_label_background.place(relx=0.52,rely=0.965, relwidth=0.205 ,relheight=0.015)
-		# self.loading_label = tkinter.Label(self, text="", bg=self.theme["bg"], fg="#FFFFFF")
-		# self.loading_label.place(relx=0.52,rely=0.965, relheight=0.015)
-
 		
 		self.theme_load()
 		self.update_buffer()
-		try:
-			for arg in sys.argv[1:]:
-				self.file_handler.load_file(filename=arg)
-		except IndexError:
-			pass
+
+		if (len(sys.argv) > 1): [self.file_handler.load_file(filename=arg) for arg in sys.argv[1:]]
+		
 
 	def test_function(self, arg=None):		
-		# sw = tkinter.Tk()
-		# x = tkinter.Label(sw)
-		# x.pack()
-		# self.definition_label.place(x=0, y=100)
-		# f = f"self.definition_label.configure(text={self.selection_get()}.__doc__)"
 		f = f"self.command_O(arg={self.selection_get()}.__doc__)"
 		try:
 			exec(f)
@@ -272,7 +243,7 @@ class win(tkinter.Tk):
 
 	def theme_load(self):
 		for key in self.theme["highlighter"].items():
-			if (key[0][-2:] == "bg"): self.txt.tag_configure(key[0], background=key[1])
+			if (key[0][-2:] == "bg"): self.txt.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"])
 			else: self.txt.tag_configure(key[0], foreground=key[1])
 		self.configure(bg=self.theme["window"]["bg"])
 
@@ -528,7 +499,6 @@ class win(tkinter.Tk):
 
 		if (self.queue): self.queue[0].sort(); start_index = self.queue[0][0]; stop_index = self.queue[0][1]+1
 		else: start_index = self.convert_line_index("int"); stop_index = self.convert_line_index("int")+1
-		print(self.queue)
 
 		for line_no in range(start_index, stop_index):
 			current_line = self.txt.get(float(line_no), self.highlighter.get_line_lenght(line_no))
@@ -593,7 +563,7 @@ class win(tkinter.Tk):
 		# self.line_no.place(width=100, height=50)
 
 	#window operation bindings
-	def window_select(self, widget="", arg=None,):
+	def window_select(self, widget="", arg=None):
 		if (widget == "file_menu"): self.file_menubar_label.focus_set(); self.file_menubar_label.configure(bg=self.theme["window"]["select_widget"], fg=self.theme["window"]["select_widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
 		elif (widget == "settings_menu"): self.settings_menubar_label.focus_set(); self.settings_menubar_label.configure(bg=self.theme["window"]["select_widget"], fg=self.theme["window"]["select_widget_fg"]); self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
 		elif (widget == "text"): self.txt.focus_set(); self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
@@ -607,36 +577,36 @@ class win(tkinter.Tk):
 
 		return "break"
 
-	def set_dimensions(self, arg=None, expand=None): # I do understand that this is a terrible, hideous thing but I couldn't come up with a better solution
+	def set_dimensions(self, arg=None, expand=True): # I do understand that this is a terrible, hideous thing but I couldn't come up with a better solution
 		""" changes window size accordingly to keys pressed Alt-Curses """
 		key = arg.keysym
+		print(arg.state)
 		if (expand):
 			margin = 20
 			if (key == "Right"):
 				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}")
 			elif (key == "Left"):
-				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()-margin}+{self.winfo_y()}")
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()-margin}+{self.winfo_y()-WINDOW_MARGIN}")
 			elif (key == "Up"):
-				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-margin}")
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-margin-WINDOW_MARGIN}")
 			elif (key == "Down"):
 				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}")
 
 		elif (not expand):
 			margin = -20
 			if (key == "Right"):
-				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()-margin}+{self.winfo_y()}")
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()-margin}+{self.winfo_y()-WINDOW_MARGIN}")
 			if (key == "Left"):
-				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()}+{self.winfo_y()}")
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{self.winfo_x()}+{self.winfo_y()-WINDOW_MARGIN}")
 			if (key == "Up"):
-				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()}")
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-WINDOW_MARGIN}")
 			if (key == "Down"):
-				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-margin}")
-				
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{self.winfo_x()}+{self.winfo_y()-margin-WINDOW_MARGIN}")
+		
 		return "break"	
 		
 	def set_font_size(self, arg):
 		""" Changes font size and reconfigures(updates) widgets accordingly """
-		print(arg)
 		if (arg.delta > 120 or arg.delta < -120): arg.delta=0 
 		if (arg.keysym == "period" or arg.num == 4 or arg.delta > 0):
 			self.Font_size += 1
@@ -839,9 +809,8 @@ class win(tkinter.Tk):
 				
 		elif (command[0] == "test"):
 			self.txt.event_generate("<<Return>>")
-		#highlighting command
+
 		elif (command[0] == "highlighting"):
-			#print("aaa")
 			if (command[1] == "on"):
 				self.command_O("highlighting on")
 				self.highlight_chunk()
@@ -860,7 +829,6 @@ class win(tkinter.Tk):
 
 		elif (re.match(r"^l[0-9]+$|^lget$", command[0])):
 			for i, pnum in enumerate(command[0][1:], 1):
-				print(pnum)
 				if (re.search("[0-9]", pnum)): 
 					argument = command[0][i:]
 					break
@@ -894,7 +862,7 @@ class win(tkinter.Tk):
 			self.command_O("temperature changed")
 
 		elif (command[0] == "quit" or command[0] == "q"):
-			self.run = False
+			self.destroy()
 
 		elif (command[0] == "sharpness"):
 			self.sharpness = command[1]
@@ -1051,9 +1019,12 @@ class win(tkinter.Tk):
 
 	def update_buffer(self, arg=None):
 		""" updates some of the widgets when a character is typed in """
-		if (self.file_handler.current_file_name): self.title(f"Nix: <*{os.path.basename(self.file_handler.current_buffer)}>") #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
-		# len(self.content) != len(self.txt.get("1.0", "end-1c")) and
-		# self.file_handler.buffers[self.file_handler.current_buffer] = self.txt.get("1.0", "end")
+		if (self.file_handler.current_file_name and len(self.txt.get("1.0", "end")) != self.text_len): #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
+			self.title(f"Nix: <*{os.path.basename(self.file_handler.current_buffer)}>")
+			self.text_len = len(self.txt.get("1.0", "end"))
+
+		if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
+				self.highlighter.highlight(self.cursor_index[0], line=self.current_line)
 
 		if (self.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
@@ -1078,7 +1049,7 @@ class win(tkinter.Tk):
 	def main(self):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
 		self.txt.mark_set(tkinter.INSERT, "1.0")
-		while (True):
+		while (self.run):
 			self.update_win()
 			if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"]); self.txt.see(tkinter.INSERT)
 			
@@ -1090,22 +1061,16 @@ class win(tkinter.Tk):
 
 			self.get_time()
 
-			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				self.highlighter.highlight(self.cursor_index[0], line=self.current_line) #highlight function
-
-			# self.txt.buffer.trace("w", self.update_buffer)
-			# if (len(self.file_handler.buffers[self.file_handler.current_buffer]) != len(self.txt.get("1.0", "end-1c")) and self.focus_displayof() == self.txt): #if a character has been typed into the text widget call the udpate buffer function
-			# self.update_buffer()
-
 			if (self.focus_displayof() == self.command_entry):
 				self.highlighter.command_highlight()
 
-			if (self.terminal_like_cursor):
+			if (self.terminal_like_cursor): #very bad, horrible in fact
 				try:
-					if (re.match(r"\n", self.txt.get(self.txt.index(tkinter.INSERT)))): self.txt.configure(blockcursor=True)
+					if (re.match(r"[\n]", self.txt.get(self.txt.index(tkinter.INSERT)))): self.txt.configure(blockcursor=True)
 					self.txt.tag_configure("test", background=self.theme["highlighter"][self.txt.tag_names(self.txt.index(tkinter.INSERT))[-2]], foreground=self.theme["window"]["bg"]); self.txt.configure(blockcursor=self.insert)
-				except Exception as e:
+				except Exception:
 					if (re.match(r"[\n]", self.txt.get(self.txt.index(tkinter.INSERT)))): self.txt.tag_configure("test", background=self.theme["window"]["bg"], foreground=self.theme["window"]["fg"])
+					else: self.txt.tag_configure("test", background=self.theme["window"]["fg"], foreground=self.theme["window"]["bg"])
 			
 			self.txt.tag_remove("test", "1.0", "end")
 			self.txt.tag_add("test", self.txt.index(tkinter.INSERT))
@@ -1165,3 +1130,5 @@ if __name__ == '__main__':
 	main_win.after(0, main_win.main)
 	main_win.mainloop()
 	
+
+
