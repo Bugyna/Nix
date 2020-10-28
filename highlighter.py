@@ -64,9 +64,12 @@ class highlighter(object):
 		self.txt = parent.txt
 		self.command_entry = parent.command_entry
 		self.theme = parent.theme
+		self.parent = parent
 
 		self.countingQuomarks = False
-		
+		self.human_error = []
+		self.brackets = [[],[],[]]
+		self.bracket_pairs = {}
 
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
@@ -75,8 +78,13 @@ class highlighter(object):
 		self.separator_regex = re.compile(r"[\s\.\,\:\;]")
 		self.num_regex = re.compile(r"[0-9]")
 		self.special_num_regex = re.compile(r"^0b+[0-1]+$|^0x+[0-9a-fA-F]+$")
-		self.special_char_regex = re.compile(r"[\&\^\|\{\}\[\]\@\$\(\)]")
-		self.L_bracket_regex = re.compile(r"[\(]")
+		self.special_char_regex = re.compile(r"[\&\^\|\@\$]")
+		self.brackets_regex = re.compile(r"[\{\}\[\]\(\)]")
+		self.left_brackets_regex = [re.compile(r"[\(]"), re.compile(r"[\[]"), re.compile(r"[\{]")]
+		self.right_brackets_regex = [re.compile(r"[\)]"), re.compile(r"[\]]"), re.compile(r"[\}]")]
+		# self.left_brackets_regex = re.compile(r"[\(]")
+		# self.right_brackets_regex = re.compile(r"[\)]")
+		self.function_separator_regex = re.compile(r"[\(]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		self.whitespace_regex = re.compile(r"[\t]")
@@ -164,6 +172,45 @@ class highlighter(object):
 					self.command_entry.tag_add("command_keywords", last_separator, index)
 				last_separator = f"1.{i}"
 				
+
+	def bracket_pair_highlight(self):
+		self.txt.tag_remove("pair_bg", "1.0", "end")
+
+		index = self.txt.index(tkinter.INSERT)
+		if (self.brackets_regex.match(self.txt.get(index))):
+			self.txt.tag_add("pair_bg", self.bracket_pairs[index])
+					
+
+	def bracket_pair_make(self):
+		self.brackets = [[],[],[]] #clearing useless things
+		self.human_error = []
+		self.bracket_pairs = {}
+
+		for line_no in range(self.parent.get_line_count()+1):
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
+
+			for type_index in range(len(self.left_brackets_regex)):
+				for i, current_char	in enumerate(line, 0):
+					if (self.left_brackets_regex[type_index].match(current_char)):
+						index = f"{line_no}.{i}"
+						self.brackets[type_index].append(index)
+
+					elif (self.right_brackets_regex[type_index].match(current_char)):
+						index = f"{line_no}.{i}"
+						try: #checks if pair already exists; if not, it throws an error and creates a new pair
+							self.bracket_pairs[index]; self.brackets[type_index].pop(); self.bracket_pairs[self.brackets[type_index][-1]]
+						except Exception:
+							try:
+								if (not self.brackets[type_index]): self.human_error.append(index); continue
+								self.bracket_pairs[index] = self.brackets[type_index][-1]; self.bracket_pairs[self.brackets[type_index][-1]] = index; self.brackets[type_index].pop()
+							except Exception:
+								pass
+
+		self.txt.tag_remove("error_bg", "1.0", "end")
+		for i in range(3):
+			[self.txt.tag_add("error_bg", index) for index in self.brackets[i]]
+		[self.txt.tag_add("error_bg", index) for index in self.human_error]
+
 				
 	def highlight_keyword(self, last_separator, index):
 		if (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
@@ -234,19 +281,27 @@ class highlighter(object):
 			
 			elif (self.operator_regex.match(current_char)):
 				index = f"{line_no}.{i}"
-				self.txt.tag_add("operators", index)
 				self.highlight_keyword(last_separator, index)
+				self.txt.tag_add("operators", index)
+				self.pattern = ""
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				continue
+			
+			elif (self.brackets_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+				self.highlight_keyword(last_separator, index)
+				self.txt.tag_add("special_chars", index)
+				if (self.function_separator_regex.match(current_char)):
+					self.txt.tag_add("functions", last_separator, index)
+
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
 			
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
-				index = f"{line_no}.{i}"
-				self.txt.tag_add("special_chars", index)
-				if (self.L_bracket_regex.match(current_char)):
-					self.txt.tag_add("functions", last_separator, index)
-				else: self.highlight_keyword(last_separator, index)
+				self.highlight_keyword(last_separator, index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -340,15 +395,20 @@ class highlighter(object):
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
 			
-			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
+			elif (self.brackets_regex.match(current_char)):
 				index = f"{line_no}.{i}"
+				self.highlight_keyword(last_separator, index)
 				self.txt.tag_add("special_chars", index)
-				
-				if (self.L_bracket_regex.match(current_char)):
+				if (self.function_separator_regex.match(current_char)):
 					self.txt.tag_add("functions", last_separator, index)
 
-				else: self.highlight_keyword(last_separator, index)
-
+				self.pattern = ""
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				continue
+			
+			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
+				self.highlight_keyword(last_separator, index)
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"

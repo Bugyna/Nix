@@ -10,7 +10,8 @@ x = 55555555555
 xx = 0x5000000000
 xxx = 0b100000000
 # TEST
-
+# (((((((((())))))))))
+# ))
 import tkinter
 from tkinter import ttk
 from tkinter import font
@@ -54,7 +55,7 @@ class win(tkinter.Tk):
 		super().__init__()
 		# "cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 		# 	 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-		with open("config.nix", "r") as config:
+		with open("/home/bugy/projs/neditor/config.nix", "r") as config:
 			self.theme_options = json.load(config)["themes"]
 		self.theme = self.theme_options["cake"]
 
@@ -1022,9 +1023,9 @@ class win(tkinter.Tk):
 		if (self.file_handler.current_file_name and len(self.txt.get("1.0", "end")) != self.text_len): #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
 			self.title(f"Nix: <*{os.path.basename(self.file_handler.current_buffer)}>")
 			self.text_len = len(self.txt.get("1.0", "end"))
-
-		if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				self.highlighter.highlight(self.cursor_index[0], line=self.current_line)
+			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
+				try: self.bracket_pair_make()
+				except Exception as e: print(e)
 
 		if (self.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
@@ -1060,6 +1061,10 @@ class win(tkinter.Tk):
 			if (self.selection_start_index): self.line_no.configure(text=f"[{self.selection_start_index}][{self.txt.index(tkinter.INSERT)}]")
 
 			self.get_time()
+			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
+				self.highlighter.highlight(self.cursor_index[0], line=self.current_line)
+				try: self.highlighter.bracket_pair_highlight()
+				except Exception as e: print(e)
 
 			if (self.focus_displayof() == self.command_entry):
 				self.highlighter.command_highlight()
@@ -1101,12 +1106,20 @@ class win(tkinter.Tk):
 		if (type(start_index) == float): start_index = int(start_index)	#shit
 		if (type(stop_index) == float): stop_index = int(stop_index) #am out
 		def highlight():
-			t0 = time() # timer| gets current time in miliseconds
-			if self.highlighting: [self.highlighter.highlight(i) for i in range(start_index, stop_index)]
-			t1 = time() # timer| gets current time in miliseconds
+			t0 = time() # timer gets current time in miliseconds
+			if self.highlighting:
+				[self.highlighter.highlight(i) for i in range(start_index, stop_index)]
+				self.highlighter.bracket_pair_make()
+
+			t1 = time() # timer gets current time in miliseconds
 			print(t1-t0)
 		threading.Thread(target=highlight).start()
 		
+	def bracket_pair_make(self):
+		def highlight():
+			if self.highlighting: self.highlighter.bracket_pair_make()
+		
+		threading.Thread(target=highlight).start()
 
 	def unhighlight_chunk(self, arg=None, start_index=None, stop_index=None):
 		if (not start_index): start_index = 1
@@ -1130,5 +1143,8 @@ if __name__ == '__main__':
 	main_win.after(0, main_win.main)
 	main_win.mainloop()
 	
+
+
+
 
 
