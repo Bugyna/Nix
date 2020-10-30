@@ -8,8 +8,9 @@ __status__ = "Production"
 # TEST
 x = 55555555555
 xx = 0x5000000000
-xxx = 0b100000000
+xxx = 0b100000000 
 # TEST
+# if (re.match(r"bruh"), line)):
 # (((((((((())))))))))
 # ))
 import tkinter
@@ -652,7 +653,7 @@ class win(tkinter.Tk):
 			if index == "": break
 			if count.get() == 0: break # degenerate pattern which matches zero-lenght strings
 			self.txt.mark_set("matchStart", index)
-			self.txt.mark_set("matchEnd", "%s+%sc" % (index, count.get()))
+			self.txt.mark_set("matchEnd", f"{index}+{count.get()}c")
 			self.found.append([index, self.txt.index(f"{index}+{count.get()}c")])
 		
 		for index in self.found:
@@ -891,6 +892,9 @@ class win(tkinter.Tk):
 		elif (command[0] == "resize"):
 			self.update_win()
 			self.geometry(f"{int(command[1])}x{int(command[2])}")
+			
+		elif (command[0] == "buffers"):
+			self.file_handler.load_buffer(command[1:])
 
 		elif (command[0] == "save"):
 			self.file_handler.save_file()
@@ -1023,10 +1027,7 @@ class win(tkinter.Tk):
 		if (self.file_handler.current_file_name and len(self.txt.get("1.0", "end")) != self.text_len): #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
 			self.title(f"Nix: <*{os.path.basename(self.file_handler.current_buffer)}>")
 			self.text_len = len(self.txt.get("1.0", "end"))
-			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
-				try: self.bracket_pair_make()
-				except Exception as e: print(e)
-
+				
 		if (self.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
 
@@ -1063,8 +1064,7 @@ class win(tkinter.Tk):
 			self.get_time()
 			if (self.highlighting): # if the highlighting option is on then turn on highlighting :D
 				self.highlighter.highlight(self.cursor_index[0], line=self.current_line)
-				try: self.highlighter.bracket_pair_highlight()
-				except Exception as e: print(e)
+				self.highlighter.bracket_pair_highlight(self.cursor_index[0], self.current_line)
 
 			if (self.focus_displayof() == self.command_entry):
 				self.highlighter.command_highlight()
@@ -1109,17 +1109,17 @@ class win(tkinter.Tk):
 			t0 = time() # timer gets current time in miliseconds
 			if self.highlighting:
 				[self.highlighter.highlight(i) for i in range(start_index, stop_index)]
-				self.highlighter.bracket_pair_make()
-
+				self.bracket_pair_make()
 			t1 = time() # timer gets current time in miliseconds
 			print(t1-t0)
+
 		threading.Thread(target=highlight).start()
 		
-	def bracket_pair_make(self):
-		def highlight():
-			if self.highlighting: self.highlighter.bracket_pair_make()
+	def bracket_pair_make(self, arg=None):
+		def pair_make():
+			self.highlighter.bracket_pair_make()
+		threading.Thread(target=pair_make).start()
 		
-		threading.Thread(target=highlight).start()
 
 	def unhighlight_chunk(self, arg=None, start_index=None, stop_index=None):
 		if (not start_index): start_index = 1
@@ -1143,8 +1143,6 @@ if __name__ == '__main__':
 	main_win.after(0, main_win.main)
 	main_win.mainloop()
 	
-
-
 
 
 

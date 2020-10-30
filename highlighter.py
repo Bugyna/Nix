@@ -82,6 +82,7 @@ class highlighter(object):
 		self.brackets_regex = re.compile(r"[\{\}\[\]\(\)]")
 		self.left_brackets_regex = [re.compile(r"[\(]"), re.compile(r"[\[]"), re.compile(r"[\{]")]
 		self.right_brackets_regex = [re.compile(r"[\)]"), re.compile(r"[\]]"), re.compile(r"[\}]")]
+		print(self.brackets_regex)
 		# self.left_brackets_regex = re.compile(r"[\(]")
 		# self.right_brackets_regex = re.compile(r"[\)]")
 		self.function_separator_regex = re.compile(r"[\(]")
@@ -173,44 +174,56 @@ class highlighter(object):
 				last_separator = f"1.{i}"
 				
 
-	def bracket_pair_highlight(self):
+	def bracket_pair_highlight(self, line_no: int, line: str) -> None: 
 		self.txt.tag_remove("pair_bg", "1.0", "end")
+
+		for i, current_char in enumerate(line, 0):
+			if (self.brackets_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+				try:
+					self.txt.tag_remove("error_bg", index)
+					self.txt.tag_remove("error_bg", self.bracket_pairs[index])
+				except Exception:
+					self.txt.tag_add("error_bg", index)
 
 		index = self.txt.index(tkinter.INSERT)
 		if (self.brackets_regex.match(self.txt.get(index))):
-			self.txt.tag_add("pair_bg", self.bracket_pairs[index])
-					
+			try:
+				self.txt.tag_add("pair_bg", self.bracket_pairs[index])
+				self.txt.tag_remove("error_bg", index)
+				self.txt.tag_remove("error_bg", self.bracket_pairs[index])
+			except Exception:
+				self.txt.tag_add("error_bg", index)
 
-	def bracket_pair_make(self):
+
+	def bracket_pair_make(self, type_index: int=None):
 		self.brackets = [[],[],[]] #clearing useless things
 		self.human_error = []
 		self.bracket_pairs = {}
 
-		for line_no in range(self.parent.get_line_count()+1):
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
+		for type_index in range(len(self.left_brackets_regex)):
+			if (type_index == 0): pattern = r"[\(\)]"
+			elif (type_index == 1): pattern = r"[\[\]]"
+			elif (type_index == 2): pattern = r"[\{\}]"
+			start = self.txt.index("1.0")
+			end = self.txt.index("end")
+			self.txt.mark_set("matchStart", start)
+			self.txt.mark_set("matchEnd", start)
+			self.txt.mark_set("searchLimit", end)
 
-			for type_index in range(len(self.left_brackets_regex)):
-				for i, current_char	in enumerate(line, 0):
-					if (self.left_brackets_regex[type_index].match(current_char)):
-						index = f"{line_no}.{i}"
-						self.brackets[type_index].append(index)
+			count = tkinter.IntVar()
+			while True:
+				index = self.txt.search(pattern, "matchEnd", "searchLimit", count=count, regexp=True)
+				if index == "": break
+				if count.get() == 0: break # degenerate pattern which matches zero-lenght strings
+				self.txt.mark_set("matchStart", index)
+				self.txt.mark_set("matchEnd", f"{index}+{count.get()}c")
+				if (self.left_brackets_regex[type_index].match(self.txt.get(index))):
+					self.brackets[type_index].append(index)
 
-					elif (self.right_brackets_regex[type_index].match(current_char)):
-						index = f"{line_no}.{i}"
-						try: #checks if pair already exists; if not, it throws an error and creates a new pair
-							self.bracket_pairs[index]; self.brackets[type_index].pop(); self.bracket_pairs[self.brackets[type_index][-1]]
-						except Exception:
-							try:
-								if (not self.brackets[type_index]): self.human_error.append(index); continue
-								self.bracket_pairs[index] = self.brackets[type_index][-1]; self.bracket_pairs[self.brackets[type_index][-1]] = index; self.brackets[type_index].pop()
-							except Exception:
-								pass
-
-		self.txt.tag_remove("error_bg", "1.0", "end")
-		for i in range(3):
-			[self.txt.tag_add("error_bg", index) for index in self.brackets[i]]
-		[self.txt.tag_add("error_bg", index) for index in self.human_error]
-
+				elif (self.right_brackets_regex[type_index].match(self.txt.get(index))):
+					if (not self.brackets[type_index]): self.human_error.append(index); continue
+					self.bracket_pairs[index] = self.brackets[type_index][-1]; self.bracket_pairs[self.brackets[type_index][-1]] = index; self.brackets[type_index].pop()
 				
 	def highlight_keyword(self, last_separator, index):
 		if (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
