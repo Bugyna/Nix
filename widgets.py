@@ -70,12 +70,12 @@ class TEXT(tkinter.Text):
 		self.parent = parent
 
 		self.bind("<KeyRelease>", self.parent.update_buffer)
-		self.bind("(", self.parent.bracket_pair_make)
-		self.bind(")", self.parent.bracket_pair_make)
-		self.bind("[", self.parent.bracket_pair_make)
-		self.bind("]", self.parent.bracket_pair_make)
-		self.bind("{", self.parent.bracket_pair_make)
-		self.bind("}", self.parent.bracket_pair_make)
+		# self.bind("(", self.parent.bracket_pair_make)
+		# self.bind(")", self.parent.bracket_pair_make)
+		# self.bind("[", self.parent.bracket_pair_make)
+		# self.bind("]", self.parent.bracket_pair_make)
+		# self.bind("{", self.parent.bracket_pair_make)
+		# self.bind("}", self.parent.bracket_pair_make)
 		self.bind("<KeyRelease>-<Delete>", self.parent.bracket_pair_make)
 		# self.bind("<Delete>", self.parent.bracket_pair_make)
 		# self.bind("<Backspace>", self.parent.bracket_pair_make)

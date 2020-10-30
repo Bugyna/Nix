@@ -1027,6 +1027,7 @@ class win(tkinter.Tk):
 		if (self.file_handler.current_file_name and len(self.txt.get("1.0", "end")) != self.text_len): #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
 			self.title(f"Nix: <*{os.path.basename(self.file_handler.current_buffer)}>")
 			self.text_len = len(self.txt.get("1.0", "end"))
+			self.bracket_pair_make()
 				
 		if (self.focus_displayof() != self.command_entry): #if the user is not using the command entry widget and a character has been typed into the text widget: hide the command enter widget
 			self.command_entry.place_forget()
@@ -1117,6 +1118,7 @@ class win(tkinter.Tk):
 		
 	def bracket_pair_make(self, arg=None):
 		def pair_make():
+			sleep(0.2)
 			self.highlighter.bracket_pair_make()
 		threading.Thread(target=pair_make).start()
 		

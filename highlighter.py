@@ -177,23 +177,25 @@ class highlighter(object):
 	def bracket_pair_highlight(self, line_no: int, line: str) -> None: 
 		self.txt.tag_remove("pair_bg", "1.0", "end")
 
-		for i, current_char in enumerate(line, 0):
-			if (self.brackets_regex.match(current_char)):
-				index = f"{line_no}.{i}"
-				try:
-					self.txt.tag_remove("error_bg", index)
-					self.txt.tag_remove("error_bg", self.bracket_pairs[index])
-				except Exception:
-					self.txt.tag_add("error_bg", index)
+		# for i, current_char in enumerate(line, 0):
+		# 	if (self.brackets_regex.match(current_char)):
+		# 		index = f"{line_no}.{i}"
+		# 		try:
+		# 			self.txt.tag_remove("error_bg", index)
+		# 			self.txt.tag_remove("error_bg", self.bracket_pairs[index])
+		# 		except Exception:
+		# 			self.txt.tag_add("error_bg", index)
 
 		index = self.txt.index(tkinter.INSERT)
+		# i = [index, index+"+1c", index+"-1c"]
 		if (self.brackets_regex.match(self.txt.get(index))):
 			try:
 				self.txt.tag_add("pair_bg", self.bracket_pairs[index])
-				self.txt.tag_remove("error_bg", index)
-				self.txt.tag_remove("error_bg", self.bracket_pairs[index])
+				# self.txt.tag_remove("error_bg", index)
+				# self.txt.tag_remove("error_bg", self.bracket_pairs[index])
 			except Exception:
-				self.txt.tag_add("error_bg", index)
+				pass
+				# self.txt.tag_add("error_bg", index)
 
 
 	def bracket_pair_make(self, type_index: int=None):
