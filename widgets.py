@@ -70,15 +70,7 @@ class TEXT(tkinter.Text):
 		self.parent = parent
 
 		self.bind("<KeyRelease>", self.parent.update_buffer)
-		# self.bind("(", self.parent.bracket_pair_make)
-		# self.bind(")", self.parent.bracket_pair_make)
-		# self.bind("[", self.parent.bracket_pair_make)
-		# self.bind("]", self.parent.bracket_pair_make)
-		# self.bind("{", self.parent.bracket_pair_make)
-		# self.bind("}", self.parent.bracket_pair_make)
-		self.bind("<KeyRelease>-<Delete>", self.parent.bracket_pair_make)
-		# self.bind("<Delete>", self.parent.bracket_pair_make)
-		# self.bind("<Backspace>", self.parent.bracket_pair_make)
+		# self.bind("<KeyRelease>-<Delete>", self.parent.bracket_pair_make)
 
 		self.bind("<Control-period>", self.parent.set_font_size)
 		self.bind("<Control-comma>", self.parent.set_font_size)
@@ -129,6 +121,10 @@ class TEXT(tkinter.Text):
 		self.bind("<Control-l>", lambda arg: self.parent.change_case("lower"))
 		self.bind("<Control-Shift-L>", lambda arg: self.parent.change_case("upper"))
 		self.bind("<Control-Shift-l>", lambda arg: self.parent.change_case("upper"))
+
+		self.bind("<Control-K>", self.parent.get_selection_count)
+		self.bind("<Control-k>", self.parent.get_selection_count)
+
 		self.bind("<Tab>", self.parent.indent)
 		try: #linux bindings that throw errors on windows
 			self.bind("<Shift-ISO_Left_Tab>", self.parent.unindent)
@@ -183,3 +179,8 @@ class TEXT(tkinter.Text):
 		self.parent.file_handler.load_buffer(buffer_name=buffer_name)
 
 		return "break"
+
+
+class GRAPHICAL_BUFFER: # FORESHADOWING
+	def __init__(self):
+		pass

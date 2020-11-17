@@ -6,7 +6,7 @@ class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
 	def __init__(self, parent):
 		self.lang = "NaN"
-		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm", "java", "jsp", "class", "css"]
+		self.supported_languagues = ["NaN", "py", "cc", "cpp", "c", "txt", "html", "htm", "java", "jsp", "class", "css", "go"]
 
 		self.command_keywords = parent.command_keywords
 		print(self.command_keywords)
@@ -54,6 +54,21 @@ class highlighter(object):
 			 "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
 		]
 
+		self.Go_keywords = [
+			 'break', 'func', 'interface', 'select', 'defer', 'go', 'map', 'struct', 'chan',
+			 'package', 'const', 'fallthrough', 'range', 'type', 'continue', 'import', 'return', 'var',
+			 "uint", "uint8", "uint16", "uint32", "uint64", "uintptr", "rune", "byte", "int", "int8", "int16",
+			 "int32", "int64", "float32", "float64", "complex64", "complex128", "bool", "string"
+		]
+
+		self.Go_numerical_keywords = [
+			"true", "false"
+		]
+
+		self.Go_logical_keywords = [
+			"if", "else", "switch", "case", 'default', "for", "while", "goto"
+		]
+
 		# x = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
 		# self.html_keywords = ['!--', '!DOCTYPE', 'a', 'abbr', 'acronym', 'address', 'applet', 'area', 'article', 'aside', 'audio', 'b', 'base', 'basefont', 'bdi', 'bdo', 'big', 'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'center', 'cite', 'code', 'col', 'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'dir', 'div', 'dl', 'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'font', 'footer', 'form', 'frame', 'frameset', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'i', 'iframe', 'img', 'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'meta', 'meter', 'nav', 'noframes', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p', 'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script', 'section', 'select', 'small', 'source', 'span', 'strike', 'strong', 'style', 'sub', 'summary', 'sup', 'svg', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead', 'time', 'title', 'tr', 'track', 'tt', 'u', 'ul', 'var', 'video', 'wbr']
 		self.html_keywords = ['<!-->', '<!DOCTYPE>', '<a>', '<abbr>', '<acronym>', '<address>', '<applet>', '<area>', '<article>', '<aside>', '<audio>', '<b>', '<base>', '<basefont>', '<bdi>', '<bdo>', '<big>', '<blockquote>', '<body>', '<br>', '<button>', '<canvas>', '<caption>', '<center>', '<cite>', '<code>', '<col>', '<colgroup>', '<data>', '<datalist>', '<dd>', '<del>', '<details>', '<dfn>', '<dialog>', '<dir>', '<div>', '<dl>', '<dt>', '<em>', '<embed>', '<fieldset>', '<figcaption>', '<figure>', '<font>', '<footer>', '<form>', '<frame>', '<frameset>', '<h1>', '<h2>', '<h3>', '<h4>', '<h5>', '<h6>', '<head>', '<header>', '<hr>', '<html>', '<i>', '<iframe>', '<img>', '<input>', '<ins>', '<kbd>', '<label>', '<legend>', '<li>', '<link>', '<main>', '<map>', '<mark>', '<meta>', '<meter>', '<nav>', '<noframes>', '<noscript>', '<object>', '<ol>', '<optgroup>', '<option>', '<output>', '<p>', '<param>', '<picture>', '<pre>', '<progress>', '<q>', '<rp>', '<rt>', '<ruby>', '<s>', '<samp>', '<script>', '<section>', '<select>', '<small>', '<source>', '<span>', '<strike>', '<strong>', '<style>', '<sub>', '<summary>', '<sup>', '<svg>', '<table>', '<tbody>', '<td>', '<template>', '<textarea>', '<tfoot>', '<th>', '<thead>', '<time>', '<title>', '<tr>', '<track>', '<tt>', '<u>', '<ul>', '<var>', '<video>', '<wbr>', '</!-->', '</!DOCTYPE>', '</a>', '</abbr>', '</acronym>', '</address>', '</applet>', '</area>', '</article>', '</aside>', '</audio>', '</b>', '</base>', '</basefont>', '</bdi>', '</bdo>', '</big>', '</blockquote>', '</body>', '</br>', '</button>', '</canvas>', '</caption>', '</center>', '</cite>', '</code>', '</col>', '</colgroup>', '</data>', '</datalist>', '</dd>', '</del>', '</details>', '</dfn>', '</dialog>', '</dir>', '</div>', '</dl>', '</dt>', '</em>', '</embed>', '</fieldset>', '</figcaption>', '</figure>', '</font>', '</footer>', '</form>', '</frame>', '</frameset>', '</h1>', '</h2>', '</h3>', '</h4>', '</h5>', '</h6>', '</head>', '</header>', '</hr>', '</html>', '</i>', '</iframe>', '</img>', '</input>', '</ins>', '</kbd>', '</label>', '</legend>', '</li>', '</link>', '</main>', '</map>', '</mark>', '</meta>', '</meter>', '</nav>', '</noframes>', '</noscript>', '</object>', '</ol>', '</optgroup>', '</option>', '</output>', '</p>', '</param>', '</picture>', '</pre>', '</progress>', '</q>', '</rp>', '</rt>', '</ruby>', '</s>', '</samp>', '</script>', '</section>', '</select>', '</small>', '</source>', '</span>', '</strike>', '</strong>', '</style>', '</sub>', '</summary>', '</sup>', '</svg>', '</table>', '</tbody>', '</td>', '</template>', '</textarea>', '</tfoot>', '</th>', '</thead>', '</time>', '</title>', '</tr>', '</track>', '</tt>', '</u>', '</ul>', '</var>', '</video>', '</wbr>']
@@ -82,9 +97,6 @@ class highlighter(object):
 		self.brackets_regex = re.compile(r"[\{\}\[\]\(\)]")
 		self.left_brackets_regex = [re.compile(r"[\(]"), re.compile(r"[\[]"), re.compile(r"[\{]")]
 		self.right_brackets_regex = [re.compile(r"[\)]"), re.compile(r"[\]]"), re.compile(r"[\}]")]
-		print(self.brackets_regex)
-		# self.left_brackets_regex = re.compile(r"[\(]")
-		# self.right_brackets_regex = re.compile(r"[\)]")
 		self.function_separator_regex = re.compile(r"[\(]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
@@ -138,7 +150,17 @@ class highlighter(object):
 			self.highlight = self.C_highlight
 			self.comment_sign = "//"
 
+		elif (self.lang == "go"):
+			self.keywords = self.Go_keywords
+			self.numerical_keywords = self.Go_numerical_keywords
+			self.logical_keywords = self.Go_logical_keywords
+			self.highlight = self.C_highlight
+			self.comment_sign = "//"
+
 		elif (self.lang == "NaN" or self.lang == "txt"):
+			self.comment_sign = "\t"
+			self.highlight = self.no_highlight
+		else:
 			self.comment_sign = "\t"
 			self.highlight = self.no_highlight
 		
@@ -226,7 +248,19 @@ class highlighter(object):
 				elif (self.right_brackets_regex[type_index].match(self.txt.get(index))):
 					if (not self.brackets[type_index]): self.human_error.append(index); continue
 					self.bracket_pairs[index] = self.brackets[type_index][-1]; self.bracket_pairs[self.brackets[type_index][-1]] = index; self.brackets[type_index].pop()
-				
+
+	def rm_highlight(self, last_separator, line_end_index):
+		self.txt.tag_remove("functions", last_separator, line_end_index)
+		self.txt.tag_remove("keywords", last_separator, line_end_index)
+		self.txt.tag_remove("logical_keywords", last_separator, line_end_index)
+		self.txt.tag_remove("numerical_keywords", last_separator, line_end_index)
+		self.txt.tag_remove("numbers", last_separator, line_end_index)
+		self.txt.tag_remove("special_chars", last_separator, line_end_index)
+		self.txt.tag_remove("comments", last_separator, line_end_index)
+		self.txt.tag_remove("operators", last_separator, line_end_index)
+		self.txt.tag_remove("quotes", last_separator, line_end_index)
+		self.txt.tag_remove("upcase", last_separator, line_end_index)
+
 	def highlight_keyword(self, last_separator, index):
 		if (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
 			self.txt.tag_add("keywords", last_separator, index)
@@ -238,7 +272,7 @@ class highlighter(object):
 			self.txt.tag_add("numbers", last_separator, index)
 
 		elif (self.abc_upcase_regex.match(self.pattern) and len(self.pattern) > 1):
-			self.txt.tag_add("numbers", last_separator, index)
+			self.txt.tag_add("upcase", last_separator, index)
 
 		elif (self.special_num_regex.match(self.pattern)):
 			self.txt.tag_add("numbers", last_separator, index)
@@ -256,15 +290,7 @@ class highlighter(object):
 		self.pattern = ""
 		self.countingQuomarks = False
 		
-		self.txt.tag_remove("functions", last_separator, line_end_index)
-		self.txt.tag_remove("keywords", last_separator, line_end_index)
-		self.txt.tag_remove("logical_keywords", last_separator, line_end_index)
-		self.txt.tag_remove("numerical_keywords", last_separator, line_end_index)
-		self.txt.tag_remove("numbers", last_separator, line_end_index)
-		self.txt.tag_remove("special_chars", last_separator, line_end_index)
-		self.txt.tag_remove("comments", last_separator, line_end_index)
-		self.txt.tag_remove("operators", last_separator, line_end_index)
-		self.txt.tag_remove("quotes", last_separator, line_end_index)
+		self.rm_highlight(last_separator, line_end_index)
 
 
 		for i, current_char in enumerate(line, 0):
@@ -342,14 +368,7 @@ class highlighter(object):
 		self.countingQuomarks = False
 		special_highlighting_mode = 0
 
-		self.txt.tag_remove("quotes", last_separator, line_end_index)
-		self.txt.tag_remove("functions", last_separator, line_end_index)
-		self.txt.tag_remove("keywords", last_separator, line_end_index)
-		self.txt.tag_remove("numbers", last_separator, line_end_index)
-		self.txt.tag_remove("special_chars", last_separator, line_end_index)
-		self.txt.tag_remove("comments", last_separator, line_end_index)
-		self.txt.tag_remove("operators", last_separator, line_end_index)
-		
+		self.rm_highlight(last_separator, line_end_index)
 		
 		for i, current_char in enumerate(line, 0):
 

@@ -1,7 +1,9 @@
 import os
+import time
 import tkinter
+import threading
+import subprocess
 from pygame import mixer
-from time import time
 
 from widgets import BUFFER_TAB, TEXT
 
@@ -147,7 +149,7 @@ class file_handler(object):
 		self.parent.title(f"Nix: <{os.path.basename(self.current_file.name)}>") #sets the title of the window to the current filename
 		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
 
-		t0 = time() # timer| gets current time in miliseconds
+		t0 = time.time() # timer| gets current time in miliseconds
 		self.parent.txt.insert("1.0", self.current_file.read()) #puts all of the file's text in the text widget
 		self.parent.text_len = len(self.parent.txt.get("1.0", "end"))
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
@@ -155,7 +157,7 @@ class file_handler(object):
 		self.current_file.close() #closes current file
 		
 		self.parent.highlight_chunk() #highlights the text in the text widget
-		t1 = time() # timer| gets current time in miliseconds
+		t1 = time.time() # timer| gets current time in miliseconds
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		print(t1-t0)
 		self.parent.command_O(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
@@ -192,7 +194,38 @@ class music_player:
 		
 	def queue(self):
 		pass
-														
+
+
+def video_record_start(parent):
+	""" if you wanna record some video of your code (probably on works on linux (and you have to have ffmpeg installed"""
+	pos = f":1.0+{parent.winfo_rootx()},{parent.winfo_rooty()}"
+	videosize = f"{parent.winfo_width()}x{parent.winfo_height()}"
+	path = parent.file_handler.current_dir
+	filename = str(int(time.time())) + ".mkv"
+
+	args = [
+		["-f", "x11grab"],
+		["-framerate", "120"],
+		["-video_size", videosize],
+		["-i", pos],
+		["-vcodec", "libx264"],
+		["-qscale", "0"]
+	]
+
+	print(args)
+	command = f"cd {path}; ffmpeg "
+	for arg in args:
+		command += f"{arg[0]} {arg[1]} "
+
+	command += filename
+
+	return subprocess.Popen(command, stdin=subprocess.PIPE, shell=True)
+
+def video_record_stop(process):
+	process.communicate(b"q")
+	print("terminated")
+
+						
 class launcher:
 	def __init__(self):
 		pass

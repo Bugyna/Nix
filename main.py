@@ -26,7 +26,6 @@ import os, sys
 from datetime import datetime
 from time import sleep, time, localtime, strftime
 
-# import lyricwikia
 import requests
 from bs4 import BeautifulSoup
 
@@ -34,7 +33,7 @@ import random
 import threading
 
 from highlighter import highlighter
-from handlers import file_handler, music_player
+from handlers import file_handler, music_player, video_record_start, video_record_stop
 from widgets import MENUBAR_LABEL
 
 try:
@@ -56,8 +55,26 @@ class win(tkinter.Tk):
 		super().__init__()
 		# "cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 		# 	 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-		with open("/home/bugy/projs/neditor/config.nix", "r") as config:
-			self.theme_options = json.load(config)["themes"]
+		# with open("/home/bugy/projs/neditor/config.nix", "r") as config:
+		# 	self.theme_options = json.load(config)["themes"]
+		##FF103A
+		self.theme_options = {
+			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#332233", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB","numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+
+			"timelord": {"window": {"bg" : "#000099", "fg": "#AAAAAA", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+
+
+			"muffin" : {"window": {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "selectfg": "#FFFFFF", "widget_fg": "#000000", "select_widget": "#000000", "select_widget_fg": "#FFFFFF"},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+
+			"toast" : {"window": {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
+
+			"student" : {"bg" : "#222222", "fg": "#FFFFFF"}
+			}
+
 		self.theme = self.theme_options["cake"]
 
 		self.command_keywords = ["l", "lget", "highlighting", "q", "quit", "temp", "sharpness", "alpha", "convert", "save", "saveas", "open", "find", "theme"]
@@ -137,6 +154,8 @@ class win(tkinter.Tk):
 		self.wm_attributes("-alpha", 1)
 		self.canvas.create_line(0, 23, 2000, 23, fill="#FFFFFF", smooth=1)
 		self.canvas.create_line(0, 44, 2000, 44, fill="#FFFFFF", smooth=1)
+		# self.canvas.create_line(0, 23, 0, self.winfo_height(), fill="#FFFFFF", smooth=1)
+		# self.canvas.create_line(self.winfo_width()-1, 23, self.winfo_width()-1, self.winfo_height(), fill="#FFFFFF", smooth=1)
 		self.canvas.place(x=0, y=0, relwidth=1, height=45)
 		
 
@@ -192,9 +211,12 @@ class win(tkinter.Tk):
 
 		# not anymore #tags for highlighting
 		#sick fucking colors #A500FF;
+
 		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
 
 		#command binding
+		self.command_out.bind("<KeyPress>", lambda arg: self.txt.focus_set())
+
 		self.command_entry.bind("<Return>", self.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
 		self.command_entry.bind("<Up>", self.command_history) # lets you scroll through commands you have already used
 		self.command_entry.bind("<Down>", self.command_history)
@@ -233,7 +255,7 @@ class win(tkinter.Tk):
 		self.update_buffer()
 
 		if (len(sys.argv) > 1): [self.file_handler.load_file(filename=arg) for arg in sys.argv[1:]]
-		
+
 
 	def test_function(self, arg=None):		
 		f = f"self.command_O(arg={self.selection_get()}.__doc__)"
@@ -246,6 +268,7 @@ class win(tkinter.Tk):
 	def theme_load(self):
 		for key in self.theme["highlighter"].items():
 			if (key[0][-2:] == "bg"): self.txt.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"])
+			elif (key[0][-2:] == "_b"): self.txt.tag_configure(key[0][:-2], foreground=key[1], font=self.font_bold)
 			else: self.txt.tag_configure(key[0], foreground=key[1])
 		self.configure(bg=self.theme["window"]["bg"])
 
@@ -265,7 +288,7 @@ class win(tkinter.Tk):
 			 insertwidth=1, insertofftime=0, relief="raised", highlightthickness=0, bd=1, insertbackground=self.theme["window"]["insertbg"],
 			 selectbackground=self.theme["window"]["selectbg"], highlightbackground="#FFFFFF")
 
-		self.command_out.configure(font=self.smaller_font, bg=self.theme["window"]["bg"], fg="#00df00")
+		self.command_out.configure(font=self.smaller_font_bold, bg=self.theme["window"]["bg"], fg="#00df00")
 		self.find_entry.configure(font=self.smaller_font_bold, bg="#555555", fg="#00df00", insertbackground=self.theme["window"]["fg"], relief="flat", highlightthickness=0)
 		self.find_label.configure(font=self.font, bg=self.theme["window"]["bg"], fg="#00df00")
 		self.definition_label.configure(font=self.font, bg=self.theme["window"]["selectfg"], fg="#00df00")
@@ -278,7 +301,7 @@ class win(tkinter.Tk):
 
 	def reposition_widgets(self, arg=None):
 		if (self.command_entry.winfo_viewable()): self.command_entry.place(x=-1, y=self.winfo_height()+1, width=self.winfo_width()+2, height=22, anchor="sw")
-		self.txt.place(x=0,y=45,relwidth=1, height=self.winfo_height()-25, anchor="nw")
+		self.txt.place(x=2,y=45, width=self.winfo_width()-2, height=self.winfo_height()-25, anchor="nw")
 		self.time_label.place(x=self.temperature_label.winfo_x()-self.time_label.winfo_width(), y=0, height=20, anchor="nw")
 		self.temperature_label.place(x=self.line_no.winfo_x()-self.temperature_label.winfo_width()-10, y=0, height=20, anchor="nw")
 		self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=20, anchor="nw")
@@ -288,10 +311,14 @@ class win(tkinter.Tk):
 		if (type == "int"): return int(float(self.cursor_index[0]))
 		elif (type == "float"): return float(self.cursor_index[0])
 
-	def get_line_count(self):
+	def get_line_count(self, arg=None):
 		""" returns total amount of lines in opened text """
 		self.info = self.txt.get("1.0", "end-1c")
 		return sum(1 for line in self.info.split("\n"))
+
+	def get_selection_count(self, arg=None):
+		self.command_O(f"len: {len(self.selection_get())}")
+		return "break"
 
 	def set_highlighter(self):
 		""" sets the highlighter accordingly to the current file extension """
@@ -624,8 +651,10 @@ class win(tkinter.Tk):
 
 		self.font = font.Font(family=self.font_family[0], size=self.Font_size, weight=self.font_family[1])
 		self.smaller_font = font.Font(family="Ubuntu",size=self.sFont_size, weight="bold")
+		self.font_bold = font.Font(family=self.font_family[0], size=self.Font_size, weight="bold")
 		self.txt.configure(font=self.font, tabs=(f"{self.font.measure(' ' * 4)}"))
-		self.command_out.configure(text=f"font size: {self.Font_size}")
+		# self.command_out.configure(text=f"font size: {self.Font_size}")
+		self.theme_load()
 		self.command_O(f"font size: {self.Font_size}")
 		return "break" # returning "break" prevents system/tkinter to call default bindings
 
@@ -670,28 +699,27 @@ class win(tkinter.Tk):
 			self.command_out.place_forget()
 			if (arg.keysym == "Up"):
 				self.found_index -= 1
-				offset = -3
+				offset = -5
 				if (self.found_index < 0):
 					self.found_index = result_count-1
-					offset = 3
+					offset = 5
 
 			elif (arg.keysym == "Down"):
 				self.found_index += 1
-				offset = 3
+				offset = 5
 				if (self.found_index >= result_count):
 					self.found_index = 0
-					offset = -3
+					offset = -5
 
 		for index in self.found:
 			self.txt.tag_remove("found_select_bg", index[0], index[1])
 			
-		self.txt.see(float(self.found[self.found_index][0])+offset)
-		# self.find_label.configure(text=f" {self.found_index+1} out of {result_count} results : {self.found[self.found_index]}")
-		self.find_label.configure(text=f" {result_count} found")
-		self.command_O(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]}")
-		self.txt.tag_add("found_select_bg", self.found[self.found_index][0], self.found[self.found_index][1])
+		
 		self.txt.mark_set(tkinter.INSERT, self.found[self.found_index][0])
-
+		self.txt.see(float(self.found[self.found_index][0])+offset)
+		self.txt.tag_add("found_select_bg", self.found[self.found_index][0], self.found[self.found_index][1])
+		
+		self.command_O(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]}", focus=0)
 
 	def find_place(self, arg=None, text=""):
 		self.find_entry.place(x=0, y=self.winfo_height()-40, relwidth=0.5, height=20, anchor="nw")
@@ -749,7 +777,7 @@ class win(tkinter.Tk):
 	def command_entry_unset(self, arg=None):
 		""" hides command entry widget 'tis a kinda useless function"""
 		self.command_entry.place_forget()
-		self.txt.focus_set()
+		# self.txt.focus_set()
 		return "break"
 
 	def command_history(self, arg=None):
@@ -785,11 +813,12 @@ class win(tkinter.Tk):
 
 		return "break"
 
-	def command_O(self, arg):
+	def command_O(self, arg=None, focus=True):
 		""" sets the text in command output """
 		#(I have no idea why past me made this into a function when it doesn't really have to be a function)
 		self.command_out.tkraise(); self.command_out.place(relx=0, rely=0.99975, relwidth=1, anchor="sw")
-		self.command_out.configure(text=str(arg), anchor="c")
+		self.command_out.configure(text=str(arg))
+		if (focus): self.command_out.focus_set()
 
 
 	def cmmand(self, arg):
@@ -829,7 +858,7 @@ class win(tkinter.Tk):
 			self.txt.see(float(command[0])+2)
 			self.command_O(f"moved to: {float(command[0])}")
 
-		elif (re.match(r"^l[0-9]+$|^lget$", command[0])):
+		elif (re.match(r"^l[0-9]+$|^l[0-9]+.[0-9]+$|^lget$", command[0])):
 			for i, pnum in enumerate(command[0][1:], 1):
 				if (re.search("[0-9]", pnum)): 
 					argument = command[0][i:]
@@ -852,16 +881,20 @@ class win(tkinter.Tk):
 			self.find(command[1])
 
 		elif (command[0] == "lyrics"):
-			command1 = ""
-			for word in command[1:]:
-				command1 += " "+word
-			command1 = command1.split(",")
-			lyrics = lyricwikia.get_lyrics(command1[0], command1[1])
-			self.command_O(lyrics)
+			def lyr():
+				command1 = ""
+				for word in command[1:]:
+					command1 += "-"+word
+				command1 = command1.split(",")
+				url = f"http://www.songlyrics.com/{command1[0]}/{command1[1]}-lyrics/" #link to Stockholm's weather data
+				html = requests.get(url).content #gets the html of the url
+				x = BeautifulSoup(html, features="html.parser").find(id="songLyricsDiv").text
+				self.command_O(x)
+			threading.Thread(target=lyr).start()
 
 		elif (command[0] == "temp"):
-			self.temperature_label.configure(text=self.get_temperature())
-			self.command_O("temperature changed")
+			self.get_temperature()
+			self.txt.focus_set()
 
 		elif (command[0] == "quit" or command[0] == "q"):
 			self.destroy()
@@ -888,6 +921,14 @@ class win(tkinter.Tk):
 				self.command_O(f"DECIMAL: {decimal}, HEXADECIMAL: {hex(decimal)}, BINARY: {bin(decimal)}")
 			except ValueError:
 				self.command_O("Error: wrong format; please, add prefix (0x | 0b)")
+
+		elif (command[0] == "cap"):
+			if (command[1] == "start"):
+				self.process = video_record_start(self)
+			
+			elif (command[1] == "stop"):
+				video_record_stop(self.process)
+				self.command_O("screen capture terminated")
 		
 		elif (command[0] == "resize"):
 			self.update_win()
@@ -946,19 +987,21 @@ class win(tkinter.Tk):
 				self.theme_load()
 				self.highlight_chunk()
 			except IndexError:
-				result = "themes:"
+				result = ""
 				for key in self.theme_options.keys():
-					result += "  "+key
+					result += "<"+key+">\n"
 				self.command_O(result)
 		else:
-			self.command_O(f"Command {command} not found")
-
+			res = ""
+			for c in command:
+				res += c+" "
+			self.command_O(f"Command <{res[:-1]}> not found")
 
 		#append command to command history
 		self.command_input_history.append(command)
 
 		#sets focus back to text widget
-		self.txt.focus_set()
+		# self.txt.focus_set()
 		self.txt.see(tkinter.INSERT)
 		self.command_entry.delete("1.0", "end") #deletes command line input
 
@@ -988,7 +1031,9 @@ class win(tkinter.Tk):
 			try: 
 				url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
 				html = requests.get(url).content #gets the html of the url
-				self.temperature_label.configure(text="("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)") #returns the scraped temperature
+				x = "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)"
+				self.temperature_label.configure(text=x) #returns the scraped temperature
+				self.command_O("temperature changed")
 			except Exception: #dunno if it won't crash the app if there's no internet connection
 				pass
 
@@ -1017,7 +1062,6 @@ class win(tkinter.Tk):
 		
 		if (d_time.minute % 10 == 0 and d_time.second == 10 and d_time.microsecond >= 51000 and d_time.microsecond <= 52000): #checks if it's time for updating the temperature
 			self.get_temperature()
-			self.command_O("temperature changed")
 
 		self.time_label.config(text=time) #updates the time label/widget to show current time
 
@@ -1033,7 +1077,7 @@ class win(tkinter.Tk):
 			self.command_entry.place_forget()
 
 		if (self.focus_displayof() != self.command_out): #if the a character has been typed into the text widget: hide the command output widget
-			self.command_out.place_forget() 
+			self.command_out.place_forget()
 		
 		if (self.focus_displayof() != self.find_entry): #if the a character has been typed into the text widget: hide the command output widget
 			self.find_unplace()
@@ -1058,6 +1102,7 @@ class win(tkinter.Tk):
 			
 			self.cursor_index = self.txt.index(tkinter.INSERT).split(".") # gets the cursor's position
 			self.current_line = self.txt.get(self.convert_line_index("float"), self.highlighter.get_line_lenght(self.convert_line_index("int")))+"\n"
+			self.selection_start_index = None
 
 			self.line_no.configure(text=f"[{self.txt.index(tkinter.INSERT)}]") #updates the line&column widget to show current cursor index/position
 			if (self.selection_start_index): self.line_no.configure(text=f"[{self.selection_start_index}][{self.txt.index(tkinter.INSERT)}]")
@@ -1086,17 +1131,20 @@ class win(tkinter.Tk):
 		""" gets the amount of tabs in the last line and puts them at the start of a new one """
 		#this functions gets called everytime Enter/Return has been pressed
 		self.del_queue()
-		for offset, current_char in enumerate(self.current_line, 0):
-			if (not re.match(r"\t",  current_char) or self.highlighter.commment_regex.match(current_char)):
-				break
+		offset = "\n"
+		
+		if (match := re.search(r"^\t+", self.current_line)):
+			offset += match.group()
 
-		try:
-			if (re.match(r"[\:\{\[]", self.current_line[self.convert_line_index("int")-1])): offset += 1
-		except IndexError:
-			pass
+		if (re.match(r"[\:]", self.txt.get("insert-1c"))):
+			self.txt.insert(self.txt.index(tkinter.INSERT), offset+"\t")
+		elif (re.match(r"[\{\[\(]", self.txt.get("insert-1c"))):
+			self.txt.insert(self.txt.index(tkinter.INSERT), offset+"\t"+offset)
+			self.txt.mark_set(tkinter.INSERT, f"insert-{len(offset)}c")
+		else:
+			if (re.match(r"\t+\n", self.current_line)): self.txt.delete(f"{self.cursor_index[0]}.0", "insert") #removes extra tabs if line is empty
+			self.txt.insert(self.txt.index(tkinter.INSERT), offset)
 
-		self.txt.insert(self.txt.index(tkinter.INSERT), "\n")
-		[self.txt.insert(self.txt.index(tkinter.INSERT), "\t") for i in range(offset)]#insert the tabs at the start of the line
 		return "break"
 
 	def highlight_chunk(self, arg=None, start_index=None, stop_index=None):
@@ -1118,7 +1166,6 @@ class win(tkinter.Tk):
 		
 	def bracket_pair_make(self, arg=None):
 		def pair_make():
-			sleep(0.2)
 			self.highlighter.bracket_pair_make()
 		threading.Thread(target=pair_make).start()
 		
