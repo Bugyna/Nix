@@ -1,28 +1,42 @@
+import subprocess
+import threading
 import tkinter
+import datetime
+import time
 import os
+
+from tkinter import font
+
+from highlighter import highlighter
 
 class BUFFER_TAB(tkinter.Label):
 	def __init__(self, name: str, parent):
 		super().__init__(parent)
 		self.parent = parent
-		self.name = name
-		self.index = len(self.parent.file_handler.buffers)
-		self.configure(text=os.path.basename(self.name), font=self.parent.widget_font, 
-		bg="#111111", fg=self.parent.theme["window"]["widget_fg"],
+		self.full_name = name
+		self.name = os.path.basename(name)
+
+		self.buffer_index = len(self.parent.file_handler.buffer_list)
+		self.configure(text=" "+os.path.basename(self.name))
+		self.configure(text=" "+os.path.basename(self.name), font=self.parent.widget_font, 
+		bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["widget_fg"],
 		 highlightcolor=self.parent.theme["window"]["widget_fg"])
-		# self.configure(command=lambda: self.parent.file_handler.load_buffer(buffer_name=self.name))
+
+		self.parent.file_handler.buffer_tab_index = self.buffer_index
+		# self.configure(command=lambda: self.parent.file_handler.load_buffer(buffer_name=self.name)) # if I ever wanna go back to the button widget
 		
-		if (self.index > 1):
-			self.reposition(list(self.parent.file_handler.buffers.values())[self.index-1][1])
-		elif (self.index == 1):
+		if (self.buffer_index > 1):
+			self.reposition(self.parent.file_handler.buffer_list[self.buffer_index-1][1])
+		elif (self.buffer_index == 1):
 			self.reposition()
 
 		self.menu = tkinter.Menu(self.parent)
 		self.menu.configure(font=self.parent.widget_font, tearoff=False,fg="#FFFFFF", bg=self.parent.theme["window"]["bg"], bd=0)
-		self.menu.add_command(label="Close", command=lambda: self.parent.file_handler.del_buffer(buffer_name=self.name))
+		self.menu.add_command(label="Close", command=lambda: self.parent.file_handler.del_buffer(buffer_name=self.full_name))
 
 		self.hover_info = tkinter.Label(self.parent)
 		self.hover_info.configure(text=self.name, font=self.parent.widget_font, fg="#FFFFFF", bg=self.parent.theme["window"]["bg"], bd=1)
+
 		# self.hover_info.place(x=self.winfo_rootx(), y=self.winfo_rooty()+self.winfo_height())
 		# self.hover_info.pack()
 		# self.destroy_label = tkinter.Label(self, text="X"); self.destroy_label.place(relx=1, y=0, width=10, height=10, anchor="ne")
@@ -30,25 +44,24 @@ class BUFFER_TAB(tkinter.Label):
 
 		self.bind("<Button-1>", self.load_buffer)
 		# self.bind("<Enter>", lambda arg: self.hover_info.place(x=self.winfo_x(), y=self.winfo_y()+self.winfo_height()), print("aa"))
-		self.bind("<Enter>", lambda arg: self.parent.command_O(self.name))
+		self.bind("<Enter>", lambda arg: self.parent.command_O(self.full_name))
 		# self.bind("<Leave>", lambda arg: self.hover_info.place_forget())
 		self.bind("<Button-3>", lambda arg: self.menu.tk_popup(self.winfo_rootx(), self.winfo_rooty()+self.winfo_height()))
 		# self.bind("<FocusIn>", lambda arg: self.parent.file_handler.load_buffer(buffer_name=self.name))
 
 	def reposition(self, last_buffer_tab=None):
-		if (not last_buffer_tab or self.index == 1):
+		if (not last_buffer_tab or self.buffer_index == 1):
 			self.place(x=0, y=24, height=18)
 		else:
 			self.place(x=last_buffer_tab.winfo_x()+last_buffer_tab.winfo_width()+3, y=24, height=18)
 
-	def change_name(self, new_name: str):
-		self.name = new_name
-		self.configure(text="~"+os.path.basename(new_name))
+	def change_name(self, new_name: str=None, extra_char: str = ""):
+		if (new_name): self.full_name = new_name; self.name = os.path.basename(new_name)
+		self.configure(text=extra_char+os.path.basename(self.full_name))
 
 	def load_buffer(self, arg=None):
 		self.focus_set()
-		self.parent.file_handler.load_buffer(buffer_name=self.name)
-		self.parent.file_handler.buffer_tab_index = self.index
+		self.parent.file_handler.load_buffer(buffer_name=self.full_name)
 
 
 class MENUBAR_LABEL(tkinter.Label):
@@ -65,18 +78,38 @@ class MENUBAR_LABEL(tkinter.Label):
 
 
 class TEXT(tkinter.Text):
-	def __init__(self, parent):
+	def __init__(self, parent, name):
 		super().__init__(parent)
+		print("name: ", name)
 		self.parent = parent
+		self.full_name = name
+		self.name = os.path.basename(name)
+		self.buffer_index = len(self.parent.file_handler.buffer_list)
+		
+		self.highlighter = highlighter(self.parent, self)
+		self.set_highlighter()
+
+		self.font_size = 11
+		self.sfont_size = self.font_size - 2
+		
+		self.block_cursor = False
+		self.terminal_like_cursor = True
+		self.insert_offtime = 0; self.insert_ontime = 1
+
+		self.text_len = ""
 
 		self.bind("<KeyRelease>", self.parent.update_buffer)
-		# self.bind("<KeyRelease>-<Delete>", self.parent.bracket_pair_make)
 
 		self.bind("<Control-period>", self.parent.set_font_size)
 		self.bind("<Control-comma>", self.parent.set_font_size)
 		self.bind("<Control-MouseWheel>", self.parent.set_font_size)
 		self.bind("<Control-Button-4>", self.parent.set_font_size)
 		self.bind("<Control-Button-5>", self.parent.set_font_size)
+
+		self.bind("<F2>", lambda arg: self.insert("insert", self.get_time()))
+
+		self.bind("<Button-1>", self.parent.update_index)
+		self.bind("<B1-Motion>", self.parent.update_index)
 
 		self.bind("<Prior>", self.parent.del_queue)
 		self.bind("<Next>", self.parent.del_queue)
@@ -126,15 +159,14 @@ class TEXT(tkinter.Text):
 		self.bind("<Control-k>", self.parent.get_selection_count)
 
 		self.bind("<Tab>", self.parent.indent)
+		self.bind("<Control-Tab>", self.switch_buffer)
 		try: #linux bindings that throw errors on windows
 			self.bind("<Shift-ISO_Left_Tab>", self.parent.unindent)
+			self.bind("<Control-Shift-ISO_Left_Tab>", lambda arg: self.switch_buffer(next=False))
 			self.parent.command_entry.bind("<KP_Enter>", self.parent.cmmand)
 		except Exception:
 			self.bind("<Shift-Tab>", self.parent.unindent)
-
-
-		self.bind("<Control-Tab>", self.switch_buffer)
-		self.bind("<Control-Shift-ISO_Left_Tab>", lambda arg: self.switch_buffer(next=False))
+			self.bind("<Control-Shift-Tab>", lambda arg: self.switch_buffer(next=False))
 
 		self.bind("<Shift-Up>", self.parent.queue_make)
 		self.bind("<Shift-Down>", self.parent.queue_make)
@@ -152,7 +184,8 @@ class TEXT(tkinter.Text):
 		self.bind("<End>", self.parent.end)
 		self.bind("<Shift-End>", self.parent.end_select)
 
-		# self.bind("<KeyPress>", lambda arg: self.parent.update_buffer())
+		self.bind("<Shift-Return>", lambda arg: self.run_subprocess(argv=["make"]))
+
 		self.bind("<Control-space>", self.parent.command_entry_set)
 		self.bind("<F11>", self.parent.set_fullscreen)
 		self.bind("<Alt-Right>", lambda arg: self.parent.set_dimensions(arg, True))
@@ -169,17 +202,60 @@ class TEXT(tkinter.Text):
 
 		self.bind("<F1>", lambda arg: self.bell())
 
+		# self.bind("<FocusIn>", self.test)
+
+	def get_time(self, arg=None):
+		date = datetime.date.today()
+		day_name = datetime.date.today().strftime("%A")
+		return f"~\t[ {day_name} ] [ {self.parent.get_time()} ] [ {date} ] "
+
+
+	def change_coords(self, coords: list):
+		self.coords = coords
+		self.place(x=coords[0], y=coords[1], width=coords[2], height=coords[3], anchor="nw")
+
+	def set_highlighter(self):
+		""" sets the highlighter accordingly to the current file extension """
+		try:
+			arg = os.path.basename(self.parent.file_handler.current_file_name).split(".")[-1]
+		except Exception:
+			arg = "NaN"
+
+		if (arg in self.highlighter.supported_languagues):
+			self.parent.highlighting = True
+			self.highlighter.set_languague(arg)
+		else:
+			self.parent.highlighting = False
+
 	def switch_buffer(self, arg=None, next = True):
-		if (next): buffer_tab_index = self.parent.file_handler.buffer_tab_index+1
-		elif (not next): buffer_tab_index = self.parent.file_handler.buffer_tab_index-1
-		if (buffer_tab_index >= len(self.parent.file_handler.buffers)): buffer_tab_index = 1
-		elif (buffer_tab_index < 1): buffer_tab_index = len(self.parent.file_handler.buffers)-1
-		buffer_name = list(self.parent.file_handler.buffers.values())[buffer_tab_index][1].name
-		print(buffer_name, buffer_tab_index)
+		if (next):
+			buffer_tab_index = self.parent.file_handler.buffer_tab_index+1
+
+		elif (not next):
+			buffer_tab_index = self.parent.file_handler.buffer_tab_index-1
+
+		if (buffer_tab_index >= len(self.parent.file_handler.buffer_list)):
+			buffer_tab_index = 1
+
+		elif (buffer_tab_index < 1):
+			buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
+			
+		buffer_name = self.parent.file_handler.buffer_list[buffer_tab_index][0].full_name
+		
 		self.parent.file_handler.load_buffer(buffer_name=buffer_name)
 
 		return "break"
 
+	def run_subprocess(self, argv):
+		def run():
+			process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+			out = process.stdout.read().decode("UTF-8")
+
+			self.parent.command_O(out, focus=False)
+			print(out)
+			
+		threading.Thread(target=run).start()
+		return "break"
 
 class GRAPHICAL_BUFFER: # FORESHADOWING
 	def __init__(self):
