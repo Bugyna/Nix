@@ -21,13 +21,19 @@ Shift+Enter for compiling(if you have a Makefile created in your directory)
 Control+S to save file, Control+Shift+S to save file as, Control+N to create new file
 
 Control+Tab/Control+Shift+Tab to change between buffers/opened files
+
 Control+, and Control+. to change font size
+
 Control-W to close the window
-Alt+Arrows to expand window
-Alt+Shift+Arrows to shrink the window
+
+Alt+Arrows/Alt+Shift+Arrows to expand/shrink window
+
 Control+Alt to access menu at the top
+
 F1 to ring the bell :)
+
 F2 to insert current day, date and time
+
 F11 to make window fullscreen
 
 There are also some very dumb/esoteric features like a music player(requires pygame), window recorder(only for linux and requires ffmpeg), lyrics(requires bs4), scrapes current temperature in Stockholm(also requires bs4)
