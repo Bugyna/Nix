@@ -23,7 +23,11 @@ to get to the command line press Control+Space (there are somewhat detailed desc
 | Comment | Control+/ | Comments out a line or all lines in selection |
 | Change case | Control+L | Makes selected text lowercase |
 | Change case | Control+Shift+L | Makes selected text uppercase |
-| Enclose selected text | Control+'/"/(/[/{ | | Encloses selected text with character |
+| Enclose selected text | Control+' | Encloses selected text with character |
+| Enclose selected text | Control+" | Encloses selected text with character |
+| Enclose selected text | Control+( | Encloses selected text with character |
+| Enclose selected text | Control+\[ | Encloses selected text with character |
+| Enclose selected text | Control+{ | Encloses selected text with character |
 | Get length | Control+K | Gets length of selected text |
 | Find | Control+F | Finding in text |
 | Make | Shift+Enter | Runs/Compiles(needs a Makefile) current file |
