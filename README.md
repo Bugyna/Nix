@@ -7,33 +7,36 @@ It's not a perfect text editor, but I think it's very usable. It has a syntax hi
 
 to get to the command line press Control+Space (there are somewhat detailed descriptions for each command)
 
-Control+C to copy, Control+V to paste, Control+X to cut, Control+Z to undo, Control+Y to redo, Control+A to select all
-
-Control+Tab/Control+Shift+Tab to indent/unindent
-Control+/ to comment line/selected text out
-
-Control+L to make selected text lowercase Control+Shift+L to make selected text uppercase
-Control-K to get length of selected text
-
-Control-F for finding in text
-Shift+Enter for compiling(if you have a Makefile created in your directory)
-
-Control+S to save file, Control+Shift+S to save file as, Control+N to create new file
-
-Control+Tab/Control+Shift+Tab to change between buffers/opened files
-
-Control+, and Control+. to change font size
-
-Control-W to close the window
-
-Alt+Arrows/Alt+Shift+Arrows to expand/shrink window
-
-Control+Alt to access menu at the top
-
-F1 to ring the bell :)
-
-F2 to insert current day, date and time
-
-F11 to make window fullscreen
+##Keybindings
+| Function | Keybinding | Description |
+| Copy | Control+C | Copies selection |
+| Paste| Control+V | Pastes clipboard |
+| Cut | Control+X | Cuts selection |
+| Undo | Control+Z | Undo |
+| Redo | Control+Y | Redo |
+| Select all| Control+A | selects all text in opened buffer |
+| Indent | Control+Tab | Indents line or all lines in selection |
+| Unindent | Control+Shift+Tab | Unindents line or all lines in selection |
+| Comment | Control+/ | Comments out a line or all lines in selection |
+| Change case | Control+L | Makes selected text lowercase |
+| Change case | Control+Shift+L | Makes selected text uppercase |
+| Get length | Control+K | Gets length of selected text |
+| Find | Control+F | Finding in text |
+| Make | Shift+Enter | Runs/Compiles(needs a Makefile) current file |
+| Save | Control+S | Saves file |
+| Save as| Control+Shift+S | Saves file as |
+| New file | Control+N | Creates new file |
+| Switch buffer | Control+Tab | Switches to next opened buffer |
+| Switch buffer | Control+Shift+Tab | Switches to previous opened buffer |
+| Change font size | Control+, | Makes font smaller |
+| Change font size | and Control+. | Makes font larger |
+| Close window | Control+w | Closes window |
+| Close buffer | Control+b+w | Closes opened buffer (if there is only the scratch buffer left it closes the whole window) |
+| Change window size | Alt+Arrows | Makes window bigger |
+| Change window size | Alt+Shift+Arrows | Makes window smaller |
+| Acess menubar | Control+Alt | Switches focus to menubar |
+| Bell | F1 | Rings the bell :) |
+| Insert time | F2 | to insert current day, date and time |
+| Fullscreen | F11 | Makes window fullscreen |
 
 There are also some very dumb/esoteric features like a music player(requires pygame), window recorder(only for linux and requires ffmpeg), lyrics(requires bs4), scrapes current temperature in Stockholm(also requires bs4)
