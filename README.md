@@ -7,8 +7,10 @@ It's not a perfect text editor, but I think it's very usable. It has a syntax hi
 
 to get to the command line press Control+Space (there are somewhat detailed descriptions for each command)
 
-##Keybindings
+## Keybindings
+
 | Function | Keybinding | Description |
+| ------- | ---------- | ----------- |
 | Copy | Control+C | Copies selection |
 | Paste| Control+V | Pastes clipboard |
 | Cut | Control+X | Cuts selection |
