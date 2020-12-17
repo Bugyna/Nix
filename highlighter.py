@@ -1,6 +1,6 @@
-import re 
+import threading
 import tkinter
-from itertools import chain
+import re
 
 class highlighter(object):
 	""" highlighter class storing all of the highlighting functions (and functions needed by the highlighting function) && keywords for each language """
@@ -10,7 +10,7 @@ class highlighter(object):
 			"NaN", "py", "cc", "hh", "cpp", "hpp", "c", "h", "txt", "html", "htm", "java", "jsp", "class", "css", "go", "sh", "diary"
 			]
 
-		self.command_keywords = parent.command_keywords
+		self.command_keywords = list(parent.commands.keys())
 
 		self.Py_keywords = [
 			'await', 'import', 'pass', 'break', 'in',
@@ -78,7 +78,7 @@ class highlighter(object):
 		 'local', 'logout', 'popd', 'printf', 'pushd', 'pwd', 'read', 'readonly', 'return', 'select', 'set', 'shift',
 		 'shopt', 'source', 'suspend', 'test', 'time', 'times', 'trap', 'true', 'type', 'typeset', 'ulimit', 'umask',
 		 'unalias', 'unset', 'until', 'variables', 'while']
-		 
+
 		self.html_keywords = ['<!-->', '<!DOCTYPE>', '<a>', '<abbr>', '<acronym>', '<address>', '<applet>', '<area>',
 		 '<article>', '<aside>', '<audio>', '<b>', '<base>', '<basefont>', '<bdi>', '<bdo>', '<big>', '<blockquote>',
 		 '<body>', '<br>', '<button>', '<canvas>', '<caption>', '<center>', '<cite>', '<code>', '<col>',
@@ -116,6 +116,14 @@ class highlighter(object):
 		self.human_error = []
 		self.brackets = [[],[],[]]
 		self.bracket_pairs = {}
+		self.bracket_pair_type = {
+			"(" : ")",
+			"[" : "]",
+			"{" : "}",
+			")" : "(",
+			"]" : "[",
+			"}" : "{",
+		}
 
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
@@ -126,14 +134,12 @@ class highlighter(object):
 		self.special_num_regex = re.compile(r"^0b+[0-1]+$|^0x+[0-9a-fA-F]+$")
 		self.special_char_regex = re.compile(r"[\!\&\^\|\@\$]")
 		self.brackets_regex = re.compile(r"[\{\}\[\]\(\)]")
-		self.left_brackets_regex = [re.compile(r"[\(]"), re.compile(r"[\[]"), re.compile(r"[\{]")]
-		self.right_brackets_regex = [re.compile(r"[\)]"), re.compile(r"[\]]"), re.compile(r"[\}]")]
+		self.left_brackets_regex = re.compile(r"[\(\[\{]")
+		self.right_brackets_regex = re.compile(r"[\)\]\}]")
 		self.function_separator_regex = re.compile(r"[\(]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		self.whitespace_regex = re.compile(r"[\t]")
-		# self.C_preprocessor_regex = re.compile(r"^\#[A-Za-z]+$")
-		# self.C_preprocessor_regex = re.compile(r"\#[A-Za-z]+")
 		self.C_preprocessor_regex = re.compile(r"\#")
 
 		self.html_separator_regex = re.compile(r"[\;\ \=]")
@@ -214,9 +220,7 @@ class highlighter(object):
 
 	def get_line_lenght(self, line_no: int):
 		""" gets the length of current line """
-		for i, char in enumerate(self.txt.get(float(line_no), "end"), 0):
-			if (re.match(r"\n", char)):
-				return f"{line_no}.{i}"
+		return f"{line_no}.0 lineend+1c"
 
 	def no_highlight(self, line_no, line=None):
 		pass
@@ -245,55 +249,65 @@ class highlighter(object):
 	def bracket_pair_highlight(self, line_no: int, line: str) -> None: 
 		self.txt.tag_remove("pair_bg", "1.0", "end")
 
-		# for i, current_char in enumerate(line, 0):
-		# 	if (self.brackets_regex.match(current_char)):
-		# 		index = f"{line_no}.{i}"
-		# 		try:
-		# 			self.txt.tag_remove("error_bg", index)
-		# 			self.txt.tag_remove("error_bg", self.bracket_pairs[index])
-		# 		except Exception:
-		# 			self.txt.tag_add("error_bg", index)
-
 		index = self.txt.index(tkinter.INSERT)
-		# i = [index, index+"+1c", index+"-1c"]
+
 		if (self.brackets_regex.match(self.txt.get(index))):
 			try:
 				self.txt.tag_add("pair_bg", self.bracket_pairs[index])
-				# self.txt.tag_remove("error_bg", index)
-				# self.txt.tag_remove("error_bg", self.bracket_pairs[index])
 			except Exception:
 				pass
-				# self.txt.tag_add("error_bg", index)
 
 
-	def bracket_pair_make(self, type_index: int=None):
-		self.brackets = [[],[],[]] #clearing useless things
+	def bracket_pair_make(self, char: str = None):
+		self.brackets = [] #clearing useless things
 		self.human_error = []
 		self.bracket_pairs = {}
 
-		for type_index in range(len(self.left_brackets_regex)):
-			if (type_index == 0): pattern = r"[\(\)]"
-			elif (type_index == 1): pattern = r"[\[\]]"
-			elif (type_index == 2): pattern = r"[\{\}]"
-			start = self.txt.index("1.0")
-			end = self.txt.index("end")
-			self.txt.mark_set("matchStart", start)
-			self.txt.mark_set("matchEnd", start)
-			self.txt.mark_set("searchLimit", end)
+		if (self.left_brackets_regex.match(char)):
+			direction = 1
 
-			count = tkinter.IntVar()
-			while True:
-				index = self.txt.search(pattern, "matchEnd", "searchLimit", count=count, regexp=True)
-				if index == "": break
-				if count.get() == 0: break # degenerate pattern which matches zero-lenght strings
-				self.txt.mark_set("matchStart", index)
-				self.txt.mark_set("matchEnd", f"{index}+{count.get()}c")
-				if (self.left_brackets_regex[type_index].match(self.txt.get(index))):
-					self.brackets[type_index].append(index)
+		elif (self.right_brackets_regex.match(char)):
+			direction = -1
+		
+		else: return
+		
+		i = 0
+		index = "insert"
 
-				elif (self.right_brackets_regex[type_index].match(self.txt.get(index))):
-					if (not self.brackets[type_index]): self.human_error.append(index); continue
-					self.bracket_pairs[index] = self.brackets[type_index][-1]; self.bracket_pairs[self.brackets[type_index][-1]] = index; self.brackets[type_index].pop()
+		# I am stoopid and this is a botch and a workaround
+		while (True):
+			if (self.txt.index(index) == "1.0" or self.txt.index(index) == self.txt.index("end") or i >= 500): self.txt.tag_add("error_bg", self.brackets[-1]); break
+			index = f"insert+{i}c" if direction == 1 else f"insert-{i}c"
+			pattern = self.txt.get(index)
+			if (not self.brackets_regex.match(pattern)): i+=1; continue
+			
+			if (direction == 1):
+				if (self.left_brackets_regex.match(pattern)):
+					self.brackets.append(self.txt.index(index))
+
+				elif (self.right_brackets_regex.match(pattern)):
+
+					self.bracket_pairs[self.txt.index(index)] = self.brackets[-1]
+					self.bracket_pairs[self.brackets[-1]] = self.txt.index(index)
+
+					self.brackets.pop()
+					if (not self.brackets):
+						break
+
+			else:
+				if (self.left_brackets_regex.match(pattern)):
+
+					self.bracket_pairs[self.txt.index(index)] = self.brackets[-1]
+					self.bracket_pairs[self.brackets[-1]] = self.txt.index(index)
+
+					self.brackets.pop()
+					if (not self.brackets):
+						break
+
+				elif (self.right_brackets_regex.match(pattern)):
+					self.brackets.append(self.txt.index(index))
+			
+			i += 1
 
 	def rm_highlight(self, last_separator, line_end_index):
 		self.txt.tag_remove("functions", last_separator, line_end_index)
@@ -327,7 +341,7 @@ class highlighter(object):
 	def python_highlight(self, line_no: int ,line: str=None):
 		""" highlighting for python language """
 		if (not line):
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 			# print(line)
 
 		last_separator_index = 0
@@ -406,7 +420,7 @@ class highlighter(object):
 	def C_highlight(self, line_no: int, line: str=None):
 		""" highlighting for C-like languages """
 		if (not line):
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -507,7 +521,7 @@ class highlighter(object):
 
 	def script_highlight(self, line_no: int=None, line: str=None):
 		if (not line):
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -559,8 +573,7 @@ class highlighter(object):
 	def html_highlight(self, line_no: int=None, line: str=None):
 		""" I am crying while looking at this hideous thing """
 		if (not line):
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
-
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 
 		tag_start_index = f""
 		tag_end_index = f""
@@ -596,7 +609,7 @@ class highlighter(object):
 				self.countingQuomarks = not self.countingQuomarks
 				# self.countingQuomarks = not self.countingQuomarks
 
-			elif (self.countingQuomarks):
+			if (self.countingQuomarks):
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("special_chars", index)
 				continue
@@ -649,7 +662,7 @@ class highlighter(object):
 
 	def diary_highlight(self, line_no: int, line:str = None):
 		if (not line):
-			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))+"\n"
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
 			# print(line)
 
 		last_separator_index = 0
@@ -734,5 +747,7 @@ class highlighter(object):
 		self.txt.tag_remove(["operators"], last_separator, line_end_index)
 		
 		
+
+
 
 
