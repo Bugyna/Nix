@@ -6,7 +6,7 @@ import subprocess
 try: from pygame import mixer
 except ImportError: pass
 
-from widgets import BUFFER_TAB, TEXT
+from widgets import TEXT, BUFFER_TAB
 
 class file_handler(object):
 	""" File opening and closing yes"""
@@ -26,16 +26,30 @@ class file_handler(object):
 
 		self.parent = parent
 
-	def init(self):
-		self.current_buffer = "<~NONE>"
-		self.buffer_list.append(TEXT(self.parent, "<~NONE>"))
-		print(self.buffer_list[-1].buffer_index)
-		self.buffer_dict[self.current_buffer] = self.buffer_list[-1]
+	def init(self, buffer_name: str):
+		self.buffer_list.append([TEXT(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
+		self.buffer_dict[buffer_name] = self.buffer_list[-1]
+		self.parent.txt = self.buffer_list[-1][0]
+		self.buffer_tab = self.buffer_list[-1][1]
+		self.buffer_tab_list.append(self.buffer_list[-1][1])
+		self.parent.title(f"Nix: <{self.parent.txt.name}>")
+
+	def load_scratch(self):
+		self.parent.txt = self.buffer_list[0][0]
+		self.parent.txt.focus_set()
+		self.parent.reposition_widgets()
+		
+		self.parent.title(f"Nix: <{self.parent.txt.name}>")
+		self.parent.set_font_size()
+		self.parent.theme_load()
 
 
 	def rename_buffer(self, buffer_name: str, new_buffer_name: str):
-		for buffer in self.buffer_tab_list:
-			if (buffer_name == buffer.full_name): buffer.change_name(new_buffer_name); break
+		for buffer in self.buffer_list:
+			if (buffer_name == buffer[0].full_name):
+				buffer[0].change_name(new_buffer_name)
+				buffer[1].change_name(new_buffer_name)
+				break
 
 		self.buffer_dict[new_buffer_name] = self.buffer_dict.pop(buffer_name)
 		self.current_buffer = new_buffer_name
@@ -62,8 +76,8 @@ class file_handler(object):
 		self.parent.set_font_size()
 		self.parent.title(f"Nix: <{self.parent.txt.name}>")
 
-	def del_buffer(self, buffer_name: str=None):
-		buffer_index = self.buffer_dict[buffer_name][1].buffer_index
+	def close_buffer(self, arg=None, buffer_name: str=None) -> (None, str):
+		buffer_index = self.buffer_dict[buffer_name][0].buffer_index
 		self.buffer_dict[buffer_name][0].place_forget()
 		self.buffer_dict[buffer_name][1].place_forget()
 		
@@ -71,43 +85,58 @@ class file_handler(object):
 		self.buffer_dict.pop(buffer_name)
 
 		last_buffer_tab = None
-		for buffer in self.buffer_list[1:]:
+		for enum_index, buffer in enumerate(self.buffer_list[1:], 1):
+			buffer[0].buffer_index = enum_index
+			buffer[0].buffer_index = enum_index
 			buffer[1].reposition(last_buffer_tab)
 			last_buffer_tab = buffer[1]
 
+		# if (len(self.buffer_list)-1 == 0): self.load_scratch()
+		# else: self.load_buffer(buffer_index=len(self.buffer_list)-1)
+		self.load_buffer(buffer_index=len(self.buffer_list)-1)
 
-	def load_buffer(self, buffer_name: str = None, buffer_index: int = None):
+		if (arg): return "break"
+
+
+	def load_buffer(self, arg=None, buffer_name: str = None, buffer_index: int = None) -> (None, str):
 		if (self.parent.split_mode == 0): self.parent.hide_text_widget()
 		
-		if (not buffer_name and not buffer_index): print("error"); return -1
-		if (buffer_index and not buffer_name): buffer_name = self.buffer_list[buffer_index][1].name
+		# this conditional is gross why can't it just be (buffer_index)
+		if (buffer_index is not None): buffer_name = self.buffer_list[buffer_index][0].full_name
 
 		self.current_file_name = self.current_buffer = buffer_name
 		self.parent.txt = self.buffer_dict[buffer_name][0]
 		self.buffer_tab = self.buffer_dict[buffer_name][1]
 		self.buffer_tab_index = self.parent.txt.buffer_index # text widget's buffer_index is the same as their buffer tab's buffer_index
 
-		self.current_dir = os.path.dirname(self.current_file_name)
+		if (buffer_index != 0): self.current_dir = os.path.dirname(self.current_file_name)
 		
+		self.parent.txt.focus_set()
 		self.parent.reposition_widgets()
+		
 		self.parent.title(f"Nix: <{self.parent.txt.name}>")
 		self.parent.set_font_size()
 		self.parent.theme_load()
 
-	def del_file(self, filename:str=""):
+		if (arg): return "break"
+
+	def del_file(self, arg=None, filename:str="") -> (None, str):
+		if (self.buffer_dict[filename]): self.close_buffer(buffer_name=filename)
 		if (not filename): filename=self.current_file_name
-		if (os.path.isfile(filename)): os.remove(filename); self.parent.command_O(f"File ({filename}) was deleted")
-		else: self.parent.command_O(f"File ({filename}) does not exist")
+		if (os.path.isfile(filename)): os.remove(filename); self.parent.command_out_set(f"File [{filename}] was deleted")
+		else: self.parent.command_out_set(f"File ({filename}) does not exist")
 
-	def new_file(self, name: str=""):
-		if (not name):
+		if (arg): return "break"
+
+	def new_file(self, arg=None, filename: str="") -> (None, str):
+		if (not filename):
 			i = 0
-			name = f"{self.current_dir}/untitled_{i}.txt"
-			while (os.path.isfile(name)):
+			filename = f"{self.current_dir}/untitled_{i}.txt"
+			while (os.path.isfile(filename)):
 				i += 1
-				name = f"{self.current_dir}/untitled_{i}.txt"
+				filename = f"{self.current_dir}/untitled_{i}.txt"
 
-		self.current_file_name = name
+		self.current_file_name = filename
 		self.current_file = open(self.current_file_name, "w+")
 		self.new_buffer(self.current_file.name)
 
@@ -116,7 +145,9 @@ class file_handler(object):
 		
 		self.parent.txt.set_highlighter()
 
-	def save_file(self, arg = None):
+		if (arg): return "break"
+
+	def save_file(self, arg = None) -> (None, str):
 		""" saves current text into opened file """
 		self.buffer = str(self.parent.txt.get("1.0", "end-1c"))
 		
@@ -133,15 +164,17 @@ class file_handler(object):
 			self.current_dir = os.path.dirname(self.current_file.name)
 			self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.buffer_tab.change_name(extra_char="")
-			# self.parent.command_O(f"total of {self.parent.get_line_count()} lines saved")
-			self.parent.command_O(rf"saved {size1-size0}\{size1}\{self.parent.get_line_count()} new bytes to {os.path.basename(self.current_file_name)}")
+			# self.parent.command_out_set(f"total of {self.parent.get_line_count()} lines saved")
+			self.parent.command_out_set(rf"saved {size1-size0}\{size1}\{self.parent.get_line_count()} new bytes to {os.path.basename(self.current_file_name)}")
 			
 		elif (not self.current_file_name):
 			self.new_file()
 			self.save_file()
 
+		if (arg): return "break"
 
-	def save_file_as(self, arg=None, tmp=None):
+
+	def save_file_as(self, arg=None, tmp=None) -> (None, str):
 		""" saves current text into a new file """
 		if (self.current_file_name):
 			if (not tmp):
@@ -162,7 +195,9 @@ class file_handler(object):
 		self.parent.unhighlight_chunk()
 		self.parent.highlight_chunk()
 
-	def load_file(self, filename=None):
+		if (arg): return "break"
+
+	def load_file(self, arg=None, filename=None) -> (None, str):
 		""" opens a file and loads it's content into the text widget """
 
 		if (filename): #if the filename arguments is given: set the current filename to be the argument (pretty self explanatory)
@@ -178,7 +213,7 @@ class file_handler(object):
 		try:
 			self.current_file = open(self.current_file_name, "r+") #opens the file
 		except FileNotFoundError:
-			self.new_file(self.current_file_name)
+			self.new_file(filename=self.current_file_name)
 			return
 
 
@@ -194,7 +229,7 @@ class file_handler(object):
 
 		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
 		self.parent.txt.insert("1.0", file_content) #puts all of the file's text in the text widget
-		self.parent.txt.text_len = len(self.parent.txt.get("1.0", "end"))
+		self.parent.txt.change_index = self.parent.txt.index("end")
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
 		self.parent.txt.see(tkinter.INSERT) #puts the cursor at the start of the file
 	
@@ -204,10 +239,18 @@ class file_handler(object):
 		t1 = time.time() # timer| gets current time in miliseconds
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		print(t1-t0)
-		self.parent.command_O(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
+		self.parent.command_out_set(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
 		self.parent.title(f"Nix: <{self.parent.txt.name}>") #sets the title of the window to the current filename
 
 		del file_content
+
+		if (arg): return "break"
+
+
+class file_explorer:
+	def __init__(self, parent):
+		pass
+
 
 class music_player:
 	def __init__(self, parent):
@@ -223,7 +266,7 @@ class music_player:
 			mixer.music.play()
 		except Exception as e:
 			print(e)
-			self.parent.command_O("invalid file")
+			self.parent.command_out_set("invalid file")
 		
 	def play_song(self, time: int = 0):
 		mixer.music.play(start=time)
@@ -243,37 +286,54 @@ class music_player:
 		pass
 
 
-def video_record_start(parent):
-	""" if you wanna record some video of your code (probably on works on linux (and you have to have ffmpeg installed"""
-	pos = f":1.0+{parent.winfo_rootx()},{parent.winfo_rooty()}"
-	videosize = f"{parent.winfo_width()}x{parent.winfo_height()}"
-	path = parent.file_handler.current_dir
-	filename = str(int(time.time())) + ".mkv"
+class video_handler:
+	def __init__(self, parent):
+		self.parent = parent
 
-	args = [
-		["-f", "x11grab"],
-		["-framerate", "120"],
-		["-video_size", videosize],
-		["-i", pos],
-		["-vcodec", "libx264"],
-		["-qscale", "0"]
-	]
+	def video_record_start(self, filename=time.time()):
+		""" if you wanna record some video of your code (probably on works on linux (and you have to have ffmpeg installed"""
+		pos = f":1.0+{self.parent.winfo_rootx()},{self.parent.winfo_rooty()}"
+		videosize = f"{self.parent.winfo_width()}x{self.parent.winfo_height()}"
+		path = self.parent.file_handler.current_dir
+		filename = f"{filename}.mkv"
 
-	print(args)
-	command = f"cd {path}; ffmpeg "
-	for arg in args:
-		command += f"{arg[0]} {arg[1]} "
+		args = [
+			["-f", "x11grab"],
+			["-framerate", "120"],
+			["-video_size", videosize],
+			["-i", pos],
+			["-vcodec", "libx264"],
+			["-qscale", "0"]
+		]
 
-	command += filename
+		print(args)
+		command = f"cd {path}; ffmpeg "
+		for arg in args:
+			command += f"{arg[0]} {arg[1]} "
 
-	return subprocess.Popen(command, stdin=subprocess.PIPE, shell=True)
+		command += filename
 
-def video_record_stop(process):
-	process.communicate(b"q")
-	print("terminated")
+		return subprocess.Popen(command, stdin=subprocess.PIPE, shell=True)
 
-						
-class launcher:
-	def __init__(self):
-		pass
+	def video_record_stop(self, process):
+		process.communicate(b"q")
+		print("terminated")
+
+	def screenshot(self):
+		def s():
+			process = self.video_record_start(filename="screenshot")
+			time.sleep(0.5)
+			self.video_record_stop(process)
+
+			command = f"ffmpeg -i screenshot.mkv -ss 00:00:00 -frames:v 1 {time.time()}.png"
+			process = subprocess.Popen(command, stdin=subprocess.PIPE, shell=True)
+			while (process.poll() == None):
+				continue
+
+			os.remove("screenshot.mkv")
+		threading.Thread(target=s).start()
+
+
+
+
 
