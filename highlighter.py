@@ -7,7 +7,8 @@ class highlighter(object):
 	def __init__(self, parent, txt):
 		self.lang = "NaN"
 		self.supported_languagues = [
-			"NaN", "py", "cc", "hh", "cpp", "hpp", "c", "h", "txt", "html", "htm", "java", "jsp", "class", "css", "go", "sh", "diary"
+			"NaN", "py", "cc", "hh", "cpp", "hpp", "c", "h", "txt", "html", "htm", "java", "jsp", "class", "css", "go",
+			"sh", "diary", "bat"
 			]
 
 		self.command_keywords = list(parent.commands.keys())
@@ -72,12 +73,46 @@ class highlighter(object):
 			"if", "else", "switch", "case", 'default', "for", "while", "goto"
 		]
 
-		self.Sh_keywords = ['expression', 'alias', 'bg', 'bind', 'builtin', 'caller', 'case', 'command', 'compgen',
+		self.sh_keywords = ['expression', 'alias', 'bg', 'bind', 'builtin', 'caller', 'case', 'command', 'compgen',
 		 'complete', 'continue', 'declare', 'dirs', 'disown', 'echo', 'enable', 'eval', 'exec', 'exit',
 		 'export', 'false', 'fc', 'fg', 'for', 'getopts', 'hash', 'help', 'history', 'if', 'jobs', 'kill', 'let',
 		 'local', 'logout', 'popd', 'printf', 'pushd', 'pwd', 'read', 'readonly', 'return', 'select', 'set', 'shift',
 		 'shopt', 'source', 'suspend', 'test', 'time', 'times', 'trap', 'true', 'type', 'typeset', 'ulimit', 'umask',
 		 'unalias', 'unset', 'until', 'variables', 'while']
+
+		# BATCH IS FUCKING RETARDED
+		self.bat_keywords = ['adprep', 'append', 'arp', 'assoc', 'at', 'atmadm', 'attrib', 'auditpol', 'autochk',
+		 'autoconv', 'autofmt', 'bcdboot', 'bcdedit', 'bdehdcfg', 'bitsadmin', 'bootcfg', 'break', 'break', 'cacls',
+		 'cd', 'certreq', 'certutil', 'chcp', 'change', 'choice', 'cipher', 'chdir', 'chkdsk', 'chkntfs', 'chglogon',
+		 'chgport', 'chgusr', 'clip', 'cls', 'clscluadmin', 'cluster', 'cmd', 'cmdkey', 'cmstp', 'color',
+		 'comp', 'compact', 'convert', 'copy', 'cprofile', 'cscript', 'csvde', 'date', 'dcdiag', 'dcgpofix', 'dcpromo',
+		 'defra', 'del', 'dfscmd', 'dfsdiag', 'dfsrmig', 'diantz', 'dir', 'dirquota', 'diskcomp', 'diskcopy', 'diskpart',
+		 'diskperf', 'diskraid', 'diskshadow', 'dispdiag', 'doin', 'dnscmd', 'doskey', 'driverquery', 'dsacls', 'dsadd',
+		 'dsamain', 'dsdbutil', 'dsget', 'dsmgmt', 'dsmod', 'dsmove', 'dsquery', 'dsrm', 'echo', 'edit', 'endlocal', 'erase',
+		 'esentutl', 'eventcreate', 'eventquery', 'eventtriggers', 'evntcmd', 'expand', 'extract', 'fc', 'filescrn', 'find',
+		 'findstr', 'finger', 'flattemp', 'fonde', 'forfiles', 'format', 'freedisk', 'fs', 'fsutil', 'ftp', 'ftype', 'fveupdate',
+		 'getmac', 'gettype', 'gpfixup', 'gpresult', 'gpupdate', 'graftabl', 'hashgen', 'hep', 'help', 'helpctr', 'hostname',
+		 'icacls', 'iisreset', 'inuse', 'ipconfig', 'ipxroute', 'irftp', 'ismserv', 'jetpack', 'keyb', 'klist', 'ksetup',
+		 'ktmutil', 'ktpass', 'label', 'ldifd', 'ldp', 'lodctr', 'logman', 'logoff', 'lpq', 'lpr', 'macfile', 'makecab',
+		 'manage-bde', 'mapadmin', 'md', 'mkdir', 'mklink', 'mmc', 'mode', 'more', 'mount', 'mountvol', 'move', 'mqbup', 'mqsvc',
+		 'mqtgsvc', 'msdt', 'msg', 'msiexec', 'msinfo32', 'mstsc', 'nbtstat', 'net computer', 'net group', 'net localgroup',
+		 'net print', 'net session', 'net share', 'net start', 'net stop', 'net use', 'net user', 'net view', 'net', 'netcfg',
+		 'netdiag', 'netdom', 'netsh', 'netstat', 'nfsadmin', 'nfsshare', 'nfsstat', 'nlb', 'nlbmgr', 'nltest', 'nslookup',
+		 'ntackup', 'ntcmdprompt', 'ntdsutil', 'ntfrsutl', 'openfiles', 'pagefileconfig', 'path', 'pathping', 'pause',
+		 'pbadmin', 'pentnt', 'perfmon', 'ping', 'pnpunatten', 'pnputil', 'popd', 'powercfg', 'powershell', 'powershell_ise',
+		 'print', 'prncnfg', 'prndrvr', 'prnjobs', 'prnmngr', 'prnport', 'prnqctl', 'prompt', 'pubprn', 'pushd',
+		 'pushprinterconnections', 'pwlauncher', 'qappsrv', 'qprocess', 'nquery', 'quser', 'qwinsta', 'rasdial', 'rcp',
+		 'rd', 'rdpsign', 'regentc', 'recover', 'redircmp', 'redirusr', 'reg', 'regini', 'regsvr32', 'relog', 'ren',
+		 'rename', 'rendom', 'repadmin', 'repair-bde', 'replace', 'reset', 'restore', 'rxec', 'risetup', 'rmdir',
+		 'robocopy', 'route', 'rpcinfo', 'rpcping', 'rsh', 'runas', 'rundll32', 'rwinsta', 'scp', 'sc', 'setlocal',
+		 'session', 'schtasks', 'scwcmd', 'secedit', 'serverceipoptin', 'servrmanagercmd', 'serverweroptin', 'set', 'setspn', 'setx',
+		 'sfc', 'shadow', 'shift', 'showmount', 'shutdown', 'sort', 'ssh', 'start', 'storrept', 'subst', 'sxstrace', 'ysocmgr',
+		 'systeminfo', 'takeown', 'tapicfg', 'taskkill', 'tasklist', 'tcmsetup', 'telnet', 'tftp', 'time', 'timeout',
+		 'title', 'tlntadmn', 'tpmvscmgr', 'tpmvscmgr', 'tacerpt', 'tracert', 'tree', 'tscon', 'tsdiscon', 'tsecimp',
+		 'tskill', 'tsprof', 'type', 'typeperf', 'tzutil', 'uddiconfig', 'umount', 'unlodctr', 'ver', 'verify', 'verifier',
+		 'verif', 'vol', 'vssadmin', 'w32tm', 'waitfor', 'wbadmin', 'wdsutil', 'wecutil', 'wevtutil', 'where', 'whoami', 'winnt',
+		 'winnt32', 'winpop', 'winrm', 'winrs', 'winsat', 'wlbs', 'mic', 'wscript', 'xcopy'
+		 ]
 
 		self.html_keywords = ['<!-->', '<!DOCTYPE>', '<a>', '<abbr>', '<acronym>', '<address>', '<applet>', '<area>',
 		 '<article>', '<aside>', '<audio>', '<b>', '<base>', '<basefont>', '<bdi>', '<bdo>', '<big>', '<blockquote>',
@@ -196,11 +231,18 @@ class highlighter(object):
 			self.comment_sign = "//"
 
 		elif (self.lang == "sh"):
-			self.keywords = self.Sh_keywords
+			self.keywords = self.sh_keywords
 			self.numerical_keywords = []
 			self.logical_keywords = []
 			self.highlight = self.script_highlight
 			self.comment_sign = "#"
+
+		elif (self.lang == "bat"):
+			self.keywords = self.sh_keywords
+			self.numerical_keywords = []
+			self.logical_keywords = []
+			self.highlight = self.script_highlight
+			self.comment_sign = "::"
 
 		elif (self.lang == "diary"):
 			self.keywords = ["Hello"]

@@ -239,7 +239,11 @@ class file_handler(object):
 		t1 = time.time() # timer| gets current time in miliseconds
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		print(t1-t0)
-		self.parent.command_out_set(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds") #puts the time it took to load and highlight the text in the command output widget
+		# puts the time it took to load and highlight the text in the command output widget
+		self.parent.command_out_set(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
+			["1.12", f"1.{13+len(str(self.parent.get_line_count()))}"], 
+			[f"1.{15+len(str(self.parent.get_line_count()))+11}", f"1.{15+len(str(self.parent.get_line_count()))+11+len(str(elapsed_time))}"]
+			]) # THIS IS WORSE THAN AN AMY SCHUMER PERFORMACE unlike Amy Schumer this'll probably make someone laugh
 		self.parent.title(f"Nix: <{self.parent.txt.name}>") #sets the title of the window to the current filename
 
 		del file_content

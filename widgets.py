@@ -161,7 +161,7 @@ class TEXT(tkinter.Text):
 		self.bind("<Control-slash>", self.parent.comment_line) #self.comment_line)
 
 		self.bind("<Control-quotedbl>", self.parent.char_enclose)		#"
-		self.bind("<Control-apostrophe>", self.parent.char_enclose)		#'
+		# self.bind("<Control-apostrophe>", self.parent.char_enclose)		#'
 		self.bind("<Control-parenleft>", self.parent.char_enclose) 		#( 
 		self.bind("<Control-bracketleft>", self.parent.char_enclose) 	#[
 		self.bind("<Control-braceleft>", self.parent.char_enclose) 		#{

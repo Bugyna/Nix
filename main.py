@@ -34,6 +34,7 @@ try:
 
 	if int(platform.release()) >= 8:
 		ctypes.windll.shcore.SetProcessDpiAwareness(True)
+		print("test if it's working")
 
 	CONTROL_KEYSYM = 262156
 	WINDOW_MARGIN = 0
@@ -167,6 +168,8 @@ class win(tkinter.Tk):
 		self.update_win()
 		self.geometry(self.winfo_geometry())
 		self.title(f"Nix: <None>")
+		try: self.iconbitmap("icon.ico")
+		except Exception: pass
 		# self.wm_attributes("-type", "normal")
 
 		self.file_handler = file_handler(self)
@@ -206,13 +209,14 @@ class win(tkinter.Tk):
 		self.command_entry = tkinter.Text()
 
 		#command output
-		self.command_out = tkinter.Label()
+		self.command_out = tkinter.Text()
 		
 		#right click pop-up menu
 		self.right_click_menu = tkinter.Menu()
-		self.right_click_menu.add_command(label="Copy            Control-C", font=self.smaller_font, command=self.copy)
-		self.right_click_menu.add_command(label="Paste           Control-V", font=self.smaller_font, command=self.paste)
-		self.right_click_menu.add_command(label="Cut             Control-X", font=self.smaller_font, command=self.cut)
+		self.right_click_menu.add_command(label="Copy           	 Control-C", font=self.smaller_font, command=self.copy)
+		self.right_click_menu.add_command(label="Paste      	     Control-V", font=self.smaller_font, command=self.paste)
+		self.right_click_menu.add_command(label="Cut    	         Control-X", font=self.smaller_font, command=self.cut)
+		self.right_click_menu.add_command(label="Comment             Control-/", font=self.smaller_font, command=self.comment_line)
 		self.right_click_menu.add_command(label="Show definition Control-Q", font=self.smaller_font, command=self.test_function)
 		# self.right_click_menu.add_separator()
 
@@ -298,9 +302,9 @@ class win(tkinter.Tk):
 
 	def theme_make(self):
 		for key in self.theme["highlighter"].items():
-			if (key[0][-2:] == "bg"): self.txt.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"])
-			elif (key[0][-2:] == "_b"): self.txt.tag_configure(key[0][:-2], foreground=key[1], font=self.font_bold)
-			else: self.txt.tag_configure(key[0], foreground=key[1])
+			if (key[0][-2:] == "bg"): self.txt.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"]); self.command_out.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"])
+			elif (key[0][-2:] == "_b"): self.txt.tag_configure(key[0][:-2], foreground=key[1], font=self.font_bold); self.command_out.tag_configure(key[0][:-2], foreground=key[1], font=self.font_bold)
+			else: self.txt.tag_configure(key[0], foreground=key[1]); self.command_out.tag_configure(key[0], foreground=key[1])
 
 	def theme_load(self):
 		self.theme_make()
@@ -308,10 +312,10 @@ class win(tkinter.Tk):
 
 		self.canvas.configure(bg=self.theme["window"]["bg"], bd=0, highlightthickness=0)
 
-		self.txt.configure(font=self.font,bg = self.theme["window"]["bg"],fg=self.theme["window"]["fg"], undo=True, maxundo=0, spacing1=2,
+		self.txt.configure(font=self.font,bg = self.theme["window"]["bg"], fg=self.theme["window"]["fg"], undo=True, maxundo=0, spacing1=2,
 		insertwidth=0, insertofftime=self.txt.insert_offtime, insertontime=self.txt.insert_ontime, insertbackground="#555",
 		selectbackground=self.theme["window"]["selectbg"], selectforeground=self.theme["window"]["selectfg"], borderwidth=1,
-		relief="flat", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="word", exportselection=True,
+		relief="flat", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="none", exportselection=True,
 		blockcursor=self.txt.block_cursor, highlightthickness=0, insertborderwidth=0)
 
 		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
@@ -323,7 +327,9 @@ class win(tkinter.Tk):
 		insertwidth=1, insertofftime=0, relief="raised", highlightthickness=0, bd=1, insertbackground=self.theme["window"]["insertbg"],
 		selectbackground=self.theme["window"]["selectbg"], highlightbackground="#FFFFFF")
 
-		self.command_out.configure(font=self.smaller_font_bold, bg=self.theme["window"]["bg"], fg="#00df00")
+		self.command_out.configure(font=self.smaller_font_bold, bg=self.theme["window"]["bg"], fg=self.theme["window"]["fg"],
+		 selectbackground=self.theme["window"]["selectbg"], selectforeground=self.theme["window"]["selectfg"], spacing3=5, cursor="trek")
+
 		self.find_entry.configure(font=self.smaller_font_bold, bg=self.theme["window"]["bg"], fg="#00df00", insertbackground=self.theme["window"]["fg"], relief="flat", highlightthickness=0)
 		self.find_label.configure(font=self.font, bg=self.theme["window"]["bg"], fg="#00df00")
 		self.definition_label.configure(font=self.font, bg=self.theme["window"]["selectfg"], fg="#00df00")
@@ -417,21 +423,17 @@ class win(tkinter.Tk):
 
 		if (key == "Up"):
 			self.txt.event_generate(f"<<Prev{suffix[0]}>>")
-			self.queue = []
 			self.txt.see(self.convert_line_index("float")-3)
 
 		elif (key == "Down"):
 			self.txt.event_generate(f"<<Next{suffix[0]}>>")
-			self.queue = []
 			self.txt.see(self.convert_line_index("float")+3)
 
 		elif (key == "Left"):
 			self.txt.event_generate(f"<<Prev{suffix[1]}>>")
-			self.queue = []
 
 		elif (key == "Right"):
 			self.txt.event_generate(f"<<Next{suffix[1]}>>")
-			self.queue = []
 
 		self.selection_start_index = None
 
@@ -489,6 +491,7 @@ class win(tkinter.Tk):
 
 		
 	def home(self, arg=None):
+		""" Home """
 		index = ""
 		i = 0
 		for i, char in enumerate(self.current_line, 0):
@@ -500,6 +503,7 @@ class win(tkinter.Tk):
 		return "break"
 
 	def home_select(self, arg=None):
+		""" Shift-Home """
 		index = ""
 		i = 0
 		self.queue_make()
@@ -866,11 +870,22 @@ class win(tkinter.Tk):
 
 		return "break"
 
-	def command_out_set(self, arg=None, focus=True, anchor="sw", justify="l"):
+	def command_out_set(self, arg=None, tags=None, focus=True, anchor="sw", justify="l"):
 		""" sets the text in command output """
-		self.command_out.tkraise(); self.command_out.place(x=0, y=self.winfo_height(), width=self.winfo_width(), anchor="sw")
-		self.command_out.configure(text=str(arg), justify=justify, anchor=anchor, wraplength=self.winfo_width())
-		if (focus): self.txt.focus_set() # self.command_out.focus_set()
+		# print((self.smaller_font.metrics("linespace")+self.command_out.cget("spacing3"))*(len(arg.split("\n"))))
+
+		if (len(arg.split("\n")) >= 10): h = (self.smaller_font.metrics("linespace")+self.command_out.cget("spacing3")*self.winfo_height()//10)
+		else:  h = (self.smaller_font.metrics("linespace")+self.command_out.cget("spacing3"))*len(arg.split("\n"))
+
+		self.command_out.tkraise(); self.command_out.place(x=0, y=self.winfo_height(), width=self.winfo_width(), height=h, anchor="sw")
+		self.command_out.configure(state="normal")
+		self.command_out.delete("1.0", "end")
+		self.command_out.insert("1.0", arg)
+
+		if (tags): [self.command_out.tag_add("keywords", tag[0], tag[1]) for tag in tags]
+
+		self.command_out.configure(state="disabled")
+		if (focus): self.txt.focus_set()
 
 
 	def cmmand(self, arg):
@@ -926,7 +941,7 @@ class win(tkinter.Tk):
 				self.command_out_set(f"moved to: {float(argument)}")
 
 			elif (re.match("get", argument)):
-				self.command_out_set(f"total lines: {self.get_line_count()}")
+				self.command_out_set(f"total lines: {self.get_line_count()}", tags=[["1.15", "end"]])
 
 		elif (command[0] == "find"):
 			self.find_place(text=command[1])
@@ -1058,24 +1073,38 @@ class win(tkinter.Tk):
 		elif (command[0] == "sys"):
 			self.txt.run_subprocess(argv=command[1:])
 
+		elif (command[0] == "exec"):
+			exec ("".join(command[1:]))
+
 		elif (command[0] == "ls"):
 			result = ""
-			for i, file in enumerate(os.listdir(self.file_handler.current_dir), 0):
-				# if (i % 3 == 0): result += f"{file}\n"
-				# else: result += f"{file} | "
-				result += file+"\n"
-			self.command_out_set(f"{result}")
+			tags = []
+			if (not command[1:]):
+				for i, file in enumerate(os.listdir(self.file_handler.current_dir), 1):
+					if (os.path.isdir(file)):
+						tags.append([f"{i}.0", f"{i}.{len(file)}"])
+					# if (i % 3 == 0): result += f"{file}\n"
+					# else: result += f"{file} | "
+					result += file+"\n"
+					
+			elif (command[1] == "-d" or command[1] == "d"):
+				for i, file in enumerate(os.listdir(self.file_handler.current_dir), 1):
+					if (os.path.isdir(file)):
+						tags.append([f"{i}.0", f"{i}.{len(file)}"])
+						result += file+"\n"
+				
+			self.command_out_set(f"{result}", tags)
 		
 		elif (command[0] == "cd"):
 			try:
 				os.chdir(command[1])
-				self.current_dir = os.getcwd()
+				self.file_handler.current_dir = os.getcwd()
 				self.command_out_set(arg=f"current directory: {self.file_handler.current_dir}")
 			except FileNotFoundError:
 				self.command_out_set(arg=f"Error: File/Directory not found")
 				
 		elif (command[0] == "theme"):
-			if (command[1]):
+			if (command[1:]):
 				self.unhighlight_chunk()
 				self.theme = self.theme_options[command[1]]
 				self.theme_load()
@@ -1085,12 +1114,12 @@ class win(tkinter.Tk):
 				result = ""
 				for key in self.theme_options.keys():
 					result += "<"+key+">\n"
-				self.command_out_set(result)
+				self.command_out_set(result, [["1.0", "end"]])
 		else:
 			res = ""
 			for c in command:
 				res += c+" "
-			self.command_out_set(f"Command <{res[:-1]}> not found")
+			self.command_out_set(f"Command <{res[:-1]}> not found", [["1.0", "1.7"], [f"1.{8+len(res)+2}", "end"]])
 
 		#append command to command history
 		self.command_input_history.append(command)
@@ -1270,7 +1299,7 @@ class win(tkinter.Tk):
 			if (re.match(r"\t+\n", self.current_line)):
 				self.txt.delete(f"{self.cursor_index[0]}.0", "insert") #removes extra tabs if the line is empty
 			self.txt.insert(self.txt.index(tkinter.INSERT), offset)
-
+		
 		return "break"
 
 
@@ -1319,6 +1348,11 @@ if __name__ == '__main__':
 	main_win.after(0, main_win.main)
 	main_win.mainloop()
 	
+
+
+
+
+
 
 
 
