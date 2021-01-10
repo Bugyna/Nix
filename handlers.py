@@ -6,7 +6,7 @@ import subprocess
 try: from pygame import mixer
 except ImportError: pass
 
-from widgets import TEXT, BUFFER_TAB
+from widgets import *
 
 class file_handler(object):
 	""" File opening and closing yes"""
@@ -55,41 +55,38 @@ class file_handler(object):
 		self.current_buffer = new_buffer_name
 
 
-	def new_buffer(self, buffer_name: str):
+	def new_buffer(self, buffer_name: str, buffer_type=None):
 		try: self.buffer_dict[buffer_name]; return # Checks for existing buffers
 		except KeyError: pass
 
 		self.parent.hide_text_widget()
 
-		self.buffer_list.append([TEXT(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
+		if (buffer_type == None): self.buffer_list.append([TEXT(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
+		elif (buffer_type == "GRAPHICAL"): self.buffer_list.append([GRAPHICAL_BUFFER(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
 		self.buffer_dict[buffer_name] = self.buffer_list[-1]
-		self.parent.txt = self.buffer_list[-1][0]
-		self.buffer_tab = self.buffer_list[-1][1]
 		self.buffer_tab_list.append(self.buffer_list[-1][1])
-		self.buffer_tab_index = self.parent.txt.buffer_index # text widget's buffer_index is the same as their buffer tab's buffer_index
 
-
-		self.parent.theme_load()
-		self.current_file_name = self.current_buffer = buffer_name
-		self.current_dir = os.path.dirname(self.current_file_name)
-
-		self.parent.set_font_size()
-		self.parent.title(f"Nix: <{self.parent.txt.name}>")
+		self.load_buffer(buffer_name=buffer_name)
 
 	def close_buffer(self, arg=None, buffer_name: str=None) -> (None, str):
 		buffer_index = self.buffer_dict[buffer_name][0].buffer_index
 		self.buffer_dict[buffer_name][0].place_forget()
 		self.buffer_dict[buffer_name][1].place_forget()
-		
+
+		self.buffer_tab_list.pop(buffer_index)
 		self.buffer_list.pop(buffer_index)
 		self.buffer_dict.pop(buffer_name)
 
-		last_buffer_tab = None
-		for enum_index, buffer in enumerate(self.buffer_list[1:], 1):
-			buffer[0].buffer_index = enum_index
-			buffer[0].buffer_index = enum_index
-			buffer[1].reposition(last_buffer_tab)
-			last_buffer_tab = buffer[1]
+		for enum_index in range(buffer_index, len(self.buffer_list)):
+			self.buffer_list[enum_index][0].buffer_index = enum_index
+			self.buffer_list[enum_index][1].buffer_index = enum_index
+			self.buffer_tab_list[enum_index].buffer_index = enum_index
+			self.buffer_tab_list[enum_index].reposition(self.buffer_tab_list[enum_index-1])
+			self.buffer_list[enum_index][1].reposition(self.buffer_tab_list[enum_index-1])
+			# if (enum_index == 1):
+				# self.buffer_list[buffer_index][1].place(x=0, y=25, height=18)
+			# else:
+				# self.buffer_list[buffer_index][1].place(x=last_buffer_tab.winfo_x()+last_buffer_tab.winfo_width()+3, y=25, height=18)
 
 		# if (len(self.buffer_list)-1 == 0): self.load_scratch()
 		# else: self.load_buffer(buffer_index=len(self.buffer_list)-1)
@@ -111,12 +108,13 @@ class file_handler(object):
 
 		if (buffer_index != 0): self.current_dir = os.path.dirname(self.current_file_name)
 		
-		self.parent.txt.focus_set()
+		# self.parent.txt.focus_set()
 		self.parent.reposition_widgets()
 		
 		self.parent.title(f"Nix: <{self.parent.txt.name}>")
 		self.parent.set_font_size()
 		self.parent.theme_load()
+		self.buffer_tab.focus_highlight()
 
 		if (arg): return "break"
 
@@ -218,18 +216,21 @@ class file_handler(object):
 
 
 		t0 = time.time() # timer| gets current time in miliseconds
-		self.new_buffer(self.current_file.name)
-
 		self.current_dir = os.path.dirname(self.current_file.name)
-		file_content = self.current_file.read()
+		try:
+			file_content = self.current_file.read()
+		# except UnicodeDecodeError:
+		except Exception:
+			self.new_buffer(self.current_file_name, buffer_type="GRAPHICAL"); return
 
+		self.new_buffer(self.current_file.name)
 		file = open("."+os.path.basename(self.current_file_name)+".error_swp", "w+")
 		file.write(file_content)
 		file.close()
 
 		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
 		self.parent.txt.insert("1.0", file_content) #puts all of the file's text in the text widget
-		self.parent.txt.change_index = self.parent.txt.index("end")
+		self.parent.txt.change_index = len(file_content)+1
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
 		self.parent.txt.see(tkinter.INSERT) #puts the cursor at the start of the file
 	
@@ -249,6 +250,28 @@ class file_handler(object):
 		del file_content
 
 		if (arg): return "break"
+			
+	def ls(self, command=[]):
+		dir = os.listdir(self.current_dir)
+		dir.sort()
+		result = "..\n"
+		self.parent.command_out.change_ex(self.parent.command_out.file_explorer)
+		tags = []
+		args = command[1:]
+		
+		for i, file in enumerate(dir, 2):
+			if ("-a" not in args and file.startswith(".")): continue
+			if (os.path.isdir(file)):
+				tags.append([f"{i}.0", f"{i}.{len(file)}"])
+			result += file+"\n"
+				
+		# elif (command[1] == "-d" or command[1] == "d"):
+			# for i, file in enumerate(dir, 2):
+				# if (os.path.isdir(file)):
+					# tags.append([f"{i}.0", f"{i}.{len(file)}"])
+					# result += file+"\n"
+					
+		self.parent.command_out_set(result[:-1], tags) # excludes newline at the end
 
 
 class file_explorer:
@@ -336,7 +359,6 @@ class video_handler:
 
 			os.remove("screenshot.mkv")
 		threading.Thread(target=s).start()
-
 
 
 
