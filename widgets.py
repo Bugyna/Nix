@@ -11,6 +11,7 @@ from PIL import ImageTk, Image
 
 from highlighter import highlighter
 
+
 class BUFFER_TAB(tkinter.Label):
 	def __init__(self, name: str, parent):
 		super().__init__(parent)
@@ -163,23 +164,39 @@ class BUFFER(tkinter.Frame):
 class GRAPHICAL_BUFFER(BUFFER):
 	def __init__(self, parent, name):
 		super().__init__(parent, name)
-		print("THIS IS A GRAPHICAL BUFFER")
-		self.parent = parent
-		self.full_name = name
-		self.name = os.path.basename(name)
-		self.buffer_index = len(self.parent.file_handler.buffer_list)
-		
-		self.place_picture()
+		self.img = None
+		self.picture_place()
 
-	def place_picture(self, arg=None):
-		img = Image.open(self.full_name)
-		img = img.resize((self.parent.winfo_width(), self.parent.winfo_height()), Image.ANTIALIAS)
-		img = ImageTk.PhotoImage(img)
-		self.img_label = tkinter.Label(self, image=img)
-		self.img_label.image = img
+		self.bind("<Control-period>", lambda arg: self.picture_resize(zoom=True))
+		self.bind("<Control-comma>", lambda arg: self.picture_resize(zoom=False))
+
+	def picture_place(self, arg=None):
+		if (not self.img):
+			self.img = Image.open(self.full_name)
+			self.img_size = [self.img.size[0], self.img.size[1]]
+		# if (self.parent.winfo_width() <= img.size[0] and self.parent.winfo_height() <= img.size[1]):
+			# self.img_size = self.parent.winfo_width(), self.parent.winfo_height()
+		self.img = self.img.resize(self.img_size, Image.ANTIALIAS)
+			
+		self.img_resized = ImageTk.PhotoImage(self.img)
+		self.img_label = tkinter.Label(self, image=self.img_resized)
+		self.img_label.image = self.img_resized
+		
 		self.img_label.place(x=0, y=0, width=self.parent.winfo_width(), height=self.parent.winfo_height())
 		self.img_label.configure(bg = self.parent.theme["window"]["bg"], relief="flat", highlightthickness=0, cursor="pirate")
-		self.bind("<Configure>", self.place_picture)
+		
+		self.bind("<Configure>", self.picture_place)
+
+	def picture_resize(self, arg=None, zoom=True):
+		if (zoom): self.img_size[0] += 10; self.img_size[1] += 10;
+		else: self.img_size[0] -= 10; self.img_size[1] -= 10;
+
+		self.picture_place()
+
+class CHAT_BUFFER(BUFFER):
+	def __init__(self, parent, name):
+		super().__init__(self, parent, name)
+		
 
 class FIND_ENTRY(tkinter.Text):
 	def __init__(self, parent):
@@ -317,7 +334,7 @@ class COMMAND_OUT(tkinter.Text):
 			if (os.path.isfile(line)):
 				self.parent.file_handler.load_file(filename=line)
 			elif (os.path.isdir(line)):
-				self.parent.file_handler.current_dir = line
+				self.parent.file_handler.current_dir = os.path.normpath(line)
 				self.parent.file_handler.ls()
 			
 		return "break"
@@ -365,9 +382,7 @@ class TEXT(tkinter.Text):
 
 		self.bind("<Button-1>", self.parent.update_buffer)
 		self.bind("<B1-Motion>", self.parent.update_index)
-
-		self.bind("<Prior>", self.parent.del_queue)
-		self.bind("<Next>", self.parent.del_queue)
+		
 		self.bind("<Up>", self.parent.move)
 		self.bind("<Down>", self.parent.move)
 		self.bind("<Left>", self.parent.move)
@@ -376,6 +391,16 @@ class TEXT(tkinter.Text):
 		self.bind("<Control-Down>", self.parent.move)
 		self.bind("<Control-Left>", self.parent.move)
 		self.bind("<Control-Right>", self.parent.move)
+
+		# self.bind("<Shift-Up>", self.parent.queue_make)
+		# self.bind("<Shift-Down>", self.parent.queue_make)
+		# self.bind("<Shift-Left>", self.parent.queue_make)
+		# self.bind("<Shift-Right>", self.parent.queue_make)
+
+		self.bind("<Shift-Up>", lambda arg: self.parent.move(arg, prefix="Select"))
+		self.bind("<Shift-Down>", lambda arg: self.parent.move(arg, prefix="Select"))
+		self.bind("<Shift-Left>", lambda arg: self.parent.move(arg, prefix="Select"))
+		self.bind("<Shift-Right>", lambda arg: self.parent.move(arg, prefix="Select"))
 
 		self.bind("<MouseWheel>", self.parent.scroll)
 		self.bind("<Button-4>", self.parent.scroll)
@@ -442,13 +467,10 @@ class TEXT(tkinter.Text):
 			self.bind("<Shift-Tab>", self.parent.unindent)
 			self.bind("<Control-Shift-Tab>", lambda arg: self.switch_buffer(next=False))
 
-		self.bind("<Shift-Up>", self.parent.queue_make)
-		self.bind("<Shift-Down>", self.parent.queue_make)
-		self.bind("<Shift-Left>", self.parent.queue_make)
-		self.bind("<Shift-Right>", self.parent.queue_make)
-
-		self.bind("<Control-Q>", self.parent.test_function)
-		self.bind("<Control-q>", self.parent.test_function)
+		# self.bind("<Control-Q>", self.parent.test_function)
+		# self.bind("<Control-q>", self.parent.test_function)
+		self.bind("<Control-Q>", lambda arg: self.highlighter.suggest(self.parent.cursor_index[0], self.parent.current_line))
+		self.bind("<Control-q>", lambda arg: self.highlighter.suggest(self.parent.cursor_index[0], self.parent.current_line))
 
 		self.bind("<Insert>", self.parent.set_cursor_mode)
 		self.bind("<Home>", self.parent.home)
@@ -481,8 +503,8 @@ class TEXT(tkinter.Text):
 
 	def configure_self(self):
 		self.configure(font=self.font,bg = self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"], undo=True, maxundo=0,
-		 spacing1=0, insertborderwidth=0, insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime,
-		 insertbackground=self.parent.theme["window"]["insertbg"],
+		 spacing1=0, insertborderwidth=0, insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
+		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
 		 selectborderwidth=0, borderwidth=1, relief="flat", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="word", exportselection=True,
 		 blockcursor=self.block_cursor, highlightthickness=0, cursor="pirate")
@@ -558,3 +580,22 @@ class TEXT(tkinter.Text):
 			
 		threading.Thread(target=run).start()
 		return "break"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

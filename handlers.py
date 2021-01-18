@@ -115,7 +115,8 @@ class file_handler(object):
 		self.parent.set_font_size()
 		self.parent.theme_load()
 		self.buffer_tab.focus_highlight()
-
+		self.parent.txt.focus_set()
+		
 		if (arg): return "break"
 
 	def del_file(self, arg=None, filename:str="") -> (None, str):
@@ -228,7 +229,7 @@ class file_handler(object):
 		file.write(file_content)
 		file.close()
 
-		self.parent.txt.delete("1.0", "end-1c") #deletes the buffer so there's not any extra text
+		self.parent.txt.delete("1.0", "end") #deletes the buffer so there's not any extra text
 		self.parent.txt.insert("1.0", file_content) #puts all of the file's text in the text widget
 		self.parent.txt.change_index = len(file_content)+1
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
@@ -359,7 +360,5 @@ class video_handler:
 
 			os.remove("screenshot.mkv")
 		threading.Thread(target=s).start()
-
-
 
 

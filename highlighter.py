@@ -23,7 +23,7 @@ class highlighter(object):
 		self.Py_logical_keywords = [
 			'and', 'or', 'not', 'if', 'elif', 'else', 'for', 'try', 'except', 'finally','while', 'with', 'self'] 
 		self.Py_var_keywords = [
-			"object", "int", "str", "float", "list"
+			"object", "int", "str", "float", "list", "Any", 
 		]
 		# self.Py_keywords_regex = re.compile('|'.join(self.Py_keywords))#(r'\b(?:\|)\b'.join(self.Py_keywords))
 		
@@ -155,6 +155,12 @@ class highlighter(object):
 			"}" : "{",
 		}
 
+		self.vars = []
+		self.objs = []
+		self.funcs = []
+		self.pattern = ""
+		self.last_pattern = []
+
 		# compiled regexes used by the highlighting functions
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z_]")
@@ -254,6 +260,87 @@ class highlighter(object):
 			self.highlight = self.no_highlight
 		
 		self.commment_regex = re.compile(rf"{self.comment_sign}")
+
+
+	def suggest(self, line_no: int = None, line: str = None) -> None:
+		if (not line):
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
+
+		token = ""
+		for i, current_char in enumerate(line, 0):
+			if (self.abc_regex.match(current_char)):
+				token += current_char
+		
+				tt = ""
+				for m in self.vars:
+					if (re.match(token, m)):
+						tt += m+"  "
+				for m in self.funcs:
+					if (re.match(token, m)):
+						tt += m+"  "
+
+				self.parent.command_out_set(tt)
+
+			else:
+				token = ""
+
+
+	def lex_line(self, line_no: int = None, line: str = None) -> None:
+		if (not line):
+			line = self.txt.get(float(line_no), self.get_line_lenght(line_no))
+			
+		token = ""
+		last_token = ""
+		index = ""
+		last_separator_index = 0
+		last_separator = f"{line_no}.{last_separator_index}"
+		
+		for i, current_char in enumerate(line, 0):
+			if (self.abc_regex.match(current_char)):
+				token += current_char
+
+			elif (self.operator_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+
+				if (current_char == "=" and last_token != "" and last_token not in self.vars):
+					self.vars.append(last_token)
+				
+				last_token = token
+				token = ""
+				
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				continue
+			
+			elif (self.brackets_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+				if (self.function_separator_regex.match(current_char) and last_token == "def" and token not in self.funcs):
+					self.funcs.append(token)
+
+				last_token = token
+				token = ""
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				continue
+			
+			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
+				index = f"{line_no}.{i}"
+				
+				last_token = token
+				token = ""
+				
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				continue
+
+			elif (self.separator_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+			
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
+				last_token = token
+				token = ""
+		
 
 	def get_line_lenght(self, line_no: int):
 		""" gets the length of current line """
@@ -358,7 +445,7 @@ class highlighter(object):
 		self.txt.tag_remove("quotes", last_separator, line_end_index)
 		self.txt.tag_remove("upcase", last_separator, line_end_index)
 
-	def highlight_keyword(self, last_separator, index):
+	def highlight_keyword(self, last_separator, index) -> None:
 		if (self.pattern in self.keywords): #self.pattern in self.keywords #self.Py_keywords_regex.match(self.pattern)
 			self.txt.tag_add("keywords", last_separator, index)
 		
@@ -367,6 +454,9 @@ class highlighter(object):
 
 		elif (self.pattern in self.numerical_keywords):
 			self.txt.tag_add("numbers", last_separator, index)
+
+		elif (self.pattern in self.objs):
+			self.txt.tag_add("functions", last_separator, index)
 
 		elif (self.abc_upcase_regex.match(self.pattern) and len(self.pattern) > 1):
 			self.txt.tag_add("upcase", last_separator, index)
@@ -401,7 +491,6 @@ class highlighter(object):
 			
 			elif (self.abc_regex.match(current_char)):
 				self.pattern += current_char
-				# print(self.pattern)
 				continue
 
 			elif (self.commment_regex.match(current_char)): #comments
@@ -421,6 +510,7 @@ class highlighter(object):
 				index = f"{line_no}.{i}"
 				self.highlight_keyword(last_separator, index)
 				self.txt.tag_add("operators", index)
+				
 				self.pattern = ""
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
@@ -782,36 +872,7 @@ class highlighter(object):
 		self.txt.tag_remove(["special_chars"], last_separator, line_end_index)
 		self.txt.tag_remove(["comments"], last_separator, line_end_index)
 		self.txt.tag_remove(["operators"], last_separator, line_end_index)
-		
-		
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	
 
 
 
