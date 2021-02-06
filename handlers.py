@@ -99,6 +99,7 @@ class file_handler(object):
 		if (self.parent.split_mode == 0): self.parent.hide_text_widget()
 		
 		# this conditional is gross why can't it just be (buffer_index)
+		# THIS IS PROBABLY THE MOST PYTHONIC LINE OUT OF ALL THE FILES
 		if (buffer_index is not None): buffer_name = self.buffer_list[buffer_index][0].full_name
 
 		self.current_file_name = self.current_buffer = buffer_name
@@ -162,7 +163,7 @@ class file_handler(object):
 			
 			self.current_dir = os.path.dirname(self.current_file.name)
 			self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
-			self.buffer_tab.change_name(extra_char="")
+			self.buffer_tab.change_name(extra_char=" ")
 			# self.parent.command_out_set(f"total of {self.parent.get_line_count()} lines saved")
 			self.parent.command_out_set(rf"saved {size1-size0}\{size1}\{self.parent.get_line_count()} new bytes to {os.path.basename(self.current_file_name)}")
 			
@@ -233,9 +234,9 @@ class file_handler(object):
 		self.parent.txt.insert("1.0", file_content) #puts all of the file's text in the text widget
 		self.parent.txt.change_index = len(file_content)+1
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
-		self.parent.txt.see(tkinter.INSERT) #puts the cursor at the start of the file
+		self.parent.txt.see(tkinter.INSERT)
 	
-		self.current_file.close() #closes current file
+		self.current_file.close()
 	
 		self.parent.highlight_chunk() #highlights the text in the text widget
 		t1 = time.time() # timer| gets current time in miliseconds
@@ -245,42 +246,33 @@ class file_handler(object):
 		self.parent.command_out_set(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
 			["1.12", f"1.{13+len(str(self.parent.get_line_count()))}"], 
 			[f"1.{15+len(str(self.parent.get_line_count()))+11}", f"1.{15+len(str(self.parent.get_line_count()))+11+len(str(elapsed_time))}"]
-			]) # THIS IS WORSE THAN AN AMY SCHUMER PERFORMACE unlike Amy Schumer this'll probably make someone laugh
-		self.parent.title(f"Nix: <{self.parent.txt.name}>") #sets the title of the window to the current filename
+			]) # wild...
+		self.parent.title(f"Nix: <{self.parent.txt.name}>")
 
 		del file_content
 
 		if (arg): return "break"
 			
 	def ls(self, command=[]):
+		self.parent.command_out.change_ex(self.parent.command_out.file_explorer)
 		dir = os.listdir(self.current_dir)
 		dir.sort()
-		result = "..\n"
-		self.parent.command_out.change_ex(self.parent.command_out.file_explorer)
-		tags = []
-		args = command[1:]
-		
-		for i, file in enumerate(dir, 2):
-			if ("-a" not in args and file.startswith(".")): continue
-			if (os.path.isdir(file)):
-				tags.append([f"{i}.0", f"{i}.{len(file)}"])
-			result += file+"\n"
-				
-		# elif (command[1] == "-d" or command[1] == "d"):
-			# for i, file in enumerate(dir, 2):
-				# if (os.path.isdir(file)):
-					# tags.append([f"{i}.0", f"{i}.{len(file)}"])
-					# result += file+"\n"
-					
+		dir.insert(0, "..")
+		result, tags = self.highlight_ls(dir)
 		self.parent.command_out_set(result[:-1], tags) # excludes newline at the end
 
 
-class file_explorer:
-	def __init__(self, parent):
-		pass
+	def highlight_ls(self, dir):
+		result = ""
+		tags = []
+		for i, file in enumerate(dir, 0):
+			if (os.path.isdir(f"{self.current_dir}/{file}")):
+				tags.append([f"{i+1}.0", f"{i+1}.{len(file)}"])
+			result += file+"\n"
 
+		return result, tags
 
-class music_player:
+class music_player(object):
 	def __init__(self, parent):
 		self.parent = parent
 		self.volume = 1
@@ -359,6 +351,5 @@ class video_handler:
 				continue
 
 			os.remove("screenshot.mkv")
-		threading.Thread(target=s).start()
-
+		threading.Thread(target=s, daemon=True).start()
 

@@ -10,7 +10,136 @@ from tkinter import font, PhotoImage
 from PIL import ImageTk, Image
 
 from highlighter import highlighter
+from parser import *
 
+
+# class NERD_TREE(tkinter.Text):
+# 	def __init__(self, parent, name):
+# 		super().__init__(parent)
+# 		self.parent = parent
+# 		self.full_name = name
+# 		self.name = os.path.basename(name)
+
+# 		self.arg = ""
+# 		self.tags = []
+# 		self.selected_lines = []
+# 		self.out = []
+
+# 		self.font = self.parent.smaller_font_bold
+# 		self.font_size = 9
+# 		self.font_weight = "bold"
+
+# 		self.tag_configure("left", justify="left")
+# 		self.tag_configure("center", justify="center")
+# 		self.tag_configure("right", justify="right")
+
+# 		# self.bind("<Key>", lambda arg: "break")
+# 		self.bind("<Down>", self.scroll)
+# 		self.bind("<Up>", self.scroll)
+# 		self.bind("<Prior>", self.scroll)
+# 		self.bind("<Next>", self.scroll)
+# 		
+# 		self.bind("<Escape>", self.unplace)
+# 		# self.bind("<Control-w>", self.parent.win_destroy)
+# 		# self.bind("<Control-W>", self.parent.win_destroy)
+# 		self.bind("<Control-b>w", self.unplace)
+# 		self.bind("<Control-B>W", self.unplace)
+# 		self.bind("<Button-1>", lambda arg: self.focus_set())
+
+# 		self.bind("<Control-comma>", lambda arg: self.parent.set_font_size(arg, self))
+# 		self.bind("<Control-period>", lambda arg: self.parent.set_font_size(arg, self))
+
+# 		self.bind("<Control_L>", self.add_selection)
+# 		self.bind("<Return>", self.use_selection)
+# 		self.bind("<Shift-Return>", lambda arg: self.use_selection())
+
+# 		self.bind("<Control-F>", self.find)
+# 		self.bind("<Control-f>", self.find)
+
+# 	def unplace(self, arg=None):
+# 		self.parent.txt.focus_set()
+# 		self.place_forget()
+
+# 	def scroll(self, arg):
+# 		key = arg.keysym
+# 		self.configure(state="normal")
+# 		if (key == "Up"):
+# 			self.mark_set("insert", "insert linestart-1c")
+# 			self.see("insert")
+
+# 		elif (key == "Down"):
+# 			self.mark_set("insert", "insert lineend+1c")
+# 			self.see("insert")
+
+# 		elif (key == "Prior"):
+# 			self.mark_set("insert", "1.0")
+# 			self.see("insert")
+
+# 		elif (key == "Next"):
+# 			self.mark_set("insert", "end linestart")
+# 			self.see("insert")
+
+# 		self.tag_remove("command_out_insert_bg", "1.0", "end")
+# 		self.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
+# 		self.configure(state="disabled")
+
+# 		return "break"
+# 		
+# 	def stdout(self, arg=None, tags=None, justify="left"):
+# 		self.configure(state="normal")
+
+# 		self.arg = arg
+# 		if (arg not in self.out): self.out.append(arg)
+# 		self.delete("1.0", "end")
+# 		self.insert("1.0", self.arg)
+# 		self.mark_set("insert", "1.0")
+
+# 		self.tag_add(justify, "1.0", "end")
+
+# 		if (tags):
+# 			self.tags = []
+# 			self.tags.append(tags)
+# 			for tag in tags:
+# 				if tag[2:]: self.tag_add(tag[2], tag[0], tag[1])
+# 				else: self.tag_add("keywords", tag[0], tag[1])
+
+# 				
+# 			# [self.tag_add(tag[3], tag[0], tag[1]) for tag in tags]
+# 			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
+
+# 		self.configure(state="disabled")
+
+# 	def ex(self, arg=None):
+# 		for line in arg:
+# 			line = f"{self.parent.file_handler.current_dir}/{line}"
+# 			if (os.path.isfile(line)):
+# 				self.parent.file_handler.load_file(filename=line)
+# 			elif (os.path.isdir(line)):
+# 				self.parent.file_handler.current_dir = os.path.normpath(line)
+# 				self.parent.file_handler.ls()
+# 			
+# 		return "break"
+
+# 	def add_selection(self, arg=None):
+# 		if (arg):
+# 			self.tag_add("command_out_select_bg", "insert linestart", "insert lineend")
+# 			for i, line in enumerate(self.selected_lines, 0):
+# 				if (line == self.get("insert linestart", "insert lineend")):
+# 					self.selected_lines.pop(i)
+# 					self.tag_remove("command_out_select_bg", "insert linestart", "insert lineend")
+# 					return "break"
+# 			
+# 		self.selected_lines.append(self.get("insert linestart", "insert lineend"))
+
+# 		return "break"
+# 			
+# 	def use_selection(self, arg=None):
+# 		if (arg): self.add_selection()
+# 		self.ex(self.selected_lines)
+# 		del self.selected_lines[:]
+
+# 		return "break"
+	
 
 class BUFFER_TAB(tkinter.Label):
 	def __init__(self, name: str, parent):
@@ -20,7 +149,7 @@ class BUFFER_TAB(tkinter.Label):
 		self.name = os.path.basename(name)
 
 		self.buffer_index = len(self.parent.file_handler.buffer_list)
-		self.configure(text=" "+self.name, font=self.parent.widget_font, 
+		self.configure(text=f" {self.name} ", font=self.parent.widget_font, 
 		 bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["widget_fg"],
 		 highlightcolor=self.parent.theme["window"]["widget_fg"])
 
@@ -55,11 +184,11 @@ class BUFFER_TAB(tkinter.Label):
 		if (self.buffer_index == 1):
 			self.place(x=0, y=25, height=18)
 		else:
-			self.place(x=last_buffer_tab.winfo_x()+last_buffer_tab.winfo_width()+3, y=25, height=18)
+			self.place(x=last_buffer_tab.winfo_x()+last_buffer_tab.winfo_width(), y=25, height=18)
 
 	def change_name(self, new_name: str=None, extra_char: str = ""):
 		if (new_name): self.full_name = new_name; self.name = os.path.basename(new_name)
-		self.configure(text=extra_char+self.name)
+		self.configure(text=extra_char+self.name+" ")
 
 	def load_buffer(self, arg=None):
 		self.focus_set()
@@ -161,6 +290,13 @@ class BUFFER(tkinter.Frame):
 
 		return "break"
 
+class PROGRAMABLE_BUFFER(BUFFER):
+	def __init__(self, parent, name):
+		super().__init__(parent, name)
+
+		self.txt = tkinter.Text()
+		self.win = tkinter.Frame()	
+
 class GRAPHICAL_BUFFER(BUFFER):
 	def __init__(self, parent, name):
 		super().__init__(parent, name)
@@ -203,6 +339,7 @@ class FIND_ENTRY(tkinter.Text):
 		super().__init__(parent)
 
 class COMMAND_OUT(tkinter.Text):
+	#DUNNO who tf wrote this, but they were a complete piece of shit ......................................
 	def __init__(self, parent, name):
 		super().__init__(parent)
 		self.parent = parent
@@ -210,14 +347,27 @@ class COMMAND_OUT(tkinter.Text):
 		self.name = os.path.basename(name)
 
 		self.arg = ""
+		self.modified_arg = ""
 		self.tags = []
 		self.selected_lines = []
+		self.out = []
+
+		self.input = ""
+		self.input_label = tkinter.Label(self)
+		self.input_label.configure(bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"])
+		self.input_label.pack()
+
+		self.parser = PARSER(self.parent)
 
 		self.font = self.parent.smaller_font_bold
 		self.font_size = 9
 		self.font_weight = "bold"
 
-		# self.bind("<Key>", lambda arg: "break")
+		self.tag_configure("left", justify="left")
+		self.tag_configure("center", justify="center")
+		self.tag_configure("right", justify="right")
+
+		self.bind("<KeyPress>", self.add_input)
 		self.bind("<Down>", self.scroll)
 		self.bind("<Up>", self.scroll)
 		self.bind("<Prior>", self.scroll)
@@ -236,6 +386,44 @@ class COMMAND_OUT(tkinter.Text):
 		self.bind("<Control_L>", self.add_selection)
 		self.bind("<Return>", self.use_selection)
 		self.bind("<Shift-Return>", lambda arg: self.use_selection())
+
+		# self.bind("<Control-less>", lambda arg: self.parent.command_out_set("FUCKER"))
+		# self.bind("<Control-greater>", lambda arg: self.parent.command_out_set("FUCKER"))
+
+	def add_input(self, arg):
+		# print(arg.keysym)
+		if (len(arg.keysym) == 1): # re.match(r"[A-Za-z_0-9]", arg.keysym)
+			self.input += arg.keysym
+
+		elif (arg.keysym == "BackSpace"):
+			self.input = self.input[:-1]
+
+		elif (arg.keysym == "space"):
+			self.input += " "
+
+		self.modified_stdout(self.arg, self.tags)
+		self.show_input()
+
+	def show_input(self):
+		self.input_label.configure(text=self.input)
+
+		if (not self.input): return
+
+		self.modified_arg = []
+
+		self.mark_set("match_end", "1.0")
+		
+		count = tkinter.IntVar()
+		while (True):
+			index = self.search(self.input, "match_end", "end", count=count)
+			if (index == ""): break
+			if (count.get()) == 0: break
+			self.mark_set("match_end", index+" lineend")
+			self.modified_arg.append(self.get(index+" linestart", index+" lineend"))
+
+		self.mark_unset("match_end")
+		result, tags = self.parent.file_handler.highlight_ls(self.modified_arg)
+		self.modified_stdout(result, tags)
 
 	def unplace(self, arg=None):
 		self.parent.txt.focus_set()
@@ -266,19 +454,40 @@ class COMMAND_OUT(tkinter.Text):
 
 		return "break"
 		
-	def stdout(self, arg=None, tags=None):
+	def stdout(self, arg=None, tags=None, justify="left"):
 		self.configure(state="normal")
-		# print(arg)
-		self.arg = ""
+		del self.tags[:]
 		self.arg = arg
+		if (arg not in self.out): self.out.append(arg)
 		self.delete("1.0", "end")
 		self.insert("1.0", self.arg)
 		self.mark_set("insert", "1.0")
 
+		self.tag_add(justify, "1.0", "end")
+
 		if (tags):
-			self.tags = []
-			self.tags.append(tags)
-			[self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
+			self.tags = tags
+			for tag in tags:
+				if tag[2:]: self.tag_add(tag[2], tag[0], tag[1])
+				else: self.tag_add("keywords", tag[0], tag[1])
+
+			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
+
+		self.configure(state="disabled")
+
+	def modified_stdout(self, arg=None, tags=None, justify="left"):
+		self.configure(state="normal")
+		self.delete("1.0", "end")
+		self.insert("1.0", arg)
+		self.mark_set("insert", "1.0")
+		self.tag_add(justify, "1.0", "end")
+
+		if (tags):
+			for tag in tags:
+				if tag[2:]: self.tag_add(tag[2], tag[0], tag[1])
+				else: self.tag_add("keywords", tag[0], tag[1])
+
+			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
 
 		self.configure(state="disabled")
 
@@ -296,7 +505,6 @@ class COMMAND_OUT(tkinter.Text):
 			self.tag_add("command_out_select_bg", "insert linestart", "insert lineend")
 			for i, line in enumerate(self.selected_lines, 0):
 				if (line == self.get("insert linestart", "insert lineend")):
-					print("oh shit it working")
 					self.selected_lines.pop(i)
 					self.tag_remove("command_out_select_bg", "insert linestart", "insert lineend")
 					return "break"
@@ -308,6 +516,8 @@ class COMMAND_OUT(tkinter.Text):
 	def use_selection(self, arg=None):
 		if (arg): self.add_selection()
 		self.ex(self.selected_lines)
+		self.input = ""
+		self.show_input()
 		del self.selected_lines[:]
 
 		return "break"
@@ -317,7 +527,7 @@ class COMMAND_OUT(tkinter.Text):
 		for line in arg:
 			if (re.search(r"line [0-9]+", line)):
 				match = re.search(r"line [0-9]+", line).group()[5:]
-			else:
+			elif (re.search(r"[0-9]+", line)):
 				match = re.search(r"[0-9]+", line)
 
 			if (match):
@@ -330,11 +540,11 @@ class COMMAND_OUT(tkinter.Text):
 	def file_explorer(self, arg=None):
 		for line in arg:
 			line = f"{self.parent.file_handler.current_dir}/{line}"
-			print(line)
 			if (os.path.isfile(line)):
 				self.parent.file_handler.load_file(filename=line)
 			elif (os.path.isdir(line)):
 				self.parent.file_handler.current_dir = os.path.normpath(line)
+				print("normpath dir: ", self.parent.file_handler.current_dir)
 				self.parent.file_handler.ls()
 			
 		return "break"
@@ -372,7 +582,7 @@ class TEXT(tkinter.Text):
 
 
 		self.bind("<KeyRelease>", self.parent.update_buffer)
-		self.bind("<KeyRelease-BackSpace>", self.delete_selection_start_index)
+		self.bind("<KeyRelease><BackSpace>", self.delete_selection_start_index)
 
 		self.bind("<Control-period>", self.parent.set_font_size)
 		self.bind("<Control-comma>", self.parent.set_font_size)
@@ -380,8 +590,9 @@ class TEXT(tkinter.Text):
 		self.bind("<Control-Button-4>", self.parent.set_font_size)
 		self.bind("<Control-Button-5>", self.parent.set_font_size)
 
-		self.bind("<Button-1>", self.parent.update_buffer)
-		self.bind("<B1-Motion>", self.parent.update_index)
+		self.bind("<Button-1>", self.parent.mouse_left)
+		self.bind("<B1-Motion>", self.parent.mouse_left)
+		# self.bind("<Motion>", lambda arg: self.mark_set("insert", "current"))
 		
 		self.bind("<Up>", self.parent.move)
 		self.bind("<Down>", self.parent.move)
@@ -440,6 +651,10 @@ class TEXT(tkinter.Text):
 
 		self.bind("<Control-F>", self.parent.find_place)
 		self.bind("<Control-f>", self.parent.find_place)
+
+		self.bind("<Control-G>", self.parent.nt_place)
+		self.bind("<Control-g>", self.parent.nt_place)
+		
 		self.bind("<Control-V>", self.parent.paste)
 		self.bind("<Control-v>", self.parent.paste)
 
@@ -492,8 +707,8 @@ class TEXT(tkinter.Text):
 		self.bind("<Alt-Shift-Up>", lambda arg: self.parent.set_dimensions(arg, False))
 		self.bind("<Alt-Shift-Down>", lambda arg: self.parent.set_dimensions(arg, False))
 
-		self.bind("<Control-Alt_L>", lambda arg: self.parent.window_select("file_menu"))
-		self.bind("<Control-Alt_R>", lambda arg: self.parent.window_select("file_menu"))
+		self.bind("<Control-Alt_L><KeyRelease>", lambda arg: self.parent.window_select("file_menu"))
+		self.bind("<Control-Alt_R><KeyRelease>", lambda arg: self.parent.window_select("file_menu"))
 
 		self.bind("<F1>", lambda arg: self.bell())
 		self.bind("<F2>", lambda arg: self.insert("insert", self.get_time()))
@@ -507,7 +722,7 @@ class TEXT(tkinter.Text):
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
 		 selectborderwidth=0, borderwidth=1, relief="flat", tabs=(f"{self.font.measure(' ' * 4)}"), wrap="word", exportselection=True,
-		 blockcursor=self.block_cursor, highlightthickness=0, cursor="pirate")
+		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
 
 	def change_name(self, name):
 		self.full_name = name
@@ -517,7 +732,6 @@ class TEXT(tkinter.Text):
 		""" This has to be a function and I hate it """
 		self.parent.selection_start_index = None
 		self.parent.update_index()
-
 
 	def get_time(self, arg=None):
 		date = datetime.date.today()
@@ -541,6 +755,7 @@ class TEXT(tkinter.Text):
 		if (arg == "py" or arg == "pyw"): self.make_argv = f"python3 {self.name}"
 		elif (arg == "c" or arg == "h" or arg == "cc" or arg == "hh" or arg == "cpp" or arg == "hpp"): self.make_argv = "make"
 		elif (arg == "html"): self.make_argv = f"firefox {self.full_name}"
+		elif (arg == "go"): self.make_argv = f""
 		print(self.make_argv)
 
 		self.parent.highlighting = True
@@ -561,7 +776,7 @@ class TEXT(tkinter.Text):
 			buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
 		
 		self.parent.file_handler.load_buffer(buffer_index=buffer_tab_index)
-		self.parent.command_out_set(f"buffer [{self.parent.txt.name}] was loaded")
+		self.parent.command_out_set(f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]])
 
 		return "break"
 
@@ -578,22 +793,8 @@ class TEXT(tkinter.Text):
 			self.parent.command_out_set(out, focus=False)
 			print(out)
 			
-		threading.Thread(target=run).start()
+		threading.Thread(target=run, daemon=True).start()
 		return "break"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

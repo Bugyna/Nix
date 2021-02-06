@@ -9,7 +9,7 @@ class highlighter(object):
 		self.supported_languagues = [
 			"NaN", "py", "cc", "hh", "cpp", "hpp", "c", "h", "txt", "html", "htm", "java", "jsp", "class", "css", "go",
 			"sh", "diary", "bat"
-			]
+		]
 
 		self.command_keywords = list(parent.commands.keys())
 
@@ -17,7 +17,7 @@ class highlighter(object):
 			'await', 'import', 'pass', 'break', 'in',
 			'raise', 'class', 'is', 'return', 'continue', 'lambda', 'as', 'def', 'from',
 			'nonlocal', 'assert', 'del', 'global', 'async', 'yield'
-			]
+		]
 
 		self.Py_numerical_keywords = ['False', 'True', 'None']
 		self.Py_logical_keywords = [
@@ -25,7 +25,9 @@ class highlighter(object):
 		self.Py_var_keywords = [
 			"object", "int", "str", "float", "list", "Any", 
 		]
-		# self.Py_keywords_regex = re.compile('|'.join(self.Py_keywords))#(r'\b(?:\|)\b'.join(self.Py_keywords))
+# 		self.py_keyword_regex = (r'\b(?:\|)\b'.join(self.Py_keywords)) #re.compile('|'.join(self.Py_keywords))
+
+		# self.py_keyword_regex = r"__bases__|__builtin__|__class__|__debug__|__dict__|__doc__|__file__|__members__|__methods__|__name__|__self__|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield"
 		
 		self.Java_keywords = [
 			 'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class', 'const', 'continue',
@@ -33,7 +35,7 @@ class highlighter(object):
 			 'implements', 'import', 'instanceof', 'int', 'interface', 'long', 'native', 'new', 'package', 'private',
 			 'protected', 'public', 'return', 'short', 'static', 'strictfp', 'super', 'switch', 'synchronized', 'this', 'throw',
 			 'throws', 'transient', 'try', 'void', 'volatile', 'while', 'true', 'false', 'null'
-			]
+		]
 
 		self.C_keywords = [
 			'auto', 'break', 'case', 'char', 'const', 'continue', 'default', 'do', 'double', 'else', 'enum',
@@ -73,7 +75,8 @@ class highlighter(object):
 		 'export', 'false', 'fc', 'fg', 'for', 'getopts', 'hash', 'help', 'history', 'if', 'jobs', 'kill', 'let',
 		 'local', 'logout', 'popd', 'printf', 'pushd', 'pwd', 'read', 'readonly', 'return', 'select', 'set', 'shift',
 		 'shopt', 'source', 'suspend', 'test', 'time', 'times', 'trap', 'true', 'type', 'typeset', 'ulimit', 'umask',
-		 'unalias', 'unset', 'until', 'variables', 'while']
+		 'unalias', 'unset', 'until', 'variables', 'while'
+		]
 
 		# BATCH IS FUCKING RETARDED
 		self.bat_keywords = ['adprep', 'append', 'arp', 'assoc', 'at', 'atmadm', 'attrib', 'auditpol', 'autochk',
@@ -108,6 +111,9 @@ class highlighter(object):
 		 'verif', 'vol', 'vssadmin', 'w32tm', 'waitfor', 'wbadmin', 'wdsutil', 'wecutil', 'wevtutil', 'where', 'whoami', 'winnt',
 		 'winnt32', 'winpop', 'winrm', 'winrs', 'winsat', 'wlbs', 'mic', 'wscript', 'xcopy'
 		 ]
+
+
+# 		self.comment_keywords = ["todo", "TODO"]
 
 		# self.html_keywords = ['<!-->', '<!DOCTYPE>', '<a>', '<abbr>', '<acronym>', '<address>', '<applet>', '<area>',
 		#  '<article>', '<aside>', '<audio>', '<b>', '<base>', '<basefont>', '<bdi>', '<bdo>', '<big>', '<blockquote>',
@@ -175,7 +181,7 @@ class highlighter(object):
 		self.function_separator_regex = re.compile(r"[\(]")
 		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
-		self.whitespace_regex = re.compile(r"[\t]")
+		self.whitespace_regex = re.compile(r"[\t\ ]")
 		self.C_preprocessor_regex = re.compile(r"\#")
 
 		self.html_separator_regex = re.compile(r"[\;\ \=]")
@@ -188,78 +194,34 @@ class highlighter(object):
 		self.html_comment_start_regex = re.compile(r"<!--")
 		self.html_comment_end_regex = re.compile(r"-->")
 
+		self.language_options = {
+			"c|h": {"keywords": self.C_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.C_highlight, "comment_sign": "//"},
+			"cpp|hpp|cc|hh": {"keywords": self.Cplus_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.C_highlight, "comment_sign": "//"},
+			"py|pyw": {"keywords": self.Py_keywords, "numerical_keywords": self.Py_numerical_keywords, "logical_keywords": self.Py_logical_keywords, "highlight": self.python_highlight, "comment_sign": "#"},
+			"html|htm|css": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.html_highlight, "comment_sign": "<!-- "},
+			"java|jsp|class": {"keywords": self.Java_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.C_highlight, "comment_sign": "//"},
+			"go": {"keywords": self.Go_keywords, "numerical_keywords": self.Go_numerical_keywords, "logical_keywords": self.Go_logical_keywords, "highlight": self.C_highlight, "comment_sign": "//"},
+			"sh": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#"},
+			"bat|cmd": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "::"},
+			"diary": {"keywords": ["Hello"], "numerical_keywords": [], "logical_keywords": [], "highlight": self.diary_highlight, "comment_sign": "~$"},
+		}
+
 	def set_languague(self, arg: str=None):
 		self.lang = arg
-		if (self.lang == "c" or self.lang == "h"):
-			self.keywords = self.C_keywords
-			self.numerical_keywords = []
-			self.logical_keywords = []
-			self.highlight = self.C_highlight
-			self.comment_sign = "//"
-			self.highlight = self.C_highlight
-
-		elif (self.lang == "cpp" or self.lang == "cc" or self.lang == "hpp" or self.lang == "hh"):
-			self.keywords = self.Cplus_keywords
-			self.numerical_keywords = []
-			self.logical_keywords = []
-			self.highlight = self.C_highlight
-			self.comment_sign = "//"
-
-		elif (self.lang == "py"):
-			self.keywords = self.Py_keywords
-			self.numerical_keywords = self.Py_numerical_keywords
-			self.logical_keywords = self.Py_logical_keywords
-			self.highlight = self.python_highlight
-			self.comment_sign = "#"
-
-		elif (self.lang == "html" or self.lang == "htm" or self.lang == "css"):
-			self.keywords = self.html_keywords
-			self.highlight = self.html_highlight
-			self.comment_sign = "<!-- -->"
-
-		elif (self.lang == "java" or self.lang == "jsp" or self.lang == "class"):
-			self.keywords = self.Java_keywords
-			self.numerical_keywords = []
-			self.logical_keywords = []
-			self.highlight = self.C_highlight
-			self.comment_sign = "//"
-
-		elif (self.lang == "go"):
-			self.keywords = self.Go_keywords
-			self.numerical_keywords = self.Go_numerical_keywords
-			self.logical_keywords = self.Go_logical_keywords
-			self.highlight = self.C_highlight
-			self.comment_sign = "//"
-
-		elif (self.lang == "sh"):
-			self.keywords = self.sh_keywords
-			self.numerical_keywords = []
-			self.logical_keywords = []
-			self.highlight = self.script_highlight
-			self.comment_sign = "#"
-
-		elif (self.lang == "bat"):
-			self.keywords = self.sh_keywords
-			self.numerical_keywords = []
-			self.logical_keywords = []
-			self.highlight = self.script_highlight
-			self.comment_sign = "::"
-
-		elif (self.lang == "diary"):
-			self.keywords = ["Hello"]
-			self.numerical_keywords = []
-			self.logical_keywords = []
-			self.highlight = self.diary_highlight
-			self.comment_sign = "~$"
-
-		elif (self.lang == "NaN" or self.lang == "txt"):
-			self.comment_sign = "\t"
-			self.highlight = self.no_highlight
-		else:
-			self.comment_sign = "\t"
-			self.highlight = self.no_highlight
 		
-		self.commment_regex = re.compile(rf"{self.comment_sign}")
+		for key in self.language_options:
+			if (re.match(key, self.lang)):
+				lang_set = self.language_options[key]
+				self.keywords = lang_set["keywords"]
+				self.numerical_keywords = lang_set["numerical_keywords"]
+				self.logical_keywords = lang_set["logical_keywords"]
+				self.highlight = lang_set["highlight"]
+				self.comment_sign = lang_set["comment_sign"]
+				self.commment_regex = re.compile(rf"{self.comment_sign}")
+				return
+				
+		self.comment_sign = "\t"
+		self.highlight = self.no_highlight
 
 
 	def suggest(self, line_no: int = None, line: str = None) -> None:
@@ -270,14 +232,14 @@ class highlighter(object):
 		for i, current_char in enumerate(line, 0):
 			if (self.abc_regex.match(current_char)):
 				token += current_char
-		
+				
 				tt = ""
 				for m in self.vars:
 					if (re.match(token, m)):
-						tt += m+"  "
+						tt += m+":variable | "
 				for m in self.funcs:
 					if (re.match(token, m)):
-						tt += m+"  "
+						tt += m+":function | "
 
 				self.parent.command_out_set(tt)
 
@@ -464,7 +426,27 @@ class highlighter(object):
 		elif (self.special_num_regex.match(self.pattern)):
 			self.txt.tag_add("numbers", last_separator, index)
 
-					
+
+
+	# def py_test(self, line_no=None, line=None):
+		# start = self.txt.index("1.0")
+		# end = self.txt.index("end")
+		# self.txt.mark_set("matchStart", start)
+		# self.txt.mark_set("matchEnd", start)
+		# self.txt.mark_set("searchLimit", end)
+		
+		# count = tkinter.IntVar()
+		# while True:
+			# index = self.txt.search(self.py_keyword_regex, "matchEnd", "searchLimit", regexp=True, count=count)
+			# if index == "": break
+			# if count.get() == 0: break # degenerate pattern which matches zero-lenght strings
+			# self.txt.mark_set("matchStart", index)
+			# self.txt.mark_set("matchEnd", f"{index}+{count.get()}c")
+			# self.pattern = self.txt.get("matchStart", "matchEnd")
+			# self.parent.command_out_set(index)
+			# self.highlight_keyword("matchStart", "matchEnd")
+			
+								
 	def python_highlight(self, line_no: int ,line: str=None):
 		""" highlighting for python language """
 		if (not line):
@@ -873,19 +855,4 @@ class highlighter(object):
 		self.txt.tag_remove(["comments"], last_separator, line_end_index)
 		self.txt.tag_remove(["operators"], last_separator, line_end_index)
 	
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
