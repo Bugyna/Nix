@@ -2,7 +2,7 @@ __author__ = "Bugy"
 __license__ = "MIT"
 __maintainer__ = "Bugy"
 __email__ = ["matejbugy@gmail.com", "achjoj5@gmail.com"]
-__status__ = "Dev" 
+__status__ = "Dev"
 __version__ = "1.1.4"
 
 import tkinter
@@ -14,7 +14,6 @@ import re
 import json
 
 import subprocess
-import os, sys
 
 import requests
 from bs4 import BeautifulSoup
@@ -22,12 +21,13 @@ from bs4 import BeautifulSoup
 import random
 import threading
 
-from highlighter import highlighter
-from handlers import *
-from widgets import *
+import psutil
+
+from highlighter import *
+from parser import *
 
 try: import notify2
-except Exception: print("consider downloading the notify2 module")
+except Exception: pass
 
 try:
 	import platform, ctypes
@@ -41,39 +41,10 @@ except Exception:
 	CONTROL_KEYSYM = None
 	WINDOW_MARGIN = 24
 
-
-# class settings_win(tkinter.Tk):
-# 	def __init__(self):
-# 		super().__init__()
-# 		self.font_size = 11
-# 		self.sfont_size = self.font_size - 2
-
-# 		self.wm_attributes("-type", "splash")
-# 		self.resizable(True,True)
-# 		self.tk.call("tk","scaling", self.sharpness)
-# 		self.geometry(f"600x400")
-# 		self.wm_minsize(20, 0)
-# 		self.update_win()
-# 		self.geometry(self.winfo_geometry())
-# 		self.title(f"Nix: Settings")
-
-# class settings_widget(BUFFER):
-# 	def __init__(self, parent):
-# 		self.name = "%NIX_SETTINGS%"
-# 		super().__init__(parent, self.name)
-
-# 		self.label = tkinter.Label(text="text")
-
 class win(tkinter.Tk):
 	""" main object of Nix text editor"""
 	def __init__(self, file=None):
 		super().__init__()
-		# "cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#AAAAAA", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-		# 	 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "found_bg": "#145226", "found_select_bg": "#FFFFFF"}},
-		# with open("/home/bugy/projs/neditor/config.nix", "r") as config:
-		# 	self.theme_options = json.load(config)["themes"]
-
-		#sick fucking colors #A500FF; #FF103A
 		self.theme_options = {
 			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#555555", "selectbg": "#220022", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB","numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#220022", "command_out_insert_bg": "#555555"}},
@@ -90,7 +61,7 @@ class win(tkinter.Tk):
 			 "tea": {"window": {"bg" : "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#A53300", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase_b": "#BB5522","numbers": "#E86F68", "operators": "#f75f00", "special_chars": "#00A000", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000",  "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#113311", "command_out_insert_bg": "#005500"}},
 
-			"thorfinn": {"window": {"bg" : "#000522", "fg": "#dde2e3", "insertbg": "#6f8ea9", "selectbg": "#120512", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+			"thorfinn": {"window": {"bg" : "#020518", "fg": "#dde2e3", "insertbg": "#6f8ea9", "selectbg": "#120512", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#6f8ea9", "logical_keywords": "#b37c57", "functions": "#60412b", "upcase_b": "#796878", "numbers": "#3f5e89", "operators": "#f75c57", "special_chars": "#9aacb8", "quotes": "#005577", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#4F6CA5", "command_out_insert_bg": "#6f8ea9"}},
 
 			"muffin" : {"window": {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "selectfg": "#FFFFFF", "widget_fg": "#000000", "select_widget": "#000000", "select_widget_fg": "#FFFFFF"},
@@ -99,13 +70,21 @@ class win(tkinter.Tk):
 			"toast" : {"window": {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 
-			 "custom": {"window": {"bg" : "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords_b": "#A53300", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase_b": "#BB5522","numbers": "#E86F68", "operators": "#f75f00", "special_chars_b": "#00A000", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000",  "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#113311", "command_out_insert_bg": "#005500"}},
+			"groove": {"window": {"bg" : "#080808", "fg": "#EBDBB2", "insertbg": "#3055BB", "selectbg": "#242020", "selectfg": "#EBDBB2", "widget_fg": "#EBDBB2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#458588", "logical_keywords": "#CC241D", "functions": "#D65D0E", "upcase_b": "#3055BB", "numbers": "#B16286", "operators": "#9EC07C", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#3C3836", "command_keywords": "#FFFFFF", "pair_bg": "#FB4934", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+
+			"spacey": {"window": {"bg" : "#080808", "fg": "#b2b2b2", "insertbg": "#AF00D7", "selectbg": "#181022", "selectfg": "#EBDBB2", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#d70040", "logical_keywords": "#397c80", "functions": "#AF00D7", "upcase_b": "#3055BB", "numbers": "#AF87D7", "operators": "#D7875F", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#490648", "command_keywords": "#FFFFFF", "pair_bg": "#FB4934", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+
+			"mono": {"window": {"bg" : "#080808", "fg": "#b2b2b2", "insertbg": "#FFFFFF", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
+			 "highlighter": {"whitespace": "#111111", "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase_b": "#FFFFFF", "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+
+			"hurty": {"window": {"bg" : "#b2b2b2", "fg": "#000000", "insertbg": "#000000", "selectbg": "#222222", "selectfg": "#999999", "widget_fg": "#000000", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
+			 "highlighter": {"whitespace": "#111111", "keywords_b": "#555555", "logical_keywords": "#555555", "functions_b": "#555555", "upcase_b": "#000000", "numbers": "#222222", "operators": "#111111", "special_chars": "#000000", "quotes": "#444444", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 			}
 
-		self.theme = self.theme_options["custom"]
+		self.theme = self.theme_options["spacey"]
 
-		# self.command_keywords = ["l", "lget", "highlighting", "q", "quit", "temp", "sharpness", "alpha", "convert", "save", "saveas", "open", "find", "theme"]
 		self.commands = {
 			"lget":"gets total amount of lines", "l":"use: l[number|number.number] :: puts your cursor on line[number]",
 			"q":"quits", "quit":"quits", "temp":"updates temperature", "alpha": "use: alpha [number] \n sets how see through your window is \n 0 is completely transparent :: 100 is completely opaque",
@@ -135,42 +114,45 @@ class win(tkinter.Tk):
 		self.last_index = "0.0"
 		self.text_len = 0
 
-		self.backup_files = True
-				
-		self.highlighting = False #now its turned off by default # turned on by default because it finally works (still, fuck regex (less than before tho))
-		self.command_highlighting = False
+		self.underline_pairs = False
+		self.backup_files = False
+		self.highlighting = True
+		self.command_highlighting = True
 		self.fullscreen = False
-		self.split_mode = 0 # 0 means it's turned off / 1 is for vertically split text buffers / 2 is for horizontally split text buffers
+		self.split_mode = 0
+
+		self.show_speed = True
+		self.show_time = True
+		self.show_temperature = True
+		self.show_lineno = True
 
 		self.suggest = True
 		
 		self.run = True
-		self.sharpness = 1.35
 
-		self.font_size = 11
+		self.font_size = 12
 		self.sfont_size = self.font_size - 2
+		self.font_set()
 		
 		#configuring main window
 		# self.wm_attributes("-type", "splash")
 		self.resizable(True,True)
-		self.tk.call("tk","scaling", self.sharpness)
-		self.geometry(f"800x600")
+		self.geometry(f"{self.font.measure(' ')*80}x{self.font.metrics('linespace')*32}")
 		self.wm_minsize(20, 0)
 		self.update_win()
-		print("vrootwidth: ", self.winfo_x()//4)
-		self.geometry(f"{self.winfo_width()}x{self.winfo_height()}+{self.winfo_x()+self.winfo_x()//3}+{(self.winfo_screenheight()-self.winfo_height())//2}") #CENTERING MAGIC
-		self.wm_attributes("-type", "normal")
+		self.geometry(f"{self.winfo_width()}x{self.winfo_height()}+{self.winfo_x()+self.winfo_x()//3}+{(self.winfo_screenheight()-self.winfo_height())//2}") #CENTERING MAGIC #PROLLY DOESN'T WORK THOUGH
 		
 		# try: self.iconbitmap("icon.ico")
 		# except Exception as e: print(e)
-		try: self.tk.call('wm', 'iconphoto', self._w, tkinter.PhotoImage(file="icon.png"))
+		try: self.tk.call('wm', 'iconphoto', self._w, tkinter.PhotoImage(file="/usr/local/bin/Nix/icon.png"))
 		except Exception as e: print(e)
-
-		self.tk.call("wm", "title", self._w, "Nix")
 		
 		self.parser = PARSER(self)
+
 		self.file_handler = FILE_HANDLER(self)
 		self.video_handler = VIDEO_HANDLER(self)
+
+		self.suggest_widget = SUGGEST_WIDGET(self)
 
 		self.init()
 
@@ -180,82 +162,27 @@ class win(tkinter.Tk):
 		# self.wm_attributes("-alpha", 1)
 		self.canvas = tkinter.Canvas()
 		self.canvas.place(x=0, y=0, relwidth=1, height=45)
-		
-		# self.font_family = ["Px437 IBM CGA", "normal", "bold", "roman"]
-		self.font_family = ["Consolas", "normal", "bold", "roman"]
-		self.font = font.Font(family=self.font_family[0], size=self.font_size, weight=self.font_family[1], slant=self.font_family[3])
-		self.font_bold = font.Font(family=self.font_family[0], size=self.font_size, weight="bold", slant=self.font_family[3]) 
-		self.smaller_font = font.Font(family=self.font_family[0],size=self.sfont_size, weight=self.font_family[1])
-		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.sfont_size, weight="bold")
-		self.widget_font = font.Font(family=self.font_family[0], size=self.font_size, weight=self.font_family[2])
 
 		self.time_label = tkinter.Label()
 		self.time_label_value = tkinter.StringVar()
 		self.time_label_value.set("0:0:0")
-		self.temperature_label = tkinter.Label(text="("+self.get_rand_temperature()+")")
+		self.temperature_label = tkinter.Label(text="(-273.15°C)")
 		self.line_no = tkinter.Label()
 		self.fps_label = tkinter.Label()
-
+		self.key_label = tkinter.Label()
 
 		# see widgets.py
 		self.find_entry = FIND_ENTRY(self)
 		self.command_entry = COMMAND_ENTRY(self)
 		self.command_out = COMMAND_OUT(self)
-		
-		#right click pop-up menu
-		# self.right_click_menu = tkinter.Menu()
-		# self.right_click_menu.add_command(label="Copy             Control-C", font=self.smaller_font, command=self.copy)
-		# self.right_click_menu.add_command(label="Paste            Control-V", font=self.smaller_font, command=self.paste)
-		# self.right_click_menu.add_command(label="Cut              Control-X", font=self.smaller_font, command=self.cut)
-		# self.right_click_menu.add_command(label="Comment          Control-/", font=self.smaller_font, command=self.comment_line)
-		# self.right_click_menu.add_command(label="Show definition  Control-Q", font=self.smaller_font, command=self.test_function)
-		# self.right_click_menu.add_separator()
 
-		#menubar
-		self.file_menubar_label = MENUBAR_LABEL(self, "file_menu")
-		self.file_menubar_label.place(x=2, y=2, height=20, anchor="nw")
-
-		self.settings_menubar_label = MENUBAR_LABEL(self, "settings_menu")
-		self.settings_menubar_label.place(x=60, y=2, height=20, anchor="nw")
-
-
-		#dropdown for menubar
-		self.file_dropdown = tkinter.Menu()
-		self.file_dropdown.add_command(label="New file",command=self.file_handler.new_file)
-		self.file_dropdown.add_command(label="Open file",command=self.file_handler.load_file)
-		self.file_dropdown.add_command(label="Save file",command=self.file_handler.save_file)
-		self.file_dropdown.add_command(label="Save file as",command=self.file_handler.save_file_as)
+		self.buffer_tab_frame = tkinter.Frame(self)
 
 		self.txt = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
-		#BASICALLY
 		self.file_handler.init(".~scratch") #see handlers.py/FILE_HANDLER
+		self.curs = tkinter.Label(self.txt, bg=self.theme["window"]["fg"])
 
-		try:
-			self.music_player = music_player(self)
-		except Exception:
-			pass
-
-		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
-
-		self.file_menubar_label.bind("<Right>", lambda arg: self.window_select("settings_menu"))
-		self.file_menubar_label.bind("<Left>", lambda arg: self.window_select("text"))
-		self.settings_menubar_label.bind("<Right>", lambda arg: self.window_select("text"))
-		self.settings_menubar_label.bind("<Left>", lambda arg: self.window_select("file_menu"))
-	
-		# self.txt.bind("<Control-space>", self.command_entry_set)
-		self.bindable_widgets = [self.file_menubar_label, self.settings_menubar_label, self.find_entry, self.command_entry, self.command_out]
-		for widget in self.bindable_widgets:
-			widget.bind("<Control-space>", self.command_entry_place)
-			widget.bind("<Control-Shift-space>", lambda arg: self.command_out_set(resize=True))
-			widget.bind("<F11>", self.set_fullscreen)
-			widget.bind("<Alt-Right>", lambda arg: self.set_dimensions(arg, True))
-			widget.bind("<Alt-Left>", lambda arg: self.set_dimensions(arg, True))
-			widget.bind("<Alt-Up>", lambda arg: self.set_dimensions(arg, True))
-			widget.bind("<Alt-Down>", lambda arg: self.set_dimensions(arg, True))
-			widget.bind("<Alt-Shift-Right>", lambda arg: self.set_dimensions(arg, False))
-			widget.bind("<Alt-Shift-Left>", lambda arg: self.set_dimensions(arg, False))
-			widget.bind("<Alt-Shift-Up>", lambda arg: self.set_dimensions(arg, False))
-			widget.bind("<Alt-Shift-Down>", lambda arg: self.set_dimensions(arg, False))
+		# self.music_player = MUSIC_PLAYER(self)
 
 		self.bind("<Control-Escape>", self.win_destroy)
 		self.bind("<Configure>", self.reposition_widgets) #repositions the text widget to be placed correctly
@@ -264,31 +191,27 @@ class win(tkinter.Tk):
 		self.update_buffer()
 
 		if (len(sys.argv) > 1): [self.file_handler.load_file(filename=arg) for arg in sys.argv[1:]]
-
-	def test_function(self, arg=None):		
-		f = f"self.command_out_set(arg={self.selection_get()}.__doc__)"
-		try:
-			exec(f)
-		except Exception:
-			self.command_out_set(arg="None")
-		return "break"
-
+		
 	def theme_make(self):
 		if (type(self.txt) != TEXT): return
 		for key in self.theme["highlighter"].items():
 			if (key[0][-2:] == "bg"):
-				self.txt.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"])
-				self.command_out.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"])
+				self.txt.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=self.txt.font)
+				self.command_out.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=self.command_out.font)
 				
 			elif (key[0][-2:] == "_b"):
 				self.txt.tag_configure(key[0][:-2], foreground=key[1], font=self.txt.font_bold)
-				self.command_out.tag_configure(key[0][:-2], foreground=key[1], font=self.command_out.font)
+				self.command_out.tag_configure(key[0][:-2], foreground=key[1], font=self.command_out.font_bold)
 				
 			else:
-				self.txt.tag_configure(key[0], foreground=key[1]); self.command_out.tag_configure(key[0], foreground=key[1])
+				self.txt.tag_configure(key[0], foreground=key[1], font=self.txt.font)
+				self.command_out.tag_configure(key[0], foreground=key[1], font=self.command_out.font)
+
+		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
+		# self.txt.tag_lower("comments", "keywords")
 
 	def theme_set(self, theme=None):
-		if (type(theme) == list): theme = theme[-1] #failsave switch
+		if (type(theme) == list): theme = theme[-1] #failsave switch when selecting multiple themes through command_out widget
 		self.theme = self.theme_options[theme]
 		self.theme_load()
 		self.highlight_chunk()
@@ -298,46 +221,63 @@ class win(tkinter.Tk):
 		self.configure(bg=self.theme["window"]["bg"], cursor=None)
 
 		self.canvas.configure(bg=self.theme["window"]["bg"], bd=0, highlightthickness=0)
+		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], bd=0, highlightthickness=0)
 
 		self.txt.configure_self()
 
-		self.time_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, textvariable=self.time_label_value,
+		self.time_label.configure(fill=None, anchor="w", justify="left", font=self.widget_font, textvariable=self.time_label_value,
 		 bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
-		self.temperature_label.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
-		self.line_no.configure(fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
-		self.fps_label.configure(text="<0.0KHz>", fill=None, anchor="w", justify=tkinter.LEFT, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.temperature_label.configure(fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.line_no.configure(fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.fps_label.configure(text="<0.0KHz>", fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.key_label.configure(fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 
 		self.command_entry.configure_self()
 		self.find_entry.configure_self()
 		self.command_out.configure_self()
-		
-		# self.right_click_menu.configure(tearoff=0, font=self.smaller_font, bg=self.theme["window"]["bg"], fg="#ffffff")
-		self.file_menubar_label.configure(text="File", font=self.widget_font, bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
-		self.settings_menubar_label.configure(text="Settings" ,font=self.widget_font, bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
-		self.file_dropdown.configure(font=self.widget_font, tearoff=False,fg="#FFFFFF", bg=self.theme["window"]["bg"], bd=0)
 
 		for buffer_tab in self.file_handler.buffer_tab_list:
-			buffer_tab.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"], highlightcolor=self.theme["window"]["widget_fg"])
-			buffer_tab.menu.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
+			buffer_tab.configure_self()
 
 		if (self.file_handler.buffer_tab): self.file_handler.buffer_tab.focus_highlight()
 
 		self.update_win()
 
+	def font_set(self, arg=None, family="Noto Mono", retro=False):
+		if (retro): self.font_family = ["Ac437 IBM VGA 9x8", "normal", "bold", "roman"]
+		else: self.font_family = [family, "normal", "bold", "roman"]
+		self.font = font.Font(family=self.font_family[0], size=self.font_size, weight=self.font_family[1], slant=self.font_family[3])
+		self.font_bold = font.Font(family=self.font_family[0], size=self.font_size, weight="bold", slant=self.font_family[3]) 
+		self.smaller_font = font.Font(family=self.font_family[0],size=self.sfont_size, weight=self.font_family[1])
+		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.sfont_size, weight="bold")
+		self.widget_font = font.Font(family=self.font_family[0], size=self.font_size, weight=self.font_family[2])
+
+		#lazy workaround
+		try: self.theme_load()
+		except Exception: pass
+
 	def reposition_widgets(self, arg=None):
-		if (self.command_entry.winfo_viewable()): self.command_entry.place(x=-1, y=self.winfo_height(), width=self.winfo_width()+2, height=20, anchor="sw")
-		if (self.command_out.winfo_viewable()): self.command_out_set(resize=True) # self.command_out.place(x=0, y=self.winfo_height(), width=self.winfo_width(), anchor="sw")
-		self.time_label.place(x=self.temperature_label.winfo_x()-self.time_label.winfo_width(), y=2, height=20, anchor="nw")
-		self.temperature_label.place(x=self.line_no.winfo_x()-self.temperature_label.winfo_width()-10, y=2, height=20, anchor="nw")
-		self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=2, height=20, anchor="nw")
-		self.fps_label.place(x=self.time_label.winfo_x()-self.fps_label.winfo_width()-10, y=2, height=20, anchor="nw")
+		fs = self.widget_font.metrics("linespace")
+		top_bar_y = fs//1.5+3
+		txt_y = fs*2+2
 
-		if (self.split_mode == 0): self.txt.place(x=0,y=45, width=self.winfo_width(), height=self.winfo_height()-45, anchor="nw") # self.txt.change_coords([2, 45, self.winfo_width()-2, self.winfo_height()-50])
-		elif (self.split_mode == 1): self.txt.place(x=2,y=45, width=self.winfo_width()//2-2, height=self.winfo_height()-50, anchor="nw"); self.txt_1.place(x=self.winfo_width()//2,y=45, width=self.winfo_width()//2-2, height=self.winfo_height()-50, anchor="nw")
-		elif (self.split_mode == 2): self.txt.place(x=2,y=45, width=self.winfo_width()-2, height=self.winfo_height()//2-50, anchor="nw"); self.txt_1.place(x=2,y=self.winfo_height()//2, width=self.winfo_width()-2, height=self.winfo_height()//2, anchor="nw")
+		# TODO(@bugy): make separate frame for topbar info and use pack instead of place for more customizability
+		if (self.command_entry.winfo_viewable()): self.command_entry_place()
+		if (self.command_out.winfo_viewable()): self.command_out_set(resize=True)
+		if (self.show_time): self.time_label.place(x=self.temperature_label.winfo_x(), y=0, height=top_bar_y, anchor="ne")
+		if (self.show_temperature): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
+		if (self.show_lineno): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=top_bar_y, anchor="nw")
+		if (self.show_speed): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
+		self.key_label.place(x=0, y=0, height=top_bar_y, anchor="nw")
+		self.buffer_tab_frame.place(x=0, y=top_bar_y+3, width=self.winfo_width(), height=fs, anchor="nw")
 
-		self.canvas.create_line(0, 23, self.winfo_width(), 23, fill=self.theme["window"]["fg"], smooth=1)
-		self.canvas.create_line(0, 44, self.winfo_width(), 44, fill=self.theme["window"]["fg"], smooth=1)
+		if (self.split_mode == 0): self.txt.place(x=0,y=txt_y, width=self.winfo_width(), height=self.winfo_height()-45, anchor="nw") # self.txt.change_coords([2, 45, self.winfo_width()-2, self.winfo_height()-50])
+		elif (self.split_mode == 1): self.txt.place(x=2,y=txt_y, width=self.winfo_width()//2-2, height=self.winfo_height()-50, anchor="nw"); self.txt_1.place(x=self.winfo_width()//2,y=txt_y, width=self.winfo_width()//2-2, height=self.winfo_height()-50, anchor="nw")
+		elif (self.split_mode == 2): self.txt.place(x=2,y=txt_y, width=self.winfo_width()-2, height=self.winfo_height()//2-50, anchor="nw"); self.txt_1.place(x=2,y=self.winfo_height()//2, width=self.winfo_width()-2, height=self.winfo_height()//2, anchor="nw")
+
+		self.canvas.delete("all")
+		self.canvas.create_line(0, fs-1, self.winfo_width(), fs-1, fill=self.theme["window"]["fg"], smooth=1)
+		self.canvas.create_line(0, fs*2, self.winfo_width(), fs*2, fill=self.theme["window"]["fg"], smooth=1)
 
 
 	def flashy_loading_bar(self, arg=None):
@@ -352,9 +292,9 @@ class win(tkinter.Tk):
 		threading.Thread(target=a, daemon=True).start()
 
 	def win_destroy(self, arg=None) -> str:
+		self.file_handler.closing_sequence()
 		self.run = False
 		self.quit()
-		self.destroy()
 		return "break"
 
 	def convert_line_index(self, type: str, index=None) -> (int, float):
@@ -367,19 +307,40 @@ class win(tkinter.Tk):
 		""" returns total amount of lines in opened text """
 		return sum(1 for line in self.txt.get("1.0", "end").split("\n"))
 
+	def get_word_count(self, arg=None):
+		t = self.txt.get("1.0", "end-1c")
+		return [len(t.split(" ")), len(t)/5]
+
 	def get_selection_count(self, arg=None):
 		self.command_out_set(f"len: {len(self.selection_get())}")
 		return "break"
 
-	def index_sort(self, index1, index2):
+	def inline_index_sort(self, index1, index2):
 		if (int(index1.split(".")[1]) <= int(index2.split(".")[1])): return (index1, index2)
 		else: return (index2, index1)
+
+	def multiline_index_sort(self, index1, index2):
+		self.queue = [self.convert_line_index("int", index1), self.convert_line_index("int", index2)]
+		self.queue.sort()
+		return self.queue[0], self.queue[1] + 1
+
+	def sameline_check(self, index1, index2):
+		return self.convert_line_index("int", index1) == self.convert_line_index("int", index2)
+
+	def precise_index_sort(self, index1, index2):
+		print(index1, index2)
+		s1, s2 = index1, index2
+		if (self.sameline_check(s1, s2)):
+			if (int(s1.split(".")[1]) <= int(s2.split(".")[1])): return (index1, index2)
+			else: return (index2, index1)
+		else:
+			if (self.convert_line_index("int", s1) <=  self.convert_line_index("int", s2)): (index1, index2)
+			else: return (index2, index1)
 			
 	def del_selection(self):
-		start_index, stop_index = self.queue_get()
-
-		for line_no in range(start_index, stop_index):
-			self.txt.delete(f"{line_no}.0", f"{line_no} lineend")
+		self.selection_start_index = None
+		self.txt.mark_unset(self.txt.mark_names()[-1])
+		self.txt.tag_remove("sel", "1.0", "end")
 
 	def queue_get(self, arg=None):
 		self.queue = [self.convert_line_index("int", self.selection_start_index), self.convert_line_index("int", self.txt.index("insert"))]
@@ -396,12 +357,16 @@ class win(tkinter.Tk):
 		return wrapped_func
 
 	@moving
-	def move(self, arg=None, prefix=""):
+	def move(self, arg=None, mod=[]):
 		key = arg.keysym
 		suffix = ["Line", "Char"]
+		prefix = ""
 		
-		if (arg.state == CONTROL_KEYSYM or arg.state == 20 or arg.state == 21):
+		if ("control" in mod):
 			suffix = ["Para", "Word"]
+
+		if ("shift" in mod):
+			prefix = "Select"
 
 		if (key == "Up"):
 			self.txt.event_generate(f"<<{prefix}Prev{suffix[0]}>>")
@@ -419,9 +384,25 @@ class win(tkinter.Tk):
 
 		if (prefix == ""): self.selection_start_index = None; del self.queue[:]
 		else: self.selection_start_index = self.txt.index(self.txt.mark_names()[-1])
-
+		self.update_index()
 		# if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.command_out.place_forget()
 
+		return "break"
+
+	def move_standard(self, arg=None):
+		self.move(arg)
+		return "break"
+
+	def move_jump(self, arg=None):
+		self.move(arg, ["control"])
+		return "break"
+
+	def move_select(self, arg=None):
+		self.move(arg, ["shift"])
+		return "break"
+
+	def move_jump_select(self, arg=None):
+		self.move(arg, ["control", "shift"])
 		return "break"
 
 	#text manipulation bindings
@@ -461,13 +442,9 @@ class win(tkinter.Tk):
 	def paste(self, arg=None):
 		""" Control-V """
 		to_paste = self.clipboard_get()
-
-		if (self.selection_start_index): start_index = self.selection_start_index; self.del_selection()
-		else: start_index = self.txt.index("insert")
-		stop_index = float(start_index)+len(to_paste.split("\n"))
-
-		self.txt.insert(start_index, to_paste)
-		self.highlight_chunk(start_index=start_index, stop_index=stop_index)
+		start_index = self.convert_line_index("int", self.txt.index("insert"))
+		self.txt.insert("insert", to_paste)
+		self.highlight_chunk(start_index=start_index, stop_index=self.convert_line_index("int", self.txt.index("insert")))
 
 		self.txt.event_generate("<<SelectNone>>")
 		return "break"
@@ -520,9 +497,15 @@ class win(tkinter.Tk):
 	@moving
 	def mouse_left(self, arg=None):
 		self.txt.mark_set("insert", "current")
-		self.txt.mark_unset(self.txt.mark_names()[-1])
+		self.del_selection()
 		self.update_buffer()
 		return "break"
+
+	def mouse_left_motion(self, arg=None):
+		if (not self.selection_start_index):
+			self.selection_start_index = self.txt.index("insert")
+		self.txt.mark_set("insert", "current")
+		self.update_buffer()
 
 	def set_cursor_mode(self, arg=None):
 		""" Insert """
@@ -560,7 +543,7 @@ class win(tkinter.Tk):
 		self.selection_start_index = self.txt.index(self.txt.mark_names()[-1])
 		index_range = [self.selection_start_index, self.txt.index("insert")]
 
-		index_range = self.index_sort(*index_range)
+		index_range = self.inline_index_sort(*index_range)
 		
 		if (arg.state == 20): # without shift
 			text = self.txt.get(index_range[0], index_range[1])
@@ -582,7 +565,7 @@ class win(tkinter.Tk):
 
 	def char_enclose(self, arg=None) -> str:
 		self.selection_start_index = self.txt.index(self.txt.mark_names()[-1])
-		index = self.index_sort(self.txt.index("insert"), self.selection_start_index)
+		index = self.inline_index_sort(self.txt.index("insert"), self.selection_start_index)
 
 		if (arg.keysym == "parenleft"): c1 = "("; c2 = ")"
 		elif (arg.keysym == "bracketleft"): c1 = "["; c2 = "]"
@@ -598,15 +581,12 @@ class win(tkinter.Tk):
 		
 		start_index, stop_index = self.queue_get()
 
-		self.command_out_set(f"{start_index, stop_index}")
 		comment_len = len(self.txt.highlighter.comment_sign)
 
 		for line_no in range(start_index, stop_index):
 			current_line = self.txt.get(float(line_no), f"{line_no}.0 lineend+1c")
-			if (len(current_line) <= 1): continue
-			
 			for i, current_char in enumerate(current_line, 0):
-				if (self.txt.highlighter.commment_regex.match(current_char+current_line[i+1])):
+				if (self.txt.highlighter.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
 					if (self.txt.get(f"{line_no}.{i+comment_len}", f"{line_no}.{i+1+comment_len}") == " "):
 						self.txt.delete(f"{line_no}.{i}", f"{line_no}.{i+1+comment_len}")
 					else:
@@ -684,53 +664,58 @@ class win(tkinter.Tk):
 		
 		return "break"	
 
-	def find_place(self, arg=None, text=""):
-		self.find_entry.place(x=0, y=self.winfo_height()-40, relwidth=0.5, height=20, anchor="nw")
-		self.find_entry.insert("1.0", "?"+text)
-		self.find_entry.tkraise(); self.find_entry.focus_set()
+	def win_expand(self, arg=None):
+		self.set_dimensions(arg)
+		return "break"
 
-	def nt_place(self, arg=None):
+	def win_shrink(self, arg=None):
+		self.set_dimensions(arg, expand=False)
+		return "break"
+
+	def nt_place(self, arg=None): # why nt???
 		self.file_handler.ls()
 
 	@moving
 	def scroll(self, arg, multiplier=1):
 		""" scrolls through the text widget MouseWheel && Shift-MouseWheel for speedy scrolling """
-		next_index = float(self.txt.index("insert"))
 		if (arg.num == 5 or arg.delta < 0):
-			self.txt.mark_set("insert", next_index+3*multiplier)
+			self.txt.mark_set("insert", f"{int(self.cursor_index[0])+3*multiplier}.{self.cursor_index[1]}")
 	
 		elif (arg.num == 4 or arg.delta > 0):
-			self.txt.mark_set("insert", next_index-3*multiplier)
+			self.txt.mark_set("insert", f"{int(self.cursor_index[0])-3*multiplier}.{self.cursor_index[1]}")
 		
 		# hides widgets that could be in the way
 		self.txt.focus_set()
 		self.txt.see("insert")
 		self.command_out.place_forget()
 		self.command_entry.place_forget()
-
+		
+		self.del_selection()
 		self.update_index()
 
 	def popup(self, arg=None):
 		""" gets x, y position of mouse click and places a menu accordingly """
 		self.right_click_menu.tk_popup(arg.x_root+5, arg.y_root)
-		
-	def file_menu_popup(self, widget):
-		""" places a dropdown menu accordingly to menubar option clicked """
-		if (widget == "file_menu"): 
-			self.file_dropdown.tk_popup(self.file_menubar_label.winfo_rootx(), self.file_menubar_label.winfo_rooty()+self.file_menubar_label.winfo_height())
-		
-		elif (widget == "settings_menu"):
-			self.file_dropdown.tk_popup(self.settings_menubar_label.winfo_rootx(), self.settings_menubar_label.winfo_rooty()+self.settings_menubar_label.winfo_height())
 
 	def command_entry_place(self, arg=None):
 		""" Shows command entry widget """
-		self.command_entry.place(x=-1, y=self.winfo_height(), width=self.winfo_width()+2, height=20, anchor="sw")
+		h = self.command_entry.font.metrics("linespace")
+		self.command_entry.place(x=-1, y=self.winfo_height()-h-5, width=self.winfo_width()+2, height=h+5, anchor="nw")
 		self.command_out.place_forget()
 		self.command_entry.tkraise(); self.command_entry.focus_set()
 			
 		return "break"
 
+	def find_place(self, arg=None, text=""):
+		h = self.find_entry.font.metrics("linespace")
+		self.find_entry.place(x=0, y=self.winfo_height()-h-40, width=self.winfo_width(), height=h+5, anchor="nw")
+		self.find_entry.find_mode_set()
+		self.find_entry.tkraise(); self.find_entry.focus_set()
+
+		return "break"
+
 	def command_out_set(self, arg=None, tags=None, resize=False, focus=True, justify="left"):
+		# honestly this is a really shitty function, but it works somehow, so you shouldn't question it, if you poke around with it it's most probably going to break
 		""" sets the text in command output """
 		
 		if (not resize):
@@ -755,6 +740,11 @@ class win(tkinter.Tk):
 		return "break"
 
 	def cmmand(self, arg):
+		# gets input from the command_entry widget, checks if there's any actual input or if it's an empty string
+		# if it's not an empty string it sends it to the parser class and if it's a valid command defined in the "commands" dictionary
+		# and if it's defined it runs the function related to that name
+		""" """
+		
 		command = self.command_entry.get("1.0", "end-1c").split()#turns command into a list of arguments
 		
 		if (not command): self.command_entry.unplace(); return #if no input/argument were provided hide the command entry widget and break function
@@ -770,8 +760,8 @@ class win(tkinter.Tk):
 		self.command_entry.unplace()
 
 	def hide_text_widget(self, arg=None):
+		""" I have no idea why this is a separate function """
 		self.txt.place_forget()
-
 
 	def get_rand_temperature(self):
 		""" generates a random temperature depending on the current month """
@@ -795,19 +785,18 @@ class win(tkinter.Tk):
 			try:
 				url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
 				html = requests.get(url).content #gets the html of the url
-				x = "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)"
-				self.temperature_label.configure(text=x) #returns the scraped temperature
-				# self.command_out_set("temperature changed")
+				x = "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)" # looks for the temperature value and puts it in a string "([value and degree sign]C)"
+				self.temperature_label.configure(text=x)
 			except Exception: #dunno if it won't crash the app if there's no internet connection
-				pass
+				self.temperature_label.configure(text=self.get_rand_temperature())
 
-		threading.Thread(target=temp).start()
+		threading.Thread(target=temp, daemon=True).start()
 
 	def get_time(self):
 		""" gets time and parses to make it look the way I want it to """
 
 		d_time = datetime.datetime.now().time()
-		if (int(self.time_label_value.get().split(":")[2]) == d_time.second): return
+		if (int(self.time_label_value.get().split(":")[2]) == d_time.second): return # checks if it's still the same second as the last time the function was executed, not very efficient, but still more efficient than running a bunch of string formatting every few miliseconds
 		hour = ""
 		minute = ""
 		second = ""
@@ -828,63 +817,63 @@ class win(tkinter.Tk):
 
 		time = hour+minute+second
 	
-		if (d_time.minute % 10 == 0 and d_time.second == 10 and d_time.microsecond >= 51000 and d_time.microsecond <= 52000): #checks if it's time for updating the temperature
+		if (d_time.minute % 10 == 0 and d_time.second == 10): #checks if it's time for updating the temperature
 			self.get_temperature()
 
 		self.time_label_value.set(time)# return time #updates the time label/widget to show current time
 
 
 	def update_index(self, arg=None):
-		def t(line_no):
-			time.sleep(0.5)
-			if (self.cursor_index[0] == line_no):
-				if (self.txt.font.measure(self.current_line) >= self.txt.winfo_width()):
-					self.txt.configure(wrap="word")
-				else:
-					self.txt.configure(wrap="none")
-
-				self.txt.see("insert")
-					
+		# called upon every keypress
 		if (self.txt.index("insert") == self.selection_start_index): self.selection_start_index = None
 
-		self.cursor_index = self.txt.index("insert").split(".") # gets the cursor's position
+		self.cursor_index = self.txt.index("insert").split(".") # gets the cursor's position and makes it into a tuple/list [line, column]
 		self.line_no.configure(text=f"[{self.txt.index('insert')}]") #updates the line&column widget to show current cursor index/position
-		if (self.selection_start_index):
+		if (self.selection_start_index): # show selection index on the top of the window if a selection is active
 			self.line_no.configure(text=f"[{self.selection_start_index}][{self.txt.index('insert')}]")
 
-		self.txt.highlighter.bracket_pair_make(self.txt.get("insert"))
+		self.txt.highlighter.bracket_pair_make(self.txt.get("insert")) # highlights matching brackets
 		self.txt.highlighter.bracket_pair_highlight(self.cursor_index[0], self.current_line)
 
 		self.current_line = self.txt.get(f"insert linestart", f"insert lineend+1c") #+1c so the line includes the newline character
-		# threading.Thread(target=t, args=(self.cursor_index[0],)).start()
+		# custom cursor thingy
+		# coords = self.txt.bbox("insert")
+		# self.curs.place(x=coords[0]-2, y=coords[1]-2, w=1, h=self.txt.font.metrics("linespace"))
+		# self.curs.place(x=coords[0]-2, y=coords[1]+self.txt.font.metrics("linespace")-2, w=self.txt.font_size-3, h=1)
+		# threading.Thread(target=t, args=(self.cursor_index[0],), deamon=True).start()
 		
 		if (arg): return "break"
 
 	def update_buffer(self, arg=None):
 		""" updates some of the widgets when a character is typed in """
-		#and arg.keysym not in self.banned_keysyms
+		# called upon every keypress
+
+		if (arg): # shows the characters that were released (eg. Control: D), but it can't handle more than one character (eg. Control: b-w)
+			text = re.sub("\|*Mod2", "", re.search("state=[a-zA-Z0-9\|]+", f"{arg}").group()[6:]) # magic with regex to show the keys you pressed in a nicer format
+			self.key_label["text"] = f"{text}: {arg.keysym}"
+			if (arg.keysym in ("Up", "Down", "Left", "Right")): return # ends function if it was triggered by arrow keys (as they have different functions to handle them)
+		
 		self.update_index()
-		if (self.file_handler.current_file_name and self.txt.change_index != len(self.txt.get("1.0", "end"))): #if statement to prevent an error because there is no file at the start of the app other && if a new character has been typed in put an asterisk to the title to show that the file hasn't been updated yet
+		if (self.txt.change_index != len(self.txt.get("1.0", "end"))): # checks if any changes have been made to the text
 			self.title(f"Nix: <*{self.txt.name}>")
 			self.file_handler.buffer_tab.change_name(extra_char="*")
 			self.txt.change_index = len(self.txt.get("1.0", "end"))
-			self.txt.highlighter.lex_line(self.cursor_index[0], self.current_line)
-
-			if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.txt.see("insert")
+			self.txt.typing_index_set() # Alt-N: sets your cursor to the position you were last typing in
+			self.txt.lexer.lex() # lex text for variables, functions, structures and class etc.
 
 			# if the following widgets are not focused they are hidden
 			if (self.focus_displayof() != self.command_entry):
 				self.command_entry.place_forget()
-
 			if (self.focus_displayof() != self.command_out):
 				self.command_out.place_forget()
 
 			if (self.suggest): self.txt.highlighter.suggest(self.cursor_index[0], self.current_line)
 
-		self.txt.highlighter.highlight(self.cursor_index[0], self.current_line)
+		self.txt.highlighter.highlight(self.cursor_index[0], self.current_line) # highlight current line
 
-		if (self.txt.terminal_like_cursor): #not so horrible anymore
-			try: self.txt.configure(insertbackground=self.theme["highlighter"][self.txt.tag_names("insert")[-2]]) #Checks if there are any tags available 
+		# this is not very effective and doesn't even work properly
+		if (self.txt.terminal_like_cursor):
+			try: self.txt.configure(insertbackground=self.theme["highlighter"][self.txt.tag_names("insert")[-2]]) #Checks if there are any tags available on current character and if so it sets the cursor color to that tag 
 			except Exception: self.txt.configure(insertbackground=self.theme["window"]["insertbg"])
 			self.txt.tag_configure("cursor", foreground=self.theme["window"]["bg"])
 			
@@ -901,21 +890,21 @@ class win(tkinter.Tk):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
 		self.txt.focus_set()
 		t0 = time.time(); self.c = 0
-		def a():
+		def a(): # some annoying notifications
 			time.sleep(1650)
-			try:
-				self.command_out_set("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
-				notify2.init("Nix")
-				notify2.Notification("POSTURE CHECK", "You've been programming for half an hour now. Consider stretching for a bit").show()
-			except Exception:
-				self.commmand_out_set("Consider downloading the notify2 module"); return
+			# try:
+			self.command_out_set("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+				# notify2.init("Nix")
+				# notify2.Notification("POSTURE CHECK", "You've been programming for half an hour now. Consider stretching for a bit").show()
+			# except Exception:
+			# 	self.commmand_out_set("Consider downloading the notify2 module"); return
 			time.sleep(1650)
-			try:
-				self.command_out_set("You've been programming for an hour now. Consider taking a break")
-				notify2.init("Nix")
-				notify2.Notification("BREAK TIME", "You've been programming for an hour now. Consider taking a break").show()
-			except Exception:
-				self.commmand_out_set("Consider downloading the notify2 module"); return
+			# try:
+			self.command_out_set("You've been programming for an hour now. Consider taking a break")
+			# 	notify2.init("Nix")
+			# 	notify2.Notification("BREAK TIME", "You've been programming for an hour now. Consider taking a break").show()
+			# except Exception:
+			# 	self.commmand_out_set("Consider downloading the notify2 module"); return
 			a()
 
 		# def b():
@@ -932,11 +921,11 @@ class win(tkinter.Tk):
 			self.update_win()
 			self.get_time()
 
-			self.c += 1
-			if (int(time.time()-t0) >= 1): # I guess this is supposed to count elapsed cycles
-				self.fps_label.configure(text=f"<{round(self.c/1000, 2)}KHz>")
+			if (int(time.time()-t0) >= 1): # updates the processor frequency value every second
+				def a():
+					self.fps_label.configure(text=f"<{round(psutil.cpu_freq().current/100*psutil.cpu_percent(), 2)}MHz> <{psutil.sensors_temperatures()['coretemp'][0].current}>")
+				threading.Thread(target=a, daemon=True).start()
 				t0 = time.time()
-				self.c = 0
 
 	@moving	
 	def keep_indent(self, arg=None):
@@ -949,15 +938,19 @@ class win(tkinter.Tk):
 			offset += match.group()
 
 		# I am seeing a lot of horrible code in this project
+		# sometimes I look back at my code and wonder if I am insane
 		# magic with brackets
+		# basically automatic indenting
 		if (re.match(r"[\:]", self.txt.get("insert-1c"))): 
 			self.txt.insert(self.txt.index("insert"), offset+"\t")
+			
 		elif (re.match(r"[\{\[\(]", self.txt.get("insert-1c"))):
 			if (re.match(r"[\}\]\)]", self.txt.get("insert"))):
 				self.txt.insert(self.txt.index("insert"), offset+"\t"+offset)
 				self.txt.mark_set("insert", f"insert-{len(offset)}c")
 			else:
 				self.txt.insert(self.txt.index("insert"), offset+"\t")
+				
 		elif (re.match(r"[\{\[\(]", self.txt.get("insert"))):
 			if (re.match(r"[\}\]\)]", self.txt.get("insert+1c"))):
 				self.txt.insert(self.txt.index("insert"), offset)
@@ -967,6 +960,7 @@ class win(tkinter.Tk):
 			else:
 				self.txt.insert(self.txt.index("insert"), offset)
 				self.txt.mark_set("insert", f"insert+{len(offset)+2}c")
+		
 		else:
 			if (re.match(r"\t+\n", self.current_line)):
 				self.txt.delete(f"{self.cursor_index[0]}.0", "insert") #removes extra tabs if the line is empty
@@ -980,34 +974,25 @@ class win(tkinter.Tk):
 		self.convert_line_index("int", start_index)
 		self.convert_line_index("int", stop_index)
 		def highlight(text):
-			# t0 = time.time() # timer gets current time in miliseconds
 			if self.highlighting:
 				for i in range(start_index, stop_index+1):
 					text.highlighter.highlight(i)
 					text.highlighter.lex_line(i)
-					
-			# t1 = time.time() # timer gets current time in miliseconds
-			# print(t1-t0)
-
-		threading.Thread(target=highlight, args=(self.txt, )).start()
-		
-	def bracket_pair_make(self, arg=None):
-		def pair_make():
-			self.txt.highlighter.bracket_pair_make()
-		threading.Thread(target=pair_make).start()
+		threading.Thread(target=highlight, args=(self.txt, ), daemon=True).start()
 		
 	def unhighlight_chunk(self, arg=None, start_index=None, stop_index=None):
 		if (not start_index): start_index = 1
 		if (not stop_index): stop_index = self.get_line_count()
 		def unhighlight():
-			[self.txt.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)] #+1 becuace for loops don't iterate over the last element or something in that sense
-
-		threading.Thread(target=unhighlight).start()
+			[self.txt.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)]
+		threading.Thread(target=unhighlight, daemon=True).start()
 
 if __name__ == "__main__":
 	main_win = win()
 	main_win.after(0, main_win.main)
 	main_win.mainloop()
+
+	print("thank you for using Nix")
 
 
 
