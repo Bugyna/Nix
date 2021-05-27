@@ -7,6 +7,9 @@ import requests
 from bs4 import BeautifulSoup
 
 from gr import *
+from widgets import *
+from handlers import *
+from highlighter import *
 
 # I have no idea why I did it this way
 # Like sure it's kinda extendable and you can kinda add new functions easily, but it's like really fucking annoying
@@ -36,13 +39,15 @@ class PARSER:
 			# "replace_tab": self.parent.txt.replace_tabs,
 		# }
 		# then it will only work with the text widget that was referenced at the time of declaration of this class
-		
-		self.commands = {
+
+		# O(n) because fuck you
+		self.commands = { 
 			"help": self.help,
 			"highlighting": self.highlighting_set,
 			"suggest": self.suggest_set,
 			r"([0-9]+)|(^l[0-9]+$)|(^l[0-9]+.[0-9]+$)": self.l,
 			"lget": self.l_get,
+			"word_count(_get)*": self.word_count_get,
 			"fget|fsize|file_size": self.file_size_get,
 			"lyrics": self.lyrics_get,
 			"temp": self.temp,
@@ -57,7 +62,8 @@ class PARSER:
 			"cap": self.video_capture,
 			"screenshot|printscreen": self.screenshot,
 			"resize": self.win_resize,
-			"buffers": self.buffers,
+			"buffers": self.buffer_list,
+			"(buffer_)*close": self.buffer_close,
 			"save": self.file_save,
 			"saveas": self.file_saveas,
 			"open|load": self.file_load,
@@ -72,13 +78,21 @@ class PARSER:
 			"buffer_exec|bexec": self.buffer_execute,
 			"ls|dir": self.ls,
 			"cd": self.cd,
+			"mkdir|new_dir(ectory)": self.new_directory,
+			"rmdir|rm_dir(ectory)": self.delete_directory,
 			"theme": self.theme,
-			"set_tab|set_tab_size": self.tab_size_set,
+			"retro": self.retro,
+			"tab_size|set_tab|set_tab_size": self.tab_size_set,
 			"flashy": self.parent.flashy_loading_bar,
 			"replace_space(s*)": self.replace_spaces,
 			"replace_tab(s*)": self.replace_tabs,
 			"init": self.initialize_file,
-			"del_empty": self.delete_empty_files,
+			"del_empty_files": self.delete_empty_files,
+			"lex": self.lex,
+			"lex_print": self.lex_print,
+			"lexer": self.lexer_switch,
+			"tag(_add)*": self.add_tag,
+			"tag_remove": self.remove_tag,
 		}
 
 	def parse_argument(self, arg=None):
@@ -134,6 +148,9 @@ class PARSER:
 	def l_get(self, arg=None):
 		self.parent.command_out_set(f"{self.parent.get_line_count()}")
 
+	def word_count_get(self, arg=None):
+		self.parent.command_out_set(f"{self.parent.get_word_count()}")
+
 	def file_size_get(self, arg=None) -> None:
 		self.parent.command_out_set(f"buffer size: {len(self.parent.txt.get('1.0', 'end'))}B >>>> file size: {os.path.getsize(self.parent.txt.full_name)}B")
 
@@ -158,15 +175,18 @@ class PARSER:
 
 	def blink(self, arg=None): #wonky as fuck
 		if (arg[1] == "on"):
-			self.parent.txt.insert_offtime = 300; self.txt.insert_ontime = 700
+			for buffer in self.parent.file_handler.buffer_list:
+				buffer[0]["insertontime"] = 700
+				buffer[0]["insertofftime"] = 300
 
 		elif (arg[1] == "off"):
-			self.parent.txt.insert_offtime = 0; self.txt.insert_ontime = 1
+			for buffer in self.parent.file_handler.buffer_list:
+				buffer[0]["insertontime"] = 1
+				buffer[0]["insertofftime"] = 0
 
 		else:
 			self.parent.command_out_set(f"ERROR: Invalid argument {arg[1:]}", tags=[["1.0", "1.7"]])
 			
-		self.parent.txt.configure(insertofftime=self.txt.insert_offtime, insertontime=self.txt.insert_ontime)
 		self.parent.txt.focus_set()
 
 	def split(self, arg=None): #also wonky as fuck
@@ -223,10 +243,10 @@ class PARSER:
 
 	def video_capture(self, arg=None):
 		if (arg[1] == "start"):
-			self.parent.process = self.parent.video_handler.video_record_start(self)
+			self.parent.process = self.parent.video_handler.video_record_start(self.parent)
 		
 		elif (arg[1] == "stop"):
-			self.parent.video_handler.video_record_stop(self.process)
+			self.parent.video_handler.video_record_stop(self.parent.process)
 			self.parent.command_out_set("screen capture terminated")
 	
 	def screenshot(self, arg=None):
@@ -236,21 +256,25 @@ class PARSER:
 		self.parent.update_win()
 		self.parent.geometry(f"{int(arg[1])}x{int(arg[2])}")
 		
-	def buffers(self, arg=None):
+	def buffer_list(self, arg=None):
 		if (not arg[1:]):
 			result = ""
 			for val in self.parent.file_handler.buffer_list[1:]:
-				result += f"<{val[1].name}> "
+				result += f"{val[1].full_name}\n"
+				self.parent.command_out.change_ex(self.parent.command_out.buffer_load)
 			if (not result): result = "<None>"
-			self.parent.command_out_set("buffers: "+result)
+			self.parent.command_out_set(result)
 		else:
 			self.parent.file_handler.load_buffer(arg[1:])
+
+	def buffer_close(self, arg=None):
+		self.parent.file_handler.close_buffer()
 
 	def file_save(self, arg=None):
 		self.parent.file_handler.save_file()
 	
 	def file_saveas(self, arg=None):
-		self.parent.file_handler.save_file_as(tmp=arg[1])
+		self.parent.file_handler.save_file_as(filename=arg[1])
 
 	def file_load(self, arg=None):
 		self.parent.file_handler.load_file(filename="".join(arg[1:]))
@@ -299,6 +323,18 @@ class PARSER:
 		else:
 			self.parent.command_out_set(arg=f"Error: File/Directory not found")
 
+	def new_directory(self, arg=None):
+		if (arg[1:]):
+			self.parent.file_handler.new_directory(filename=arg[1])
+		else:
+			self.parent.command_out_set("error: no name specified")
+
+	def delete_directory(self, arg=None):
+		if (arg[1:]):
+			self.parent.file_handler.delete_directory(filename=arg[1])
+		else:
+			self.parent.command_out_set("error: no name specified")
+
 	def theme(self, arg=None):
 		if (arg[1:]):
 			self.parent.theme_set(arg[1:])
@@ -309,6 +345,10 @@ class PARSER:
 				result += key+"\n"
 			self.parent.command_out_set(result, [["1.0", "end"]])
 
+	def retro(self, arg=None):
+		if (self.parent.font_family[0] != "Ac437 IBM VGA 9x8"): self.parent.font_set(retro=True)
+		else: self.parent.font_set(retro=False) # retro is turned off by default so there is no need to actually put retro=False in the parameters, but I think it's more readable this way
+
 	def tab_size_set(self, arg=None):
 		if (arg[1:]):
 			self.parent.tab_size = int(arg[1])
@@ -318,10 +358,10 @@ class PARSER:
 			self.parent.command_out_set(f"please, specify new size. Current size: {self.parent.tab_size}")
 
 	def replace_spaces(self, arg=None):
-		self.parent.txt.replace_x_with_y(" "*4, "\t")
+		self.parent.txt.replace_x_with_y(" "*self.parent.tab_size, "\t")
 
 	def replace_tabs(self, arg=None):
-		self.parent.txt.replace_x_with_y("\t", " "*4)
+		self.parent.txt.replace_x_with_y("\t", " "*self.parent.tab_size)
 
 	def initialize_file(self, arg=None):
 		for init in list(self.parent.txt.highlighter.language_init.keys()):
@@ -329,13 +369,37 @@ class PARSER:
 				self.parent.txt.insert("1.0", self.parent.txt.highlighter.language_init[init])
 				break
 
+			self.parent.highlight_chunk()
+
 	def delete_empty_files(self, arg=None): #TODO
 		pass
+
+	def lex(self, arg=None):
+		self.parent.txt.lexer.lex()
+
+	def lex_print(self, arg=None):
+		self.parent.txt.lexer.print_res()
+
+	def lexer_switch(self, arg=None): # TEMPORARY UNTIL I COMPLETELY IMPLEMENT LEXERS
+		if (arg[1].lower() == "python"):
+			self.parent.txt.lexer = LEXER(self.parent, self.parent.txt)
+		elif (arg[1].lower() == "c"):
+			self.parent.txt.lexer = C_LEXER(self.parent, self.parent.txt)
+
+	def add_tag(self, arg=None):
+		index = self.parent.precise_index_sort(self.parent.txt.index("insert"), self.parent.selection_start_index)
+		self.parent.txt.tag_raise(arg[1])
+		self.parent.txt.tag_add(arg[1], index[0], index[1])
+
+	def remove_tag(self, arg=None):
+		index = self.parent.precise_index_sort(self.parent.txt.index("insert"), self.parent.selection_start_index)
+		self.parent.txt.tag_remove(arg[1], index[0], index[1])
+		
 
 	def command_not_found(self, arg=None):
 		res = ""
 		for c in arg:
 			res += c+" "
-		self.parent.command_out_set(f"arg <{res[:-1]}> not found", [["1.0", "1.7"], [f"1.{8+len(res)+2}", "end"]])
+		self.parent.command_out_set(f"command <{res[:-1]}> not found", [["1.0", "1.7"], [f"1.{8+len(res)+2}", "end"]])
 
 
