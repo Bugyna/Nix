@@ -455,15 +455,16 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		if (count.get()) == 0: return None # degenerate pattern which matches zero-lenght strings
 		return [ index, self.parent.txt.index(f"{index}+{count.get()}c") ]
 
-	def find(self, arg=None, keyword=None):
+	def find(self, arg=None, keyword=None, regexp=None):
 		"""  """
-		if (regexp := self.get("1.0", "1.1") == "?"):
-			self.regexp = False
-		elif (regexp := self.get("1.0", "1.1") == "/"):
-			self.regexp = True
-		else:
-			self.regexp = False
-			keyword = self.get("1.0", "end-1c")
+		if (not regexp):
+			if (regexp := self.get("1.0", "1.1") == "?"):
+				self.regexp = False
+			elif (regexp := self.get("1.0", "1.1") == "/"):
+				self.regexp = True
+			else:
+				self.regexp = False
+				keyword = self.get("1.0", "end-1c")
 			
 		if (not keyword): keyword = self.get("1.1", "end-1c")
 

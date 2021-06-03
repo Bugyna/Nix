@@ -8,6 +8,9 @@ import subprocess
 from ascii_art import *
 from widgets import *
 
+import platform
+platform = platform.system()
+
 # thanks to everyone on https://www.asciiart.eu/
 
 class FILE_HANDLER(object):
@@ -235,6 +238,8 @@ class FILE_HANDLER(object):
 		self.parent.txt.delete("1.0", "end") #deletes the buffer so there's not any extra text
 		self.parent.txt.insert("1.0", file_content) #puts all of the file's text in the text widget
 		self.parent.txt.change_index = len(file_content)+1
+		if (platform == "Windows"): self.parent.convert_to_crlf()
+		else: self.parent.convert_to_lf()
 		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
 		self.parent.txt.see(tkinter.INSERT)
 

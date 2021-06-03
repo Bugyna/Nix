@@ -1,10 +1,3 @@
-__author__ = "Bugy"
-__license__ = "MIT"
-__maintainer__ = "Bugy"
-__email__ = ["matejbugy@gmail.com", "achjoj5@gmail.com"]
-__status__ = "Dev"
-__version__ = "1.1.4"
-
 import tkinter
 from tkinter import ttk
 from tkinter import font
@@ -26,20 +19,20 @@ import psutil
 from highlighter import *
 from parser import *
 
-try: import notify2
-except Exception: pass
+import ctypes
 
-try:
-	import platform, ctypes
+import platform
+platform = platform.system()
 
-	if int(platform.release()) >= 8:
-		ctypes.windll.shcore.SetProcessDpiAwareness(True)
-
+if (platform == "Windows"):
+	ctypes.windll.shcore.SetProcessDpiAwareness(True)
 	CONTROL_KEYSYM = 262156
 	WINDOW_MARGIN = 0
-except Exception:
+	LINE_END = "\r\n"
+else:
 	CONTROL_KEYSYM = None
 	WINDOW_MARGIN = 24
+	LINE_END = "\n"
 
 class win(tkinter.Tk):
 	""" main object of Nix text editor"""
@@ -131,7 +124,7 @@ class win(tkinter.Tk):
 		self.run = True
 
 		self.font_size = 12
-		self.sfont_size = self.font_size - 2
+		self.sfont_size = 11
 		self.font_set()
 		
 		#configuring main window
@@ -250,7 +243,7 @@ class win(tkinter.Tk):
 		self.font_bold = font.Font(family=self.font_family[0], size=self.font_size, weight="bold", slant=self.font_family[3]) 
 		self.smaller_font = font.Font(family=self.font_family[0],size=self.sfont_size, weight=self.font_family[1])
 		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.sfont_size, weight="bold")
-		self.widget_font = font.Font(family=self.font_family[0], size=self.font_size, weight=self.font_family[2])
+		self.widget_font = font.Font(family=self.font_family[0], size=self.sfont_size, weight=self.font_family[2])
 
 		#lazy workaround
 		try: self.theme_load()
@@ -297,7 +290,14 @@ class win(tkinter.Tk):
 		self.quit()
 		return "break"
 
-	def convert_line_index(self, type: str, index=None) -> (int, float):
+	def convert_to_lf(self):
+		self.txt.replace_x_with_y("\r", "", True)
+
+	def convert_to_crlf(self):
+		self.convert_to_lf()
+		self.txt.replace_x_with_y("\n", "\r\n", True)
+
+	def convert_line_index(self, type: str, index=None):
 		""" gets the cursor's position """
 		if (not index): index = self.cursor_index[0]
 		if (type == "int"): return int(float(index))
@@ -932,7 +932,7 @@ class win(tkinter.Tk):
 		""" gets the amount of tabs in the last line and puts them at the start of a new one """
 		#this functions gets called everytime Enter/Return has been pressed
 		self.txt.see(self.convert_line_index("float")+3)
-		offset = "\n"
+		offset = LINE_END
 		
 		if (match := re.search(r"^\t+", self.current_line)):
 			offset += match.group()
@@ -962,7 +962,7 @@ class win(tkinter.Tk):
 				self.txt.mark_set("insert", f"insert+{len(offset)+2}c")
 		
 		else:
-			if (re.match(r"\t+\n", self.current_line)):
+			if (re.match(r"\t+(\n|\r\n)", self.current_line)):
 				self.txt.delete(f"{self.cursor_index[0]}.0", "insert") #removes extra tabs if the line is empty
 			self.txt.insert(self.txt.index("insert"), offset)
 		
@@ -990,6 +990,8 @@ class win(tkinter.Tk):
 if __name__ == "__main__":
 	main_win = win()
 	main_win.after(0, main_win.main)
+	# main_win.txt.delete("1.0", "end")
+	# main_win.txt.insert("end", "This is a line motherfucker\r\n"*100)
 	main_win.mainloop()
 
 	print("thank you for using Nix")
