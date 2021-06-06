@@ -1,0 +1,144 @@
+{
+	"TEXT" :
+	{
+		"parent":
+		{
+			"<KeyRelease>" : "update_buffer",
+			"<Control-S>" : "save_file",
+			"<Control-s>" : "save_file",
+			"<Control-Shift-S>" : "save_file_as",
+			"<Control-Shift-s>" : "save_file_as",
+			"<Control-N>" : "new_file",
+			"<Control-n>" : "new_file",
+			"<Control-O>" : "load_file",
+			"<Control-o>" : "load_file",
+			"<Control-B>L" : "load_file",
+			"<Control-b>l" : "load_file",
+			
+			"<Control-B>W" : "close_buffer",
+			"<Control-b>w" : "close_buffer",
+			"<Control-w>" : "win_destroy",
+			"<Control-W>" : "win_destroy",
+			"<Control-B><Delete>" : "del_file",
+			"<Control-b><Delete>" : "del_file",
+			"<Control-B>S" : "load_scratch",
+			"<Control-b>s" : "load_scratch",
+			
+			"<Control-E>" : "show_last_output",
+			"<Control-e>" : "show_last_output",
+			
+			"<Control-F>" : "find_place",
+			"<Control-f>" : "find_place",
+			"<Control-G>" : "nt_place",
+			"<Control-g>" : "nt_place"
+		},
+		
+		"self" :
+		{
+			"<Button-1>" : "mouse_left",
+			"<B1-Motion>" : "mouse_left_motion",
+			
+			"<Up>" : "move_standard",
+			"<Down>" : "move_standard",
+			"<Left>" : "move_standard",
+			"<Right>" : "move_standard",
+			
+			"<Control-Up>" : "move_jump",
+			"<Control-Down>" : "move_jump",
+			"<Control-Left>" : "move_jump",
+			"<Control-Right>" : "move_jump",
+			
+			"<Shift-Up>" : "move_select",
+			"<Shift-Down>" : "move_select",
+			"<Shift-Left>" : "move_select",
+			"<Shift-Right>" : "move_select",
+			
+			"<Control-Shift-Up>" : "move_jump_select",
+			"<Control-Shift-Down>" : "move_jump_select",
+			"<Control-Shift-Left>" : "move_jump_select",
+			"<Control-Shift-Right>" : "move_jump_select",
+			
+			"<Home>" : "home",
+			"<Shift-Home>" : "home_select",
+			"<End>" : "end",
+			"<Shift-End>" : "end_select",
+			
+			"<Shift-Return>" : "run_make",
+			
+			"<MouseWheel>" : "scroll",
+			"<Button-4>" : "scroll",
+			"<Button-5>" : "scroll",
+			"<Shift-MouseWheel>" : "scroll_fast",
+			"<Shift-Button-4>" : "scroll_fast",
+			"<Shift-Button-5>" : "scroll_fast",
+			
+			"<Return>" : "keep_indent",
+			"<KP_Enter>" : "keep_indent",
+			"<Control-slash>" : "comment_line",
+			
+			"<Control-Z>" : "undo",
+			"<Control-z>" : "undo",
+			"<Control-Y>" : "redo",
+			"<Control-y>" : "redo",
+			"<Control-A>" : "select_all",
+			"<Control-a>" : "select_all",
+			
+			"<Control-K>" : "get_selection_count",
+			"<Control-k>" : "get_selection_count",
+			
+			"<Tab>" : "indent",
+			"<Control-Tab>" : "switch_buffer_next",
+			"<Shift-ISO_Left_Tab>" : "unindent",
+			"<Control-Shift-ISO_Left_Tab>" : "switch_buffer_prev",
+			"<Shift-Tab>" : "unindent",
+			"<Control-Shift-Tab>" : "switch_buffer_prev",
+
+			"<Control-B>" : "empty_break",
+			"<Control-b>" : "empty_break",
+			"<Control-B><KeyPress><Left>" : "switch_buffer_prev",
+			"<Control-b><KeyPress><Left>" : "switch_buffer_prev",
+			"<Control-B><KeyPress><Right>" : "switch_buffer_next",
+			"<Control-b><KeyPress><Right>" : "switch_buffer_next",
+			
+			"<Control-Q>" : "configure_wrap",
+			"<Control-q>" : "configure_wrap",
+			
+			"<Control-L>" : "change_case",
+			"<Control-l>" : "change_case",
+			"<Control-Shift-L>" : "change_case",
+			"<Control-Shift-l>" : "change_case",
+			"<Control-B>C" : "buffer_clipboard_set",
+			"<Control-b>c" : "buffer_clipboard_set",
+			"<Control-B>V" : "buffer_clipboard_paste",
+			"<Control-b>v" : "buffer_clipboard_paste",
+			"<Control-V>" : "paste",
+			"<Control-v>" : "paste",
+			"<Control-quotedbl>" : "char_enclose",
+			"<Control-parenleft>" : "char_enclose",
+			"<Control-bracketleft>" : "char_enclose",
+			"<Control-braceleft>" : "char_enclose",
+			"<Control-BackSpace>" : "delete_prev_word",
+			"<Control-Delete>" : "delete_next_word",
+			"<Control-Shift-BackSpace>" : "delete_line",
+			"<Control-Shift-Delete>" : "delete_line",
+			
+			"<Alt-S>" : "selection_index_swap",
+			"<Alt-s>" : "selection_index_swap",
+			
+			"<Alt-Shift-M>" : "moving_index_set",
+			"<Alt-Shift-m>" : "moving_index_set",
+			"<Alt-M>" : "jump_to_moving_index",
+			"<Alt-m>" : "jump_to_moving_index",
+			"<Alt-N>" : "jump_to_typing_index",
+			"<Alt-n>" : "jump_to_typing_index",
+			"<Alt-B>" : "jump_to_scope_start",
+			"<Alt-b>" : "jump_to_scope_start",
+			"<Alt-Shift-B>" : "jump_to_scope_end",
+			"<Alt-Shift-b>" : "jump_to_scope_end",
+			
+			"<Alt-comma>" : "split_args",
+			"<Alt-bracketleft>" : "move_to_scope_start",
+			"<Alt-bracketright>" : "move_to_scope_end"
+		}
+	}
+}

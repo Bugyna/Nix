@@ -3,14 +3,35 @@ import threading
 import datetime
 import tkinter
 import time
+import json
 import os
 import re
+import platform
+platform = platform.system()
 
 from tkinter import font, PhotoImage
 try: from PIL import ImageTk, Image
 except Exception: pass
 
 from highlighter import *
+
+if (platform == "Windows"):
+	ctypes.windll.shcore.SetProcessDpiAwareness(True)
+	CONTROL_KEYSYM = 262156
+	WINDOW_MARGIN = 0
+	LINE_END = "\r\n"
+else:
+	CONTROL_KEYSYM = None
+	WINDOW_MARGIN = 24
+	LINE_END = "\n"
+
+def bind_keys_from_config(widget, filename="keybinds_conf.json"):
+	keybinds = json.load(open(filename, "r"))
+	widget_name = type(widget).__name__
+	for val in keybinds[widget_name]["parent"].items():
+		widget.bind(val[0], getattr(widget.parent, val[1]))
+	for val in keybinds[widget_name]["self"].items():
+		widget.bind(val[0], getattr(widget, val[1]))
 
 class BUFFER_TAB(tkinter.Label):
 	def __init__(self, name: str, parent):
@@ -55,6 +76,9 @@ class BUFFER_TAB(tkinter.Label):
 	def reposition(self, last_buffer_tab=None):
 		self.pack(side="left")
 		self.tkraise()
+
+	def unplace(self):
+		self.pack_forget()
 
 	def change_name(self, new_name: str=None, extra_char: str = ""):
 		if (new_name): self.full_name = new_name; self.name = os.path.basename(new_name)
@@ -188,7 +212,7 @@ class GRAPHICAL_BUFFER(BUFFER):
 
 class DEFAULT_TEXT_BUFFER(tkinter.Text):
 	def __init__(self, parent, name):
-		super().__init__(parent)
+		super().__init__(parent.text_buffer_frame)
 		
 		self.parent = parent
 		self.full_name = name
@@ -203,7 +227,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		
 		self.block_cursor = True
 		self.terminal_like_cursor = True
-		self.cursor_mode = 2
+		self.cursor_mode = 1
 
 		self.blink = False
 		self.insert_offtime = 0; self.insert_ontime = 1
@@ -275,37 +299,52 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.parent.theme_make()
 		return "break"
 
+	def cursor_highlight(self):
+		pass
+
+	def line_highlight(self):
+		pass
+
+	def terminal_highlight(self):
+		try: self.configure(insertbackground=self.parent.theme["highlighter"][self.tag_names("insert")[-2]]) #Checks if there are any tags available on current character and if so it sets the cursor color to that tag 
+		except Exception: self.configure(insertbackground=self.parent.theme["window"]["insertbg"])
+		self.tag_configure("cursor", foreground=self.parent.theme["window"]["bg"])
+
+	def normal_highlight(self):
+		self.configure(insertbackground=self.parent.theme["window"]["insertbg"])
+		self.tag_configure("cursor", foreground=self.parent.theme["window"]["bg"])
+
 	def cursor_mode_set(self, arg=None):
 		""" Insert """
-		# don't ask
-		
-		self.configure(insertwidth=1)
-		
-		# self.txt.cursor_mode -= -1 if self.txt.cursor_mode < 2 else 2 #I fucking hate this :DDD
+		self["insertwidth"] = 0
+		self["insertbackground"] = self.parent.theme["window"]["insertbg"]
 		self.cursor_mode += 1
 		if (self.cursor_mode >= 3):
 			self.cursor_mode = 0
 			
 		if (self.cursor_mode == 0): #LINE
-			# self.txt.tag_delete("cursor")
 			self.block_cursor = False
-			self.terminal_like_cursor = False
+			self.cursor_highlight = self.line_highlight
+			self.tag_delete("cursor")
+			self["insertwidth"] = 1
 			
-		elif (self.cursor_mode == 1): #
+		elif (self.cursor_mode == 1): #NORMAL BLOCK
 			self.block_cursor = True
-			self.terminal_like_cursor = False
+			self.cursor_highlight = self.normal_highlight
 
-		elif (self.cursor_mode == 2): #NORMAL BLOCK
+		elif (self.cursor_mode == 2): #TERMINAL-LIKE BLOCK
 			self.block_cursor = True
-			self.terminal_like_cursor = True
+			self.cursor_highlight = self.terminal_highlight
 		
 		else:
 			self.cursor_mode = 2
 			self.block_cursor = True
-			self.terminal_like_cursor = True
+			self.cursor_highlight = self.normal_highlight
 
-		self.configure(blockcursor=self.block_cursor)
-		return "break"	
+		self.cursor_highlight()
+		self.tag_add("cursor", "insert")
+		self["blockcursor"] = self.block_cursor
+		return "break"
 
 	def cursor_xy_get(self, arg=None):
 		return self.parent.txt.bbox('insert')[:2]
@@ -328,6 +367,8 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 
 		self.bind("<Return>", self.parent.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
 		self.bind("<Shift-Return>", self.insert_newline)
+		self.bind("<KP_Enter>", self.parent.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
+		self.bind("<Shift-KP_Enter>", self.insert_newline)
 		self.bind("<Up>", self.history) # lets you scroll through commands you have already used
 		self.bind("<Down>", self.history)
 		self.bind("<Escape>", self.unplace)
@@ -393,6 +434,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.mode = "<search>"
 
 		self.bind("<Return>", self.find)
+		self.bind("<KP_Enter>", self.find)
 		self.bind("<Up>", self.scroll_through_found)
 		self.bind("<Down>", self.scroll_through_found)
 		self.bind("<Shift-Up>", self.scroll_through_find_history)
@@ -438,12 +480,14 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.mode = "<search>"
 		if (self.get("1.0") not in ["?", "/"]): self.insert("1.0", "?")
 		self.bind("<Return>", self.find)
+		self.bind("<KP_Enter>", self.find)
 		self.unbind("<Control-Z>")
 		self.unbind("<Control-z>")
 		
 	def replace_mode_set(self, arg=None):
 		self.mode = "<replace>"
 		self.bind("<Return>", self.replace)
+		self.bind("<KP_Enter>", self.replace)
 		self.bind("<Control-Z>", self.parent.undo)
 		self.bind("<Control-z>", self.parent.undo)
 
@@ -584,9 +628,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		return "break"
 
 	def unplace(self, arg=None):
-		for index in self.found:
-			self.parent.txt.tag_remove("found_bg", index[0], index[1])
-			self.parent.txt.tag_remove("underline", index[0], index[1])
+		self.parent.txt.tag_remove("found_bg", "1.0", "end")
+		self.parent.txt.tag_remove("underline", "1.0", "end")
 		
 		self.delete("1.0", "end")
 		self.place_forget()
@@ -633,6 +676,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.bind("<Control_L>", self.add_selection)
 		self.bind("<Return>", self.use_selection)
 		self.bind("<Shift-Return>", lambda arg: self.use_selection())
+		self.bind("<KP_Enter>", self.use_selection)
+		self.bind("<Shift-KP_Enter>", lambda arg: self.use_selection())
 
 	def configure_self(self, arg=None):
 		self.font_size_set()
@@ -706,6 +751,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		return "break"
 		
 	def stdout(self, arg=None, tags=None, justify="left"):
+		if (not arg): arg = self.arg
+		if (not tags): tags = self.tags
 		self.configure(state="normal")
 		self.input = ""
 		
@@ -827,159 +874,21 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.make_argv = ""
 		self.highlighter = highlighter(self.parent, self)
 		self.set_highlighter()
+		self.cursor_highlight = self.normal_highlight
 
 		self.clipboard_register = ""
+		self.sel_start = None
 		self.moving_index = "1.0" # I should be using the inbuilt tkinter text marks, but that would've probably fucked up other things I am too lazy to fix
 		self.typing_index = "1.0"
+		self.cursor_index = ["1", "0"]
+		self.queue = []
+		self.current_line = ""
 
 		# self.text_len = ""
 		self.change_index = ""
 		self["wrap"] = "none"
 
-		self.bind("<KeyRelease>", self.parent.update_buffer)
-		# self.bind("<KeyRelease><BackSpace>", self.delete_selection_start_index)
-
-		self.bind("<Button-1>", self.parent.mouse_left)
-		self.bind("<B1-Motion>", self.parent.mouse_left_motion)
-		# self.bind("<Motion>", lambda arg: self.mark_set("insert", "current"))
-		
-		self.bind("<Up>", self.parent.move_standard)
-		self.bind("<Down>", self.parent.move_standard)
-		self.bind("<Left>", self.parent.move_standard)
-		self.bind("<Right>", self.parent.move_standard)
-		
-		self.bind("<Control-Up>", self.parent.move_jump)
-		self.bind("<Control-Down>", self.parent.move_jump)
-		self.bind("<Control-Left>", self.parent.move_jump)
-		self.bind("<Control-Right>", self.parent.move_jump)
-
-		self.bind("<Shift-Up>", self.parent.move_select)
-		self.bind("<Shift-Down>", self.parent.move_select)
-		self.bind("<Shift-Left>", self.parent.move_select)
-		self.bind("<Shift-Right>", self.parent.move_select)
-
-		self.bind("<Control-Shift-Up>", self.parent.move_jump_select)
-		self.bind("<Control-Shift-Down>", self.parent.move_jump_select)
-		self.bind("<Control-Shift-Left>", self.parent.move_jump_select)
-		self.bind("<Control-Shift-Right>", self.parent.move_jump_select)
-		
-		self.bind("<Home>", self.parent.home)
-		self.bind("<Shift-Home>", self.parent.home_select)
-		self.bind("<End>", self.parent.end)
-		self.bind("<Shift-End>", self.parent.end_select)
-
-		self.bind("<Shift-Return>", lambda arg: self.run_subprocess(make=True))
-
-		self.bind("<MouseWheel>", self.parent.scroll)
-		self.bind("<Button-4>", self.parent.scroll)
-		self.bind("<Button-5>", self.parent.scroll)
-		self.bind("<Shift-MouseWheel>", lambda arg: self.parent.scroll(arg, multiplier=3))
-		self.bind("<Shift-Button-4>", lambda arg: self.parent.scroll(arg, multiplier=3))
-		self.bind("<Shift-Button-5>", lambda arg: self.parent.scroll(arg, multiplier=3))
-		# self.bind("<Button-3>", self.parent.popup) #right click pop-up window
-
-		self.bind("<Return>", self.parent.keep_indent)
-		self.bind("<Control-slash>", self.parent.comment_line)
-
-		self.bind("<Control-S>", self.parent.file_handler.save_file)
-		self.bind("<Control-s>", self.parent.file_handler.save_file)
-		self.bind("<Control-Shift-S>", self.parent.file_handler.save_file_as)
-		self.bind("<Control-Shift-s>", self.parent.file_handler.save_file_as)
-		self.bind("<Control-N>", self.parent.file_handler.new_file)
-		self.bind("<Control-n>", self.parent.file_handler.new_file)
-		self.bind("<Control-O>", self.parent.file_handler.load_file)
-		self.bind("<Control-o>", self.parent.file_handler.load_file)
-
-		self.bind("<Control-B>", self.empty_break)
-		self.bind("<Control-b>", self.empty_break)
-		self.bind("<Control-B>L", self.parent.file_handler.load_file)
-		self.bind("<Control-b>l", self.parent.file_handler.load_file)
-		self.bind("<Control-B>W", lambda arg: self.parent.file_handler.close_buffer(arg, self.full_name))
-		self.bind("<Control-b>w", lambda arg: self.parent.file_handler.close_buffer(arg, self.full_name))
-		self.bind("<Control-w>", self.parent.win_destroy)
-		self.bind("<Control-W>", self.parent.win_destroy)
-		self.bind("<Control-B><Delete>", lambda arg: self.parent.file_handler.del_file(arg, self.full_name))
-		self.bind("<Control-b><Delete>", lambda arg: self.parent.file_handler.del_file(arg, self.full_name))
-		self.bind("<Control-B>S", self.parent.file_handler.load_scratch)
-		self.bind("<Control-b>s", self.parent.file_handler.load_scratch)
-
-		# lol this is gross
-		self.bind("<Control-E>", lambda arg: self.parent.command_out_set("\n".join(self.parent.command_out.out[-1:])))
-		self.bind("<Control-e>", lambda arg: self.parent.command_out_set("\n".join(self.parent.command_out.out[-1:])))
-
-		# self.bind("<Control-T>", self.parent.task_handler.show_tasks)
-		# self.bind("<Control-t>", self.parent.task_handler.show_tasks)
-	
-		self.bind("<Control-F>", self.parent.find_place)
-		self.bind("<Control-f>", self.parent.find_place)
-		self.bind("<Control-G>", self.parent.nt_place)
-		self.bind("<Control-g>", self.parent.nt_place)
-
-		self.bind("<Control-Z>", self.parent.undo)
-		self.bind("<Control-z>", self.parent.undo)
-		self.bind("<Control-Y>", self.parent.redo)
-		self.bind("<Control-y>", self.parent.redo)
-		self.bind("<Control-A>", self.parent.select_all)
-		self.bind("<Control-a>", self.parent.select_all)
-
-		self.bind("<Control-K>", self.parent.get_selection_count)
-		self.bind("<Control-k>", self.parent.get_selection_count)
-
-		self.bind("<Tab>", self.parent.indent)
-		self.bind("<Control-Tab>", self.switch_buffer_next)
-		try: #linux bindings that throw errors on windows
-			self.bind("<Shift-ISO_Left_Tab>", self.parent.unindent)
-			self.bind("<Control-Shift-ISO_Left_Tab>", self.switch_buffer_prev)
-			self.parent.command_entry.bind("<KP_Enter>", self.parent.cmmand)
-		except Exception:
-			self.bind("<Shift-Tab>", self.parent.unindent)
-			self.bind("<Control-Shift-Tab>", self.switch_buffer_prev)
-
-		self.bind("<Control-B><KeyPress><Left>", self.switch_buffer_prev)
-		self.bind("<Control-b><KeyPress><Left>", self.switch_buffer_prev)
-		self.bind("<Control-B><KeyPress><Right>", self.switch_buffer_next)
-		self.bind("<Control-b><KeyPress><Right>", self.switch_buffer_next)
-
-		self.bind("<Control-Q>", self.configure_wrap)
-		self.bind("<Control-q>", self.configure_wrap)
-
-		# text inserstion and deletion
-		self.bind("<Control-L>", self.parent.change_case)
-		self.bind("<Control-l>", self.parent.change_case)
-		self.bind("<Control-Shift-L>", self.parent.change_case)
-		self.bind("<Control-Shift-l>", self.parent.change_case)
-		self.bind("<Control-B>C", self.buffer_clipboard_set)
-		self.bind("<Control-b>c", self.buffer_clipboard_set)
-		self.bind("<Control-B>V", self.buffer_clipboard_paste)
-		self.bind("<Control-b>v", self.buffer_clipboard_paste)
-		self.bind("<Control-V>", self.parent.paste)
-		self.bind("<Control-v>", self.parent.paste)
-		self.bind("<Control-quotedbl>", self.parent.char_enclose)		#"
-		# self.bind("<Control-apostrophe>", self.parent.char_enclose)		#'
-		self.bind("<Control-parenleft>", self.parent.char_enclose) 		#( 
-		self.bind("<Control-bracketleft>", self.parent.char_enclose) 	#[
-		self.bind("<Control-braceleft>", self.parent.char_enclose) 		#{
-		self.bind("<Control-BackSpace>", self.delete_prev_word)
-		self.bind("<Control-Delete>", self.delete_next_word)
-		self.bind("<Control-Shift-BackSpace>", self.delete_line)
-		self.bind("<Control-Shift-Delete>", self.delete_line)
-
-		# moving around with marks and stuff
-		self.bind("<Alt-S>", self.selection_index_swap)
-		self.bind("<Alt-s>", self.selection_index_swap)
-
-		self.bind("<Alt-Shift-M>", self.moving_index_set)
-		self.bind("<Alt-Shift-m>", self.moving_index_set)
-		self.bind("<Alt-M>", self.jump_to_moving_index)
-		self.bind("<Alt-m>", self.jump_to_moving_index)
-		self.bind("<Alt-N>", self.jump_to_typing_index)
-		self.bind("<Alt-n>", self.jump_to_typing_index)
-		self.bind("<Alt-B>", self.jump_to_scope_start)
-		self.bind("<Alt-b>", self.jump_to_scope_start)
-		self.bind("<Alt-Shift-B>", self.jump_to_scope_end)
-		self.bind("<Alt-Shift-b>", self.jump_to_scope_end)
-
-		self.bind("<FocusIn>", lambda arg: self.parent.theme_load())
+		bind_keys_from_config(self)
 
 	def configure_self(self, arg=None) -> None:
 		self.font_size_set()
@@ -998,6 +907,367 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 		self.see("insert")
 
+	def convert_to_lf(self):
+		self.replace_x_with_y("\r", "", True)
+
+	def convert_to_crlf(self):
+		self.convert_to_lf()
+		self.replace_x_with_y("\n", "\r\n", True)
+
+	def convert_line_index(self, type: str, index=None):
+		""" gets the cursor's position """
+		if (not index): index = self.cursor_index[0]
+		if (type == "int"): return int(float(index))
+		elif (type == "float"): return float(index)
+
+	def inline_index_sort(self, index1, index2):
+		if (int(index1.split(".")[1]) <= int(index2.split(".")[1])): return (index1, index2)
+		else: return (index2, index1)
+
+	def multiline_index_sort(self, index1, index2):
+		self.queue = [self.convert_line_index("int", index1), self.convert_line_index("int", index2)]
+		self.queue.sort()
+		return self.queue[0], self.queue[1] + 1
+
+	def sameline_check(self, index1, index2):
+		return self.convert_line_index("int", index1) == self.convert_line_index("int", index2)
+
+	def precise_index_sort(self, index1, index2):
+		print(index1, index2)
+		s1, s2 = index1, index2
+		if (self.sameline_check(s1, s2)):
+			if (int(s1.split(".")[1]) <= int(s2.split(".")[1])): return (index1, index2)
+			else: return (index2, index1)
+		else:
+			if (self.convert_line_index("int", s1) <=  self.convert_line_index("int", s2)): (index1, index2)
+			else: return (index2, index1)
+			
+	def del_selection(self):
+		self.sel_start = None
+		self.mark_unset(self.mark_names()[-1])
+		self.tag_remove("sel", "1.0", "end")
+
+	def queue_get(self, arg=None):
+		self.queue = [self.convert_line_index("int", self.sel_start), self.convert_line_index("int", self.index("insert"))]
+		self.queue.sort()
+		return self.queue[0], self.queue[1] + 1
+
+	def moving(func): #something something event queue something
+		def wrapped_func(self, *args, **kwargs):
+			self.tag_remove("cursor", "1.0", "end")
+			func(self, *args, **kwargs)
+			self.tag_add("cursor", "insert")
+			self.cursor_highlight()
+			return "break"
+
+		return wrapped_func
+
+	@moving
+	def move(self, arg=None, mod=[]):
+		key = arg.keysym
+		suffix = ["Line", "Char"]
+		prefix = ""
+		
+		if ("control" in mod):
+			suffix = ["Para", "Word"]
+
+		if ("shift" in mod):
+			prefix = "Select"
+
+		if (key == "Up"):
+			self.event_generate(f"<<{prefix}Prev{suffix[0]}>>")
+			self.see(self.convert_line_index("float")-5)
+
+		elif (key == "Down"):
+			self.event_generate(f"<<{prefix}Next{suffix[0]}>>")
+			self.see(self.convert_line_index("float")+5)
+
+		elif (key == "Left"):
+			self.event_generate(f"<<{prefix}Prev{suffix[1]}>>")
+
+		elif (key == "Right"):
+			self.event_generate(f"<<{prefix}Next{suffix[1]}>>")
+
+		if (prefix == ""): self.sel_start = None; del self.queue[:]
+		else: self.sel_start = self.index(self.mark_names()[-1])
+		self.parent.update_index()
+		# if (self.focus_displayof() == self): self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.command_out.place_forget()
+
+		return "break"
+
+	def move_standard(self, arg=None):
+		self.move(arg)
+		return "break"
+
+	def move_jump(self, arg=None):
+		self.move(arg, ["control"])
+		return "break"
+
+	def move_select(self, arg=None):
+		self.move(arg, ["shift"])
+		return "break"
+
+	def move_jump_select(self, arg=None):
+		self.move(arg, ["control", "shift"])
+		return "break"
+
+	#text manipulation bindings
+	@moving
+	def cut(self, arg=None):
+		""" Control-X """
+		self.event_generate("<<Cut>>")
+		return "break"
+		
+	@moving
+	def undo(self, arg=None):
+		""" Control-Z """
+		chunk_size = self.get_line_count()
+		self.event_generate("<<Undo>>")
+		start_index = self.convert_line_index("int")
+		stop_index = start_index + abs(chunk_size - self.get_line_count())
+		self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
+		return "break"
+
+	@moving
+	def redo(self, arg=None):
+		""" Control-Y """
+		chunk_size = self.get_line_count()
+		self.event_generate("<<Redo>>")
+		start_index = self.convert_line_index("int")
+		stop_index = start_index + abs(chunk_size - self.get_line_count())
+		self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
+		return "break"
+
+	@moving
+	def copy(self, arg=None):
+		""" Control-C """
+		self.event_generate("<<Copy>>")
+		return "break"
+
+	@moving
+	def paste(self, arg=None):
+		""" Control-V """
+		to_paste = self.clipboard_get()
+		start_index = self.convert_line_index("int", self.index("insert"))
+		self.insert("insert", to_paste)
+		self.parent.highlight_chunk(start_index=start_index, stop_index=self.convert_line_index("int", self.index("insert")))
+
+		self.event_generate("<<SelectNone>>")
+		return "break"
+
+	def select_all(self, arg=None):
+		""" Control-A """
+		self.event_generate("<<SelectAll>>")
+		return "break"
+
+	@moving
+	def home(self, arg=None):
+		""" Home """
+		index = ""
+		i = 0
+		for i, char in enumerate(self.current_line, 0):
+			if (not re.match(r"\s", char)): index = f"{self.cursor_index[0]}.{i}"; break
+		
+		if (self.index("insert") == index): self.event_generate("<<LineStart>>")
+		else: self.mark_set("insert", index)
+		self.event_generate("<<SelectNone>>")
+		return "break"
+
+	@moving
+	def home_select(self, arg=None):
+		""" Shift-Home """
+		index = ""
+		i = 0
+		for i, char in enumerate(self.current_line, 0):
+			if (not re.match(r"\t", char)): index = f"{self.cursor_index[0]}.{i}"; break
+
+		if (self.index("insert") == index):
+			self.event_generate("<<SelectLineStart>>")
+		
+		elif (self.index("insert") != index):
+			self.event_generate("<<SelectLineStart>>")
+			[self.event_generate("<<SelectNextChar>>") for i in range(i)]
+		return "break"
+
+	@moving
+	def end(self, arg=None):
+		self.event_generate("<<LineEnd>>")
+		self.event_generate("<<SelectNone>>")
+		return "break"
+
+	@moving
+	def end_select(self, arg=None):
+		self.event_generate("<<SelectLineEnd>>")
+		return "break"
+
+	@moving
+	def mouse_left(self, arg=None):
+		self.mark_set("insert", "current")
+		self.del_selection()
+		self.parent.update_buffer()
+		return "break"
+
+	def mouse_left_motion(self, arg=None):
+		if (not self.sel_start):
+			self.sel_start = self.index("insert")
+		self.mark_set("insert", "current")
+		self.parent.update_buffer()
+
+	def change_case(self, arg=None):
+		self.sel_start = self.index(self.mark_names()[-1])
+		index_range = [self.sel_start, self.index("insert")]
+
+		index_range = self.inline_index_sort(*index_range)
+		
+		if (arg.state == 20): # without shift
+			text = self.get(index_range[0], index_range[1])
+			self.delete(index_range[0], index_range[1])
+			text = text.lower()
+			self.insert(index_range[0], text)
+
+		elif (arg.state == 21): # shift
+			text = self.get(index_range[0], index_range[1])
+			self.delete(index_range[0], index_range[1])
+			text = text.upper()
+			self.insert(index_range[0], text)
+
+		self.parent.highlight_chunk(start_index=float(index_range[0]), stop_index=float(index_range[1]))
+
+		del index_range
+		del text
+		return "break"
+
+	def char_enclose(self, arg=None) -> str:
+		self.sel_start = self.index(self.mark_names()[-1])
+		index = self.inline_index_sort(self.index("insert"), self.sel_start)
+
+		if (arg.keysym == "parenleft"): c1 = "("; c2 = ")"
+		elif (arg.keysym == "bracketleft"): c1 = "["; c2 = "]"
+		elif (arg.keysym == "braceleft"): c1 = "{"; c2 = "}"
+		elif (arg.keysym == "apostrophe" or arg.keysym == "quotedbl"): c1 = "\""; c2 = "\""
+		self.insert(index[1], c2)
+		self.insert(index[0], c1)
+
+		return "break"
+
+	def comment_line(self, arg=None) -> str:
+		""" I wish I knew what the fuck is going on in here I am depressed """
+		
+		start_index, stop_index = self.queue_get()
+
+		comment_len = len(self.highlighter.comment_sign)
+
+		for line_no in range(start_index, stop_index):
+			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
+			for i, current_char in enumerate(current_line, 0):
+				if (self.highlighter.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+					if (self.get(f"{line_no}.{i+comment_len}", f"{line_no}.{i+1+comment_len}") == " "):
+						self.delete(f"{line_no}.{i}", f"{line_no}.{i+1+comment_len}")
+					else:
+						self.delete(f"{line_no}.{i}", f"{line_no}.{i+comment_len}")
+					break
+
+				elif (not re.match("\s", current_char)):
+					self.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
+					break
+
+		self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
+		return "break" # returning "break" prevents system/tkinter to call default bindings
+
+	def indent(self, arg=None):
+		""" Tab """
+		start_index, stop_index = self.queue_get()
+		index = 0
+		if (start_index+1 == stop_index): index = self.cursor_index[1]
+
+		for line_no in range(start_index, stop_index):
+			self.insert(f"{line_no}.{index}", "\t")
+
+		return "break"
+		
+	def unindent(self, arg=None):
+		""" Checks if the first character in line is \t (tab) and deletes it accordingly """
+		start_index, stop_index = self.queue_get()
+
+		for line_no in range(start_index, stop_index):
+			if (re.match(r"\t", self.get(f"{line_no}.0", f"{line_no}.1"))):
+				self.delete(f"{line_no}.0", f"{line_no}.1")
+		
+		return "break"
+
+	@moving
+	def scroll(self, arg, multiplier=1):
+		""" scrolls through the text widget MouseWheel && Shift-MouseWheel for speedy scrolling """
+		if (arg.num == 5 or arg.delta < 0):
+			self.mark_set("insert", f"{int(self.cursor_index[0])+3*multiplier}.{self.cursor_index[1]}")
+	
+		elif (arg.num == 4 or arg.delta > 0):
+			self.mark_set("insert", f"{int(self.cursor_index[0])-3*multiplier}.{self.cursor_index[1]}")
+		
+		# hides widgets that could be in the way
+		self.focus_set()
+		self.see("insert")
+		
+		self.del_selection()
+		self.parent.update_index()
+
+	@moving
+	def scroll_fast(self, arg=None):
+		self.scroll(arg, 3)
+
+	@moving	
+	def keep_indent(self, arg=None):
+		""" gets the amount of tabs in the last line and puts them at the start of a new one """
+		#this functions gets called everytime Enter/Return has been pressed
+		self.see(self.convert_line_index("float")+3)
+		offset = LINE_END
+		
+		if (match := re.search(r"^\t+", self.current_line)):
+			offset += match.group()
+
+		# I am seeing a lot of horrible code in this project
+		# sometimes I look back at my code and wonder if I am insane
+		# magic with brackets
+		# basically automatic indenting
+		if (re.match(r"[\:]", self.get("insert-1c"))): 
+			self.insert(self.index("insert"), offset+"\t")
+			
+		elif (re.match(r"[\{\[\(]", self.get("insert-1c"))):
+			if (re.match(r"[\}\]\)]", self.get("insert"))):
+				self.insert(self.index("insert"), offset+"\t"+offset)
+				self.mark_set("insert", f"insert-{len(offset)}c")
+			else:
+				self.insert(self.index("insert"), offset+"\t")
+				
+		elif (re.match(r"[\{\[\(]", self.get("insert"))):
+			if (re.match(r"[\}\]\)]", self.get("insert+1c"))):
+				self.insert(self.index("insert"), offset)
+				self.mark_set("insert", "insert+1c")
+				self.insert(self.index("insert"), offset+"\t"+offset)
+				self.mark_set("insert", f"insert-{len(offset)}c")
+			else:
+				self.insert(self.index("insert"), offset)
+				self.mark_set("insert", f"insert+{len(offset)+2}c")
+		
+		else:
+			if (re.match(r"\t+(\n|\r\n)", self.current_line)):
+				self.delete(f"{self.cursor_index[0]}.0", "insert") #removes extra tabs if the line is empty
+			self.insert(self.index("insert"), offset)
+		
+		return "break"
+
+	def get_line_count(self, arg=None):
+		""" returns total amount of lines in opened text """
+		return sum(1 for line in self.get("1.0", "end").split("\n"))
+
+	def get_word_count(self, arg=None):
+		t = self.get("1.0", "end-1c")
+		return [len(t.split(" ")), len(t)/5]
+
+	def get_selection_count(self, arg=None):
+		self.parent.command_out_set(f"len: {len(self.selection_get())}")
+		return "break"
+
 	def change_name(self, name) -> None:
 		self.full_name = name
 		self.name = os.path.basename(name)
@@ -1007,7 +1277,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 	def delete_selection_start_index(self, arg=None) -> None:
 		""" This has to be a function and I hate it """
-		self.parent.selection_start_index = None
+		self.sel_start = None
 		self.parent.update_index()
 
 	def get_time(self, arg=None) -> None:
@@ -1030,7 +1300,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 	def buffer_clipboard_set(self, arg=None, text=None):
 		if (arg and not text):
-			text = self.get(self.parent.selection_start_index, self.index("insert"))
+			text = self.get(self.sel_start, self.index("insert"))
 		self.buffer_clipboard = text
 		
 		if (arg): return "break"
@@ -1084,12 +1354,21 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 	def selection_index_swap(self, arg=None):
 		swp_index = self.index("insert")
-		self.mark_set("insert", self.parent.selection_start_index)
+		self.mark_set("insert", self.sel_start)
 		self.mark_set(self.mark_names()[-1], swp_index)
-		self.parent.selection_start_index = swp_index
+		self.sel_start = swp_index
 		self.see("insert")
 		
 		if (arg): return "break"
+
+	def split_args(self, arg=None):
+		pass
+
+	def move_to_scope_start(self, arg=None):
+		pass
+
+	def move_to_scope_end(self, arg=None):
+		pass
 
 	def set_highlighter(self) -> None:
 		""" sets the highlighter accordingly to the current file extension """
@@ -1098,6 +1377,9 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 		self.parent.highlighting = True
 		self.highlighter.set_languague(arg)
+
+	def unplace(self):
+		self.place_forget()
 
 	def switch_buffer(self, arg=None, next = True) -> str:
 		# if (self.parent.split_mode != 0):
@@ -1142,4 +1424,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			
 		threading.Thread(target=run, daemon=True).start()
 		return "break"
+
+	def run_make(self):
+		return self.run_subprocess(make=True)
 

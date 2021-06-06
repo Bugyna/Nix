@@ -49,7 +49,7 @@ class FILE_HANDLER(object):
 		self.parent.txt.tag_add("center", "1.0", "end")
 
 	def load_scratch(self, arg=None):
-		self.parent.txt.place_forget()
+		self.parent.text_unplace()
 		self.parent.txt = self.buffer_list[0][0]
 		self.parent.txt.focus_set()
 		self.parent.reposition_widgets()
@@ -76,7 +76,7 @@ class FILE_HANDLER(object):
 		try: self.buffer_dict[buffer_name]; return # Checks for existing buffers
 		except KeyError: pass
 
-		self.parent.hide_text_widget()
+		self.parent.text_unplace()
 
 		if (buffer_type == "TEXT"): self.buffer_list.append([TEXT(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
 		elif (buffer_type == "GRAPHICAL"): self.buffer_list.append([GRAPHICAL_BUFFER(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
@@ -88,8 +88,8 @@ class FILE_HANDLER(object):
 	def close_buffer(self, arg=None, buffer_name: str=None):
 		if (not buffer_name): buffer_name = self.parent.txt.full_name
 		buffer_index = self.buffer_dict[buffer_name][0].buffer_index
-		self.buffer_dict[buffer_name][0].place_forget()
-		self.buffer_dict[buffer_name][1].pack_forget()
+		self.buffer_dict[buffer_name][0].unplace()
+		self.buffer_dict[buffer_name][1].unplace()
 
 		print("base: ", os.path.basename(buffer_name), "file: ", f".{os.path.basename(buffer_name)}.error_swp")
 		if (self.parent.backup_files): self.del_file(filename=f".{os.path.basename(buffer_name)}.error_swp")
@@ -113,10 +113,8 @@ class FILE_HANDLER(object):
 
 
 	def load_buffer(self, arg=None, buffer_name: str = None, buffer_index: int = None):
-		if (self.parent.split_mode == 0): self.parent.hide_text_widget()
+		if (self.parent.split_mode == 0): self.parent.text_unplace()
 		
-		# this conditional is gross why can't it just be (buffer_index)
-		# THIS IS PROBABLY THE MOST PYTHONIC LINE OUT OF ALL THE FILES
 		if (buffer_index is not None): buffer_name = self.buffer_list[buffer_index][0].full_name
 		
 		self.current_file_name = self.current_buffer = buffer_name
@@ -179,8 +177,8 @@ class FILE_HANDLER(object):
 			self.current_dir = os.path.dirname(self.current_file_name)
 			self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.buffer_tab.change_name(extra_char=" ")
-			# self.parent.command_out_set(f"total of {self.parent.get_line_count()} lines saved")
-			self.parent.command_out_set(rf"saved [{size1-size0}B|{size1}B|{self.parent.get_line_count()}L] to {os.path.basename(self.current_file_name)}")
+			# self.parent.command_out_set(f"total of {self.parent.txt.get_line_count()} lines saved")
+			self.parent.command_out_set(rf"saved [{size1-size0}B|{size1}B|{self.parent.txt.get_line_count()}L] to {os.path.basename(self.current_file_name)}")
 			
 		elif (not self.current_file_name):
 			self.new_file()
@@ -238,10 +236,10 @@ class FILE_HANDLER(object):
 		self.parent.txt.delete("1.0", "end") #deletes the buffer so there's not any extra text
 		self.parent.txt.insert("1.0", file_content) #puts all of the file's text in the text widget
 		self.parent.txt.change_index = len(file_content)+1
-		if (platform == "Windows"): self.parent.convert_to_crlf()
-		else: self.parent.convert_to_lf()
-		self.parent.txt.mark_set(tkinter.INSERT, "1.0") #puts the cursor at the start of the file
-		self.parent.txt.see(tkinter.INSERT)
+		# if (platform == "Windows"): self.parent.convert_to_crlf()
+		# else: self.parent.convert_to_lf()
+		self.parent.txt.mark_set("insert", "1.0") #puts the cursor at the start of the file
+		self.parent.txt.see("insert")
 
 		print("filename: ", self.current_file.name, "dir: ", self.current_dir)
 	
@@ -252,9 +250,9 @@ class FILE_HANDLER(object):
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		print(t1-t0)
 		# puts the time it took to load and highlight the text in the command output widget
-		self.parent.command_out_set(f"total lines: {self.parent.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
-			["1.12", f"1.{13+len(str(self.parent.get_line_count()))}"], 
-			[f"1.{15+len(str(self.parent.get_line_count()))+11}", f"1.{15+len(str(self.parent.get_line_count()))+11+len(str(elapsed_time))}"]
+		self.parent.command_out_set(f"total lines: {self.parent.txt.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
+			["1.12", f"1.{13+len(str(self.parent.txt.get_line_count()))}"], 
+			[f"1.{15+len(str(self.parent.txt.get_line_count()))+11}", f"1.{15+len(str(self.parent.txt.get_line_count()))+11+len(str(elapsed_time))}"]
 			]) # wild...
 		self.parent.title(f"Nix: <{self.parent.txt.name}>")
 
