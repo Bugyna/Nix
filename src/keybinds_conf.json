@@ -95,6 +95,7 @@
 
 			"<Control-B>" : "empty_break",
 			"<Control-b>" : "empty_break",
+			"<Control-semicolon>" : "list_buffer",
 			"<Control-B><KeyPress><Left>" : "switch_buffer_prev",
 			"<Control-b><KeyPress><Left>" : "switch_buffer_prev",
 			"<Control-B><KeyPress><Right>" : "switch_buffer_next",

@@ -130,16 +130,25 @@ class FILE_HANDLER(object):
 		self.buffer_tab.focus_highlight()
 		self.parent.txt.focus_set()
 		self.parent.reposition_widgets()
+		self.parent.notify(f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]])
 		
 		if (arg): return "break"
+
+	def list_buffer(self, arg=None):
+		result = ""
+		for val in self.parent.file_handler.buffer_list[1:]:
+			result += f"{val[1].full_name}\n"
+			self.parent.command_out.change_ex(self.parent.command_out.buffer_load)
+		if (not result): result = "<None>"
+		self.parent.command_out_set(result)
 
 	def del_file(self, arg=None, filename:str=""):
 		try:	self.buffer_dict[filename] ; self.close_buffer(buffer_name=filename)
 		except KeyError: pass
 			
 		if (not filename): filename=self.current_file_name
-		if (os.path.isfile(filename)): os.remove(filename); self.parent.command_out_set(f"File [{filename}] was deleted")
-		else: self.parent.command_out_set(f"File ({filename}) does not exist")
+		if (os.path.isfile(filename)): os.remove(filename); self.parent.notify(f"File [{filename}] was deleted")
+		else: self.parent.notify(f"File ({filename}) does not exist")
 
 		if (arg): return "break"
 
@@ -159,6 +168,7 @@ class FILE_HANDLER(object):
 		self.parent.title(f"Nix: <{self.parent.txt.name}>")
 		
 		self.parent.txt.set_highlighter()
+		self.current_file.close()
 
 		if (arg): return "break"
 
@@ -177,8 +187,8 @@ class FILE_HANDLER(object):
 			self.current_dir = os.path.dirname(self.current_file_name)
 			self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.buffer_tab.change_name(extra_char=" ")
-			# self.parent.command_out_set(f"total of {self.parent.txt.get_line_count()} lines saved")
-			self.parent.command_out_set(rf"saved [{size1-size0}B|{size1}B|{self.parent.txt.get_line_count()}L] to {os.path.basename(self.current_file_name)}")
+			# self.parent.notify(f"total of {self.parent.txt.get_line_count()} lines saved")
+			self.parent.notify(rf"saved [{size1-size0}B|{size1}B|{self.parent.txt.get_line_count()}L] to {os.path.basename(self.current_file_name)}")
 			
 		elif (not self.current_file_name):
 			self.new_file()
@@ -250,7 +260,7 @@ class FILE_HANDLER(object):
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		print(t1-t0)
 		# puts the time it took to load and highlight the text in the command output widget
-		self.parent.command_out_set(f"total lines: {self.parent.txt.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
+		self.parent.notify(f"total lines: {self.parent.txt.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
 			["1.12", f"1.{13+len(str(self.parent.txt.get_line_count()))}"], 
 			[f"1.{15+len(str(self.parent.txt.get_line_count()))+11}", f"1.{15+len(str(self.parent.txt.get_line_count()))+11+len(str(elapsed_time))}"]
 			]) # wild...
@@ -263,18 +273,18 @@ class FILE_HANDLER(object):
 	def new_directory(self, arg=None, filename=None):
 		path = f"{self.current_dir}/{filename}"
 		if (os.path.isdir(path)):
-			self.parent.command_out_set(f"Directory <{filename}> already exists")
+			self.parent.notify(f"Directory <{filename}> already exists")
 		else:
 			os.mkdir(path)
-			self.parent.command_out_set(f"Directory <{filename}> was created")
+			self.parent.notify(f"Directory <{filename}> was created")
 
 	def delete_directory(self, arg=None, filename=None):
 		path = f"{self.current_dir}/{filename}"
 		if (os.path.isdir(path)):
 			os.rmdir(path)
-			self.parent.command_out_set(f"Directory <{filename}> was succesfully deleted")
+			self.parent.notify(f"Directory <{filename}> was succesfully deleted")
 		else:
-			self.parent.command_out_set(f"Directory <{filename}> does not exist")
+			self.parent.notify(f"Directory <{filename}> does not exist")
 
 	def directory_list_get(self, dir):
 		dir = os.listdir(self.current_dir)
@@ -330,7 +340,7 @@ class TODO_HANDLER:
 class MUSIC_PLAYER(object):
 	def __init__(self, parent):
 		try: from pygame import mixer
-		except ImportError as e: parent.command_out_set(f"ERROR: couldn't create music player, because pygame module couldn't be imported \n {e}"); return
+		except ImportError as e: parent.notify(f"ERROR: couldn't create music player, because pygame module couldn't be imported \n {e}"); return
 		
 		self.parent = parent
 		self.volume = 1
@@ -344,7 +354,7 @@ class MUSIC_PLAYER(object):
 			mixer.music.play()
 		except Exception as e:
 			print(e)
-			self.parent.command_out_set("invalid file")
+			self.parent.notify("invalid file")
 		
 	def play_song(self, time: int = 0):
 		mixer.music.play(start=time)

@@ -93,6 +93,10 @@ class PARSER:
 			"lexer": self.lexer_switch,
 			"tag(_add)*": self.add_tag,
 			"tag_remove": self.remove_tag,
+			"lf": self.lf,
+			"crlf": self.crlf,
+			"toggle_filebar": self.toggle_buffer_tab_show,
+			"make": self.make,
 		}
 
 	def parse_argument(self, arg=None):
@@ -119,12 +123,12 @@ class PARSER:
 
 	def highlighting_set(self, arg=None):
 		if (arg[1] == "on"):
-			self.parent.command_out_set("highlighting on")
+			self.parent.notify("highlighting on")
 			self.parent.highlight_chunk()
 			self.parent.highlighting = True
 		elif (arg[1] == "off"):
 			self.parent.unhighlight_chunk()
-			self.parent.command_out_set("highlighting off")
+			self.parent.notify("highlighting off")
 			self.parent.highlighting = False
 
 	def suggest_set(self, arg=None):
@@ -143,16 +147,16 @@ class PARSER:
 		index = self.parent.txt.index(arg)
 		self.parent.txt.mark_set("insert", index)
 		self.parent.txt.see(index)
-		self.parent.command_out_set(f"moved to: {index}")
+		self.parent.notify(f"moved to: {index}")
 
 	def l_get(self, arg=None):
-		self.parent.command_out_set(f"{self.parent.get_line_count()}")
+		self.parent.notify(f"{self.parent.get_line_count()}")
 
 	def word_count_get(self, arg=None):
-		self.parent.command_out_set(f"{self.parent.get_word_count()}")
+		self.parent.notify(f"{self.parent.get_word_count()}")
 
 	def file_size_get(self, arg=None) -> None:
-		self.parent.command_out_set(f"buffer size: {len(self.parent.txt.get('1.0', 'end'))}B >>>> file size: {os.path.getsize(self.parent.txt.full_name)}B")
+		self.parent.notify(f"buffer size: {len(self.parent.txt.get('1.0', 'end'))}B >>>> file size: {os.path.getsize(self.parent.txt.full_name)}B")
 
 	def lyrics_get(self, arg=None):
 		def lyr():
@@ -171,7 +175,7 @@ class PARSER:
 		self.parent.txt.focus_set()
 
 	def time_set(self, arg=None):
-		self.parent.command_out_set(self.get_time(), tags=[["1.0", "end"]])
+		self.parent.notify(self.get_time(), tags=[["1.0", "end"]])
 
 	def blink(self, arg=None): #wonky as fuck
 		if (arg[1] == "on"):
@@ -185,7 +189,7 @@ class PARSER:
 				buffer[0]["insertofftime"] = 0
 
 		else:
-			self.parent.command_out_set(f"ERROR: Invalid argument {arg[1:]}", tags=[["1.0", "1.7"]])
+			self.parent.notify(f"ERROR: Invalid argument {arg[1:]}", tags=[["1.0", "1.7"]])
 			
 		self.parent.txt.focus_set()
 
@@ -197,13 +201,13 @@ class PARSER:
 			self.parent.split_mode = 1
 			try: self.parent.txt_1 = self.parent.file_handler.buffer_list[self.parent.txt.buffer_index+1][0]
 			except IndexError: self.parent.txt_1 = self.parent.file_handler.buffer_list[1][0]
-			self.parent.command_out_set("split vertically")
+			self.parent.notify("split vertically")
 
 		elif (arg[1] == "horizontal" or arg[1] == "h"):
 			self.parent.split_mode = 2
 			try: self.parent.txt_1 = self.parent.file_handler.buffer_list[self.parent.txt.buffer_index+1][0]
 			except IndexError: self.parent.txt_1 = self.parent.file_handler.buffer_list[1][0]
-			self.parent.command_out_set("split horizontally")
+			self.parent.notify("split horizontally")
 
 		self.parent.reposition_widgets()
 
@@ -221,12 +225,12 @@ class PARSER:
 	def sharpness_set(self, arg=None):
 		self.parent.sharpness = arg[1]
 		self.parent.tk.call("tk", "scaling", arg[1])
-		self.parent.command_out_set(f"sharpness: {arg[1]}")
+		self.parent.notify(f"sharpness: {arg[1]}")
 
 	def alpha_set(self, arg=None):
 		if (arg[1] == "default"): arg[1] = 90
 		self.parent.wm_attributes("-alpha", int(arg[1])/100)
-		self.parent.command_out_set(f"alpha: {arg[1]}")
+		self.parent.notify(f"alpha: {arg[1]}")
 
 	def convert(self, arg=None):
 		try:
@@ -237,9 +241,9 @@ class PARSER:
 			else:
 				decimal = int(arg[1], 10)
 
-			self.parent.command_out_set(f"DECIMAL: {decimal}, HEXADECIMAL: {hex(decimal)}, BINARY: {bin(decimal)}")
+			self.parent.notify(f"DECIMAL: {decimal}, HEXADECIMAL: {hex(decimal)}, BINARY: {bin(decimal)}")
 		except ValueError:
-			self.parent.command_out_set("Error: wrong format; please, add prefix (0x | 0b)")
+			self.parent.notify("Error: wrong format; please, add prefix (0x | 0b)")
 
 	def video_capture(self, arg=None):
 		if (arg[1] == "start"):
@@ -247,7 +251,7 @@ class PARSER:
 		
 		elif (arg[1] == "stop"):
 			self.parent.video_handler.video_record_stop(self.parent.process)
-			self.parent.command_out_set("screen capture terminated")
+			self.parent.notify("screen capture terminated")
 	
 	def screenshot(self, arg=None):
 		self.parent.video_handler.screenshot(self)
@@ -258,12 +262,7 @@ class PARSER:
 		
 	def buffer_list(self, arg=None):
 		if (not arg[1:]):
-			result = ""
-			for val in self.parent.file_handler.buffer_list[1:]:
-				result += f"{val[1].full_name}\n"
-				self.parent.command_out.change_ex(self.parent.command_out.buffer_load)
-			if (not result): result = "<None>"
-			self.parent.command_out_set(result)
+			self.parent.file_handler.list_buffer()
 		else:
 			self.parent.file_handler.load_buffer(arg[1:])
 
@@ -319,21 +318,21 @@ class PARSER:
 			
 		if (os.path.isdir(path)):
 			self.parent.file_handler.current_dir = path
-			self.parent.command_out_set(arg=f"current directory: {self.parent.file_handler.current_dir}")
+			self.parent.notify(arg=f"current directory: {self.parent.file_handler.current_dir}")
 		else:
-			self.parent.command_out_set(arg=f"Error: File/Directory not found")
+			self.parent.notify(arg=f"Error: File/Directory not found")
 
 	def new_directory(self, arg=None):
 		if (arg[1:]):
 			self.parent.file_handler.new_directory(filename=arg[1])
 		else:
-			self.parent.command_out_set("error: no name specified")
+			self.parent.notify("error: no name specified")
 
 	def delete_directory(self, arg=None):
 		if (arg[1:]):
 			self.parent.file_handler.delete_directory(filename=arg[1])
 		else:
-			self.parent.command_out_set("error: no name specified")
+			self.parent.notify("error: no name specified")
 
 	def theme(self, arg=None):
 		if (arg[1:]):
@@ -353,9 +352,9 @@ class PARSER:
 		if (arg[1:]):
 			self.parent.tab_size = int(arg[1])
 			self.parent.txt.configure_self()
-			self.parent.command_out_set(f"Current size: {self.parent.tab_size}")
+			self.parent.notify(f"Current size: {self.parent.tab_size}")
 		else:
-			self.parent.command_out_set(f"please, specify new size. Current size: {self.parent.tab_size}")
+			self.parent.notify(f"please, specify new size. Current size: {self.parent.tab_size}")
 
 	def replace_spaces(self, arg=None):
 		self.parent.txt.replace_x_with_y(" "*self.parent.tab_size, "\t")
@@ -394,12 +393,23 @@ class PARSER:
 	def remove_tag(self, arg=None):
 		index = self.parent.precise_index_sort(self.parent.txt.index("insert"), self.parent.selection_start_index)
 		self.parent.txt.tag_remove(arg[1], index[0], index[1])
-		
+
+	def lf(self, arg=None):
+		self.parent.convert_to_lf()
+
+	def crlf(self, arg=None):
+		self.parent.convert_to_crlf()
+
+	def toggle_buffer_tab_show(self, arg=None):
+		self.parent.buffer_tab_show = not self.parent.buffer_tab_show
+
+	def make(self, arg=None):
+		self.system_execute("sys make".split())
 
 	def command_not_found(self, arg=None):
 		res = ""
 		for c in arg:
 			res += c+" "
-		self.parent.command_out_set(f"command <{res[:-1]}> not found", [["1.0", "1.7"], [f"1.{8+len(res)+2}", "end"]])
+		self.parent.notify(f"command <{res[:-1]}> not found", [["1.0", "1.7"], [f"1.{8+len(res)+2}", "end"]])
 
 

@@ -121,6 +121,7 @@ class win(tkinter.Tk):
 		self.show_time = True
 		self.show_temperature = True
 		self.show_lineno = True
+		self.buffer_tab_show = True
 
 		self.suggest = True
 		
@@ -185,6 +186,7 @@ class win(tkinter.Tk):
 		self.bind("<Control-Escape>", self.win_destroy)
 		self.bind("<Configure>", self.reposition_widgets) #repositions the text widget to be placed correctly
 
+		self.reposition_widgets()
 		self.theme_load()
 		self.update_buffer()
 
@@ -219,7 +221,8 @@ class win(tkinter.Tk):
 		self.configure(bg=self.theme["window"]["bg"], cursor=None)
 
 		self.canvas.configure(bg=self.theme["window"]["bg"], bd=0, highlightthickness=0)
-		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], bd=0, highlightthickness=0)
+		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], relief="ridge", borderwidth=0, highlightthickness=0)
+		self.text_buffer_frame.configure(bg=self.theme["window"]["bg"], relief="flat", borderwidth=0, highlightthickness=0)
 
 		self.txt.configure_self()
 
@@ -255,18 +258,17 @@ class win(tkinter.Tk):
 		except Exception: pass
 
 	def reposition_widgets(self, arg=None):
+		btf_bd = self.buffer_tab_frame["bd"]+1
 		fs = self.widget_font.metrics("linespace")
-		top_bar_y = fs//1.5+3
-		txt_y = fs*2+2
+		top_bar_y = fs//1.5+4
+		txt_y = fs*2
 
 		# TODO(@bugy): make separate frame for topbar info and use pack instead of place for more customizability
-		self.canvas.place(x=0, y=0, relwidth=1, height=txt_y+3)
-		self.canvas.delete("all")
-		self.canvas.create_line(0, fs-1, self.winfo_width(), fs-1, fill=self.theme["window"]["fg"], smooth=1)
-		self.canvas.create_line(0, fs*2, self.winfo_width(), fs*2, fill=self.theme["window"]["fg"], smooth=1)
-
-		self.buffer_tab_frame.place(x=0, y=top_bar_y+3, relwidth=1, height=fs, anchor="nw")
-		self.text_buffer_frame.place(x=0, y=txt_y, relwidth=1, height=self.winfo_height()-txt_y, anchor="nw")
+		if (self.buffer_tab_show and len(self.file_handler.buffer_list) > 1):
+			self.buffer_tab_frame.place(x=0, y=top_bar_y+btf_bd, relwidth=1, height=fs+btf_bd+4, anchor="nw")
+			self.text_buffer_frame.place(x=0, y=txt_y+btf_bd, relwidth=1, height=self.winfo_height()-txt_y-btf_bd, anchor="nw")
+		else:
+			self.text_buffer_frame.place(x=0, y=top_bar_y, relwidth=1, height=self.winfo_height()-top_bar_y, anchor="nw")
 		
 		if (self.command_entry.winfo_viewable()): self.command_entry_place()
 		if (self.command_out.winfo_viewable()): self.command_out_set(resize=True)
@@ -276,10 +278,9 @@ class win(tkinter.Tk):
 		if (self.show_speed): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
 		self.key_label.place(x=0, y=0, height=top_bar_y, anchor="nw")
 
-		# self.txt.place(x=0, y=0, relwidth=1, relheight=1)
 		if (self.split_mode == 0): self.txt.place(x=0, y=0, relwidth=1, relheight=1) # self.txt.pack(fill="both", expand=True)
 		elif (self.split_mode == 1): self.txt.place(x=0, y=0, relwidth=0.5, relheight=1); self.txt_1.place(relx=0.5, rely=0, relwidth=0.5, relheight=1)
-		# elif (self.split_mode == 2): self.txt.place(x=2,y=txt_y, width=self.winfo_width()-2, height=self.winfo_height()//2-50, anchor="nw"); self.txt_1.place(x=2,y=self.winfo_height()//2, width=self.winfo_width()-2, height=self.winfo_height()//2, anchor="nw")
+		elif (self.split_mode == 2): self.txt.place(x=0, y=0, relwidth=1, relheight=0.5); self.txt_1.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)
 
 
 	def flashy_loading_bar(self, arg=None):
@@ -451,7 +452,7 @@ class win(tkinter.Tk):
 	def command_entry_place(self, arg=None):
 		""" Shows command entry widget """
 		h = self.command_entry.font.metrics("linespace")
-		if (self.orientate == "down"): self.command_entry.place(x=-1, y=self.text_buffer_frame.winfo_height()-h-5, width=self.winfo_width()+2, height=h+5, anchor="nw")
+		if (self.orientate == "down"): self.command_entry.place(x=0, y=self.text_buffer_frame.winfo_height()-h-7, relwidth=1, height=h+7, anchor="nw")
 		elif (self.orientate == "up"): self.command_entry.place(x=-1, y=0, width=self.winfo_width()+2, height=h+5, anchor="nw")
 		
 		self.command_out.place_forget()
@@ -470,32 +471,35 @@ class win(tkinter.Tk):
 	def command_out_set(self, arg=None, tags=None, resize=False, focus=True, justify="left"):
 		# honestly this is a really shitty function, but it works somehow, so you shouldn't question it, if you poke around with it it's most probably going to break
 		""" sets the text in command output """
-		
+
 		if (not resize):
 			self.command_out.stdout(arg=arg, tags=tags, justify=justify)
 
 		h = ((self.command_out.font.metrics("linespace")+self.command_out.cget("spacing3"))*len(self.command_out.arg.split("\n")))
-		
-		if (len(self.command_out.arg.split("\n")) == 1):
-			if (self.focus_get() == self.txt and focus): self.txt.focus_set()
 
-		if (len(self.command_out.arg.split("\n")) >= 3):
-			self.command_out.focus_set()
-			self.command_out.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
+		if (len(self.command_out.arg.split("\n")) >= 1):
+			if (focus): self.txt.focus_set()
+			else:
+				self.command_out.focus_set()
+				self.command_out.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
 	
 		if (len(self.command_out.arg.split("\n")) >= 10):
-			# h = (self.font.metrics("linespace")+self.command_out.cget("spacing3")*self.winfo_height()//10)
+			self.command_out.focus_set()
+			self.command_out.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
 			h = (self.command_out.font.metrics("linespace")+self.command_out.cget("spacing3")*self.winfo_height()//10)
 
-		# self.command_out.configure(padx=self.command_out.winfo_width()//2-self.command_out.font.measure(self.command_out.arg+" ")//2) # shitty centering
 		self.command_out.tkraise()
 		if (self.orientate == "down"): self.command_out.place(x=0, y=self.text_buffer_frame.winfo_height(), width=self.winfo_width(), height=h, anchor="sw")
 		elif (self.orientate == "up"): self.command_out.place(x=0, y=0, width=self.winfo_width(), height=h, anchor="nw")
 
 		return "break"
 
+	def notify(self, arg=None, tags=None, justify="left"):
+		self.command_out_set(arg, tags, justify=justify)
+
 	def show_last_output(self, arg=None):
 		self.command_out_set(arg=None, tags=None)
+		return "break"
 
 	def cmmand(self, arg):
 		# gets input from the command_entry widget, checks if there's any actual input or if it's an empty string

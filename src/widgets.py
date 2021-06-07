@@ -25,7 +25,7 @@ else:
 	WINDOW_MARGIN = 24
 	LINE_END = "\n"
 
-def bind_keys_from_config(widget, filename="keybinds_conf.json"):
+def bind_keys_from_config(widget, filename=f"{os.path.dirname(__file__)}/keybinds_conf.json"):
 	keybinds = json.load(open(filename, "r"))
 	widget_name = type(widget).__name__
 	for val in keybinds[widget_name]["parent"].items():
@@ -59,7 +59,7 @@ class BUFFER_TAB(tkinter.Label):
 
 		self.bind("<Button-1>", self.load_buffer)
 		# self.bind("<Enter>", lambda arg: self.hover_info.place(x=self.winfo_x(), y=self.winfo_y()+self.winfo_height()), print("aa"))
-		self.bind("<Enter>", lambda arg: self.parent.command_out_set(self.full_name))
+		self.bind("<Enter>", lambda arg: self.parent.notify(self.full_name))
 		# self.bind("<Leave>", lambda arg: self.hover_info.place_forget())
 		self.bind("<Button-3>", lambda arg: self.menu.tk_popup(self.winfo_rootx(), self.winfo_rooty()+self.winfo_height()))
 		# self.bind("<FocusIn>", lambda arg: self.parent.file_handler.load_buffer(buffer_name=self.name))
@@ -74,7 +74,7 @@ class BUFFER_TAB(tkinter.Label):
 		# self.hover_info.configure(text=self.full_name, font=self.font, fg="#FFFFFF", bg=self.parent.theme["window"]["bg"], bd=1)
 
 	def reposition(self, last_buffer_tab=None):
-		self.pack(side="left")
+		self.pack(fill="both", side="left")
 		self.tkraise()
 
 	def unplace(self):
@@ -163,7 +163,7 @@ class BUFFER(tkinter.Frame):
 			buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
 		
 		self.parent.file_handler.load_buffer(buffer_index=buffer_tab_index)
-		self.parent.command_out_set(f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]])
+		self.parent.notify(f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]])
 
 		return "break"
 
@@ -213,7 +213,8 @@ class GRAPHICAL_BUFFER(BUFFER):
 class DEFAULT_TEXT_BUFFER(tkinter.Text):
 	def __init__(self, parent, name):
 		super().__init__(parent.text_buffer_frame)
-		
+
+		self["padx"] = 2
 		self.parent = parent
 		self.full_name = name
 		self.name = os.path.basename(name)
@@ -380,7 +381,7 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 		 insertborderwidth=0, insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
-		 selectborderwidth=0, borderwidth=1, relief="raised", tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"), wrap="word", exportselection=True,
+		 selectborderwidth=0, borderwidth=2, relief="ridge", tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"), wrap="word", exportselection=True,
 		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
 
 	def on_key(self, arg=None) -> None:
@@ -472,7 +473,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		elif (self.mode == "<replace>"):
 			self.find_mode_set()
 			
-		self.parent.command_out_set(f"{self.mode}", focus=False)
+		self.parent.notify(f"{self.mode}")
 
 		return "break"
 
@@ -541,17 +542,17 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def replace(self, arg=None):
 		result_count = len(self.found)
 		match = self.parent.txt.get(self.found[self.found_index][0], self.found[self.found_index][1])
-		self.parent.command_out_set(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}", focus=False)
+		self.parent.notify(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
 		start, end = self.found[self.found_index][0], self.found[self.found_index][1]
 		self.parent.txt.delete(start, end)
 		self.parent.txt.insert(start, self.get("1.0", "end-1c"))
 		# self.parent.highlight_chunk(start_index=start, stop_index=end)
-		self.parent.txt.highlighter.highlight(line_no=self.parent.convert_line_index("int", start))
+		self.parent.txt.highlighter.highlight(line_no=self.parent.txt.convert_line_index("int", start))
 		f = self.found.pop(self.found_index)
 		
 		# fixes offset in line caused by replacing previous matches in line
 		# I just hope it doesn't create any additional bugs, cuz I am too lazy to test ;) too bad
-		if (match := self.find_match(keyword=self.find_query, start=f"{f[0]} wordend", end=f"{f[0]} lineend", regexp=self.regexp)):
+		if (match := self.find_match(keyword=self.find_query, start=f"{f[0]} wordstart", end=f"{f[0]} lineend", regexp=self.regexp)):
 			self.found[self.found_index] = match
 
 		self.scroll_through_found()
@@ -568,7 +569,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def scroll_through_found(self, arg=None):
 		result_count = len(self.found)
 		offset = 0
-		if (result_count == 0): self.parent.command_out_set(f"found none", focus=False); return "break"
+		if (result_count == 0): self.parent.notify(f"found none"); return "break"
 
 		if (arg):
 			self.parent.command_out.place_forget()
@@ -597,7 +598,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.parent.txt.tag_add("underline", self.found[self.found_index][0], self.found[self.found_index][1])
 		
 		match = self.parent.txt.get(self.found[self.found_index][0], self.found[self.found_index][1])		
-		self.parent.command_out_set(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}", focus=False)
+		self.parent.notify(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
 
 		return "break"
 
@@ -684,7 +685,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.configure(font=font.Font(family=self.parent.font_family[0], size=self.font_size,
 		 weight=self.font_weight), bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
-		 spacing3=5, cursor="left_ptr", highlightthickness=0, wrap="word") # cursor="trek"
+		 spacing3=5, cursor="left_ptr", relief="ridge", borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
 
 	def add_input(self, arg):
 		if (arg.keysym == "BackSpace"):
@@ -827,7 +828,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 				match = re.search(r"[0-9]+", line)
 
 			if (match):
-				index = self.parent.convert_line_index("float", match)
+				index = self.parent.txt.convert_line_index("float", match)
 				self.parent.txt.mark_set("insert", index)
 				self.parent.txt.see("insert")
 		
@@ -848,6 +849,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 	def buffer_load(self, arg=None):
 		arg=arg[0]
 		self.parent.file_handler.load_buffer(buffer_name=arg)
+		self.parent.command_out.unplace()
 
 	def task_set(self, arg=None):
 		# how the fuck am I supposed to handle the index bullshit???
@@ -896,7 +898,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		 spacing1=0, insertborderwidth=0, insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
-		 selectborderwidth=0, borderwidth=1, relief="flat", tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"), wrap=self["wrap"], exportselection=True,
+		 selectborderwidth=0, borderwidth=2, relief="ridge", tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"), wrap=self["wrap"], exportselection=True,
 		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
 
 	def configure_wrap(self, arg=None) -> None:
@@ -1265,7 +1267,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		return [len(t.split(" ")), len(t)/5]
 
 	def get_selection_count(self, arg=None):
-		self.parent.command_out_set(f"len: {len(self.selection_get())}")
+		self.parent.notify(f"len: {len(self.selection_get())}")
 		return "break"
 
 	def change_name(self, name) -> None:
@@ -1398,7 +1400,6 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
 		
 		self.parent.file_handler.load_buffer(buffer_index=buffer_tab_index)
-		self.parent.command_out_set(f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]])
 
 		return "break"
 
@@ -1410,6 +1411,10 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.switch_buffer()
 		return "break"
 
+	def list_buffer(self, arg=None):
+		self.parent.file_handler.list_buffer()
+		return "break"
+
 	def run_subprocess(self, argv=None, make=False) -> str:
 		if (make):
 			argv = self.make_argv.split(" ")
@@ -1419,12 +1424,12 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			out = process.stdout.read().decode("UTF-8")
 
-			self.parent.command_out_set(out, focus=False)
+			self.parent.command_out_set(out)
 			print(out)
 			
 		threading.Thread(target=run, daemon=True).start()
 		return "break"
 
-	def run_make(self):
+	def run_make(self, arg=None):
 		return self.run_subprocess(make=True)
 
