@@ -128,9 +128,9 @@ class FILE_HANDLER(object):
 		if (type(self.parent.txt) == "TEXT"): self.parent.txt.font_size_set()
 		self.parent.theme_load()
 		self.buffer_tab.focus_highlight()
-		self.parent.txt.focus_set()
 		self.parent.reposition_widgets()
-		self.parent.notify(f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]])
+		self.parent.command_out_set(arg=f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]], focus=True)
+		self.parent.txt.focus_set()
 		
 		if (arg): return "break"
 

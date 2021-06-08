@@ -16,7 +16,7 @@ class highlighter(object):
 		self.lang = "NaN"
 		self.supported_languagues = [
 			"NaN", "py", "cc", "hh", "cpp", "hpp", "c", "h", "txt", "html", "htm", "java", "jsp", "class", "css", "go",
-			"sh", "diary", "bat"
+			"sh", "diary", "bat", "json"
 		]
 
 		self.command_keywords = list(parent.commands.keys())
@@ -241,6 +241,7 @@ class highlighter(object):
 			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": "make"},
 			"sh": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#", "make_argv": f"./{self.txt.full_name}"},
 			"bat|cmd": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "::", "make_argv": f"./{self.txt.full_name}"},
+			"json": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "//", "make_argv": ""},
 			"diary": {"keywords": ["Hello"], "numerical_keywords": [], "logical_keywords": [], "highlight": self.diary_highlight, "comment_sign": "~$", "make_argv": ""},
 		}
 
@@ -284,7 +285,7 @@ class highlighter(object):
 					if (re.match(token, m)):
 						tt += m+":function | "
 
-				self.parent.command_out_set(tt)
+				self.parent.notify(tt)
 
 			else:
 				token = ""
@@ -699,6 +700,20 @@ class highlighter(object):
 				index = f"{line_no}.{i}"
 				self.txt.tag_add("comments", index, line_end_index)
 				break
+
+			if (self.quote_regex.match(current_char)):
+				index = f"{line_no}.{i}"
+				self.txt.tag_add("quotes", index)
+				if (self.countingQuomarks):
+					self.countingQuomarks = False
+				else:
+					self.countingQuomarks = True
+				# self.countingQuomarks = not self.countingQuomarks
+
+			elif (self.countingQuomarks):
+				index = f"{line_no}.{i}"
+				self.txt.tag_add("quotes", index)
+				continue
 
 			elif (self.abc_regex.match(current_char)):
 				self.pattern += current_char

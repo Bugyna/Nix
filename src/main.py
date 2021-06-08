@@ -189,6 +189,8 @@ class win(tkinter.Tk):
 		self.reposition_widgets()
 		self.theme_load()
 		self.update_buffer()
+		self.update_win()
+		self.command_out.unplace() # weird fucking bug making the output widget appear for basically no reason
 
 		if (len(sys.argv) > 1): [self.file_handler.load_file(filename=arg) for arg in sys.argv[1:]]
 		
@@ -241,7 +243,7 @@ class win(tkinter.Tk):
 			buffer_tab.configure_self()
 
 		if (self.file_handler.buffer_tab): self.file_handler.buffer_tab.focus_highlight()
-
+		
 		self.update_win()
 
 	def font_set(self, arg=None, family="Noto Mono", retro=False):
@@ -468,36 +470,37 @@ class win(tkinter.Tk):
 
 		return "break"
 
-	def command_out_set(self, arg=None, tags=None, resize=False, focus=True, justify="left"):
+	def command_out_set(self, arg=None, tags=None, resize=False, focus=False, justify="left"):
 		# honestly this is a really shitty function, but it works somehow, so you shouldn't question it, if you poke around with it it's most probably going to break
 		""" sets the text in command output """
-
-		if (not resize):
+		if (resize and self.command_out.arg == None):
+			return
+		elif (not resize):
 			self.command_out.stdout(arg=arg, tags=tags, justify=justify)
-
-		h = ((self.command_out.font.metrics("linespace")+self.command_out.cget("spacing3"))*len(self.command_out.arg.split("\n")))
-
-		if (len(self.command_out.arg.split("\n")) >= 1):
-			if (focus): self.txt.focus_set()
-			else:
+			if (focus):
+				self.txt.focus_set()
+			elif (self.focus_get() != self.find_entry): # lazy workaround
 				self.command_out.focus_set()
 				self.command_out.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
-	
-		if (len(self.command_out.arg.split("\n")) >= 10):
-			self.command_out.focus_set()
-			self.command_out.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
-			h = (self.command_out.font.metrics("linespace")+self.command_out.cget("spacing3")*self.winfo_height()//10)
+
+		lines = len(self.command_out.arg.split("\n"))
+		font_size = (self.command_out.font.metrics("linespace")+self.command_out.cget("spacing3"))
+
+		if (lines < 10):
+			h = font_size*lines
+		else:
+			h = font_size*((self.winfo_height()//2)/font_size)
 
 		self.command_out.tkraise()
 		if (self.orientate == "down"): self.command_out.place(x=0, y=self.text_buffer_frame.winfo_height(), width=self.winfo_width(), height=h, anchor="sw")
 		elif (self.orientate == "up"): self.command_out.place(x=0, y=0, width=self.winfo_width(), height=h, anchor="nw")
-
+		
 		return "break"
 
 	def notify(self, arg=None, tags=None, justify="left"):
-		self.command_out_set(arg, tags, justify=justify)
+		self.command_out_set(arg=arg, tags=tags, focus=True, justify=justify)
 
-	def show_last_output(self, arg=None):
+	def show_last_output(self, arg=None): 
 		self.command_out_set(arg=None, tags=None)
 		return "break"
 

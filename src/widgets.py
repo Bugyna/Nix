@@ -85,7 +85,7 @@ class BUFFER_TAB(tkinter.Label):
 		self.configure(text=extra_char+self.name+" ")
 
 	def load_buffer(self, arg=None):
-		self.focus_set()
+		
 		self.parent.file_handler.load_buffer(buffer_name=self.full_name)
 
 	def focus_highlight(self):
@@ -473,7 +473,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		elif (self.mode == "<replace>"):
 			self.find_mode_set()
 			
-		self.parent.notify(f"{self.mode}")
+		self.parent.command_out_set(f"{self.mode}")
+		
 
 		return "break"
 
@@ -542,7 +543,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def replace(self, arg=None):
 		result_count = len(self.found)
 		match = self.parent.txt.get(self.found[self.found_index][0], self.found[self.found_index][1])
-		self.parent.notify(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
+		self.parent.command_out_set(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
+				
 		start, end = self.found[self.found_index][0], self.found[self.found_index][1]
 		self.parent.txt.delete(start, end)
 		self.parent.txt.insert(start, self.get("1.0", "end-1c"))
@@ -569,7 +571,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def scroll_through_found(self, arg=None):
 		result_count = len(self.found)
 		offset = 0
-		if (result_count == 0): self.parent.notify(f"found none"); return "break"
+		if (result_count == 0): self.parent.command_out_set(f"found none"); return "break"
 
 		if (arg):
 			self.parent.command_out.place_forget()
@@ -598,8 +600,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.parent.txt.tag_add("underline", self.found[self.found_index][0], self.found[self.found_index][1])
 		
 		match = self.parent.txt.get(self.found[self.found_index][0], self.found[self.found_index][1])		
-		self.parent.notify(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
-
+		self.parent.command_out_set(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
+		
 		return "break"
 
 	def scroll_through_find_history(self, arg=None):
@@ -728,7 +730,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 	def scroll(self, arg):
 		key = arg.keysym
-		self.configure(state="normal")
+		self["state"] = "normal"
+		
 		if (key == "Up"):
 			self.mark_set("insert", "insert linestart-1c")
 			self.see("insert")
@@ -747,14 +750,14 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		self.tag_remove("command_out_insert_bg", "1.0", "end")
 		self.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
-		self.configure(state="disabled")
+		self["state"] = "disabled"
 
 		return "break"
 		
 	def stdout(self, arg=None, tags=None, justify="left"):
 		if (not arg): arg = self.arg
 		if (not tags): tags = self.tags
-		self.configure(state="normal")
+		self["state"] = "normal"
 		self.input = ""
 		
 		self.show_input()
@@ -765,7 +768,6 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.delete("1.0", "end")
 		self.insert("1.0", self.arg)
 		self.mark_set("insert", "1.0")
-
 		self.tag_add(justify, "1.0", "end")
 
 		if (tags):
@@ -776,7 +778,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
 
-		self.configure(state="disabled")
+		self["state"] = "disabled"
 
 	def modified_stdout(self, arg=None, tags=None, justify="left"):
 		self.configure(state="normal")
@@ -791,6 +793,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 				else: self.tag_add("keywords", tag[0], tag[1])
 
 			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
+
+		self.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
 
 		self.configure(state="disabled")
 
@@ -849,7 +853,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 	def buffer_load(self, arg=None):
 		arg=arg[0]
 		self.parent.file_handler.load_buffer(buffer_name=arg)
-		self.parent.command_out.unplace()
+		self.unplace()
 
 	def task_set(self, arg=None):
 		# how the fuck am I supposed to handle the index bullshit???
