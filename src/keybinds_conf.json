@@ -1,4 +1,120 @@
 {
+	"WIN":
+	{
+		"parent":
+		{
+			
+		},
+		
+		"self":
+		{
+			"<Control-Escape>" : "win_destroy",
+			"<Configure>" : "reposition_widgets"
+		}
+	},
+
+	"DEFAULT_TEXT_BUFFER":
+	{
+		"parent":
+		{
+			"<F11>" : "set_fullscreen",
+			"<Control-space>" : "command_entry_place",
+			"<Alt-Right>" : "win_expand",
+			"<Alt-Left>" : "win_expand",
+			"<Alt-Up>" : "win_expand",
+			"<Alt-Down>" : "win_expand",
+			"<Alt-Shift-Right>" : "win_shrink",
+			"<Alt-Shift-Left>" : "win_shrink",
+			"<Alt-Shift-Up>" : "win_shrink",
+			"<Alt-Shift-Down>" : "win_shrink"
+		},
+		
+		"self":
+		{
+			"<Control-period>" : "font_size_set",
+			"<Control-comma>" : "font_size_set",
+			"<Control-MouseWheel>" : "font_size_set",
+			"<Control-Button-4>" : "font_size_set",
+			"<Control-Button-5>" : "font_size_set",
+			"<Insert>" : "cursor_mode_set",
+	
+			"<F1>" : "bell",
+			"<F2>" : "insert_time"
+		}
+	},
+
+	"COMMAND_ENTRY":
+	{
+		"parent":
+		{
+			"<Return>" : "cmmand",
+			"<KP_Enter>" : "cmmand"
+		},
+		
+		"self":
+		{
+			"<Shift-Return>" : "insert_newline",
+			"<Shift-KP_Enter>" : "insert_newline",
+			"<Up>" : "history",
+			"<Down>" : "history",
+			"<Escape>" : "unplace",
+			"<KeyRelease>" : "on_key"
+		}
+	},
+
+	"FIND_ENTRY":
+	{
+		"parent":
+		{
+			"<Configure>" : "find_place"
+		},
+		
+		"self":
+		{
+			"<Return>" : "find",
+			"<KP_Enter>" : "find",
+			"<Up>" : "scroll_through_found",
+			"<Down>" : "scroll_through_found",
+			"<Shift-Up>" : "scroll_through_find_history",
+			"<Shift-Down>" : "scroll_through_find_history",
+			"<Escape>" : "unplace",
+	
+			"<Control-R>" : "mode_change",
+			"<Control-r>" : "mode_change",
+			"<Control-F>" : "mode_change",
+			"<Control-f>" : "mode_change",
+			"<Control-A>R" : "replace_all",
+			"<Control-a>r" : "replace_all"
+		}
+	},
+
+	"COMMAND_OUT":
+	{
+		"parent":
+		{
+			
+		},
+		
+		"self":
+		{
+			"<KeyPress>" : "add_input",
+			"<Down>" : "scroll",
+			"<Up>" : "scroll",
+			"<Prior>" : "scroll",
+			"<Next>" : "scroll",
+			
+			"<Escape>" : "unplace",
+	
+			"<Control-b>w" : "unplace",
+			"<Control-B>W" : "unplace",
+			"<Button-1>" : "focus_self",
+	
+			"<Control_L>" : "add_selection",
+			"<Return>" : "use_selection",
+			"<KP_Enter>" : "use_selection"
+		}
+	},
+			
 	"TEXT" :
 	{
 		"parent":
@@ -30,11 +146,14 @@
 			"<Control-F>" : "find_place",
 			"<Control-f>" : "find_place",
 			"<Control-G>" : "nt_place",
-			"<Control-g>" : "nt_place"
+			"<Control-g>" : "nt_place",
+			"<Control-bar>": "split"
 		},
 		
 		"self" :
 		{
+
+			"<Escape>": "focus_self",
 			"<Button-1>" : "mouse_left",
 			"<B1-Motion>" : "mouse_left_motion",
 			

@@ -19,19 +19,25 @@ if (platform == "Windows"):
 	ctypes.windll.shcore.SetProcessDpiAwareness(True)
 	CONTROL_KEYSYM = 262156
 	WINDOW_MARGIN = 0
-	LINE_END = "\r\n"
 else:
 	CONTROL_KEYSYM = None
 	WINDOW_MARGIN = 24
-	LINE_END = "\n"
 
 def bind_keys_from_config(widget, filename=f"{os.path.dirname(__file__)}/keybinds_conf.json"):
 	keybinds = json.load(open(filename, "r"))
-	widget_name = type(widget).__name__
-	for val in keybinds[widget_name]["parent"].items():
-		widget.bind(val[0], getattr(widget.parent, val[1]))
-	for val in keybinds[widget_name]["self"].items():
-		widget.bind(val[0], getattr(widget, val[1]))
+	widget_name = [type(widget), *type(widget).__bases__]
+
+	for name in widget_name:
+		name = name.__name__
+		try: keybinds[name]
+		except Exception: continue
+		
+		for val in keybinds[name]["parent"].items():
+			try: widget.bind(val[0], getattr(widget.parent, val[1]))
+			except Exception as e: print(e)
+		for val in keybinds[name]["self"].items():
+			try: widget.bind(val[0], getattr(widget, val[1]))
+			except Exception as e: print(e)
 
 class BUFFER_TAB(tkinter.Label):
 	def __init__(self, name: str, parent):
@@ -85,7 +91,6 @@ class BUFFER_TAB(tkinter.Label):
 		self.configure(text=extra_char+self.name+" ")
 
 	def load_buffer(self, arg=None):
-		
 		self.parent.file_handler.load_buffer(buffer_name=self.full_name)
 
 	def focus_highlight(self):
@@ -212,7 +217,7 @@ class GRAPHICAL_BUFFER(BUFFER):
 
 class DEFAULT_TEXT_BUFFER(tkinter.Text):
 	def __init__(self, parent, name):
-		super().__init__(parent.text_buffer_frame)
+		super().__init__(parent.buffer_frame)
 
 		self["padx"] = 2
 		self.parent = parent
@@ -240,29 +245,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.tag_configure("right", justify="right")
 		self.tag_configure("error_bg", background="#990088") # for now it's here
 
-		self.bind("<Control-period>", self.font_size_set)
-		self.bind("<Control-comma>", self.font_size_set)
-		self.bind("<Control-MouseWheel>", self.font_size_set)
-		self.bind("<Control-Button-4>", self.font_size_set)
-		self.bind("<Control-Button-5>", self.font_size_set)
-		
-		self.bind("<Insert>", self.cursor_mode_set)
-
-		self.bind("<Control-space>", self.parent.command_entry_place)
-		self.bind("<Control-Alt-space>", lambda arg: self.parent.command_out_set(resize=True))
-		self.bind("<Alt-Right>", self.parent.win_expand)
-		self.bind("<Alt-Left>", self.parent.win_expand)
-		self.bind("<Alt-Up>", self.parent.win_expand)
-		self.bind("<Alt-Down>", self.parent.win_expand)
-		self.bind("<Alt-Shift-Right>", self.parent.win_shrink)
-		self.bind("<Alt-Shift-Left>", self.parent.win_shrink)
-		self.bind("<Alt-Shift-Up>", self.parent.win_shrink)
-		self.bind("<Alt-Shift-Down>", self.parent.win_shrink)
-
-		self.bind("<F1>", lambda arg: self.bell())
-		self.bind("<F2>", lambda arg: self.insert("insert", self.get_time()))
-		self.bind("<F3>", lambda arg: self.parent.video_handler.screenshot())
-		self.bind("<F11>", self.parent.set_fullscreen)
+		bind_keys_from_config(self)
 
 	def remove_all_tags(self, index1, index2):
 		self.tag_remove("overstrike", index1, index2)
@@ -276,6 +259,9 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.place_forget()
 		self.parent.txt.focus_set()
 		return "break"
+	
+	def focus_self(self, arg=None):
+		self.focus_set()
 
 	def font_size_set(self, arg=None):
 		""" Changes font size and reconfigures widget accordingly """
@@ -295,7 +281,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.font = font.Font(family=self.parent.font_family[0], size=self.font_size, weight=self.font_weight)
 		self.font_bold = font.Font(family=self.parent.font_family[0], size=self.font_size, weight="bold")
 
-		self.configure(font=self.font, tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"))
+		self.configure(font=self.font, tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"))
 		self.see("insert")
 		self.parent.theme_make()
 		return "break"
@@ -353,6 +339,9 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 	def cursor_coords_get(self, arg=None):
 		return self.parent.txt.bbox('insert')
 
+	def insert_time(self, arg=None):
+		self.insert("insert", self.get_time())
+
 class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def __init__(self, parent, name="COMMAND_ENTRY"):
 		super().__init__(parent, name)
@@ -364,16 +353,9 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.font_bold = self.parent.smaller_font_bold
 		
 		self.input_history = [""]
-		self.input_history_index = 0		
-
-		self.bind("<Return>", self.parent.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
-		self.bind("<Shift-Return>", self.insert_newline)
-		self.bind("<KP_Enter>", self.parent.cmmand) #if you press enter in command line it executes the command and switches you back to text widget
-		self.bind("<Shift-KP_Enter>", self.insert_newline)
-		self.bind("<Up>", self.history) # lets you scroll through commands you have already used
-		self.bind("<Down>", self.history)
-		self.bind("<Escape>", self.unplace)
-		self.bind("<KeyRelease>", self.on_key)
+		self.input_history_index = 0
+		
+		bind_keys_from_config(self)
 
 	def configure_self(self, arg=None):
 		self.font_size_set()
@@ -381,7 +363,7 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 		 insertborderwidth=0, insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
-		 selectborderwidth=0, borderwidth=2, relief="ridge", tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"), wrap="word", exportselection=True,
+		 selectborderwidth=0, borderwidth=2, relief="ridge", tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap="word", exportselection=True,
 		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
 
 	def on_key(self, arg=None) -> None:
@@ -433,28 +415,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.found_index = 0
 
 		self.mode = "<search>"
-
-		self.bind("<Return>", self.find)
-		self.bind("<KP_Enter>", self.find)
-		self.bind("<Up>", self.scroll_through_found)
-		self.bind("<Down>", self.scroll_through_found)
-		self.bind("<Shift-Up>", self.scroll_through_find_history)
-		self.bind("<Shift-Down>", self.scroll_through_find_history)
-		self.bind("<Escape>", self.unplace)
-
-		self.bind("<Control-R>", self.mode_change)
-		self.bind("<Control-r>", self.mode_change)
-		self.bind("<Control-F>", self.mode_change)
-		self.bind("<Control-f>", self.mode_change)
-		self.bind("<Control-A>R", self.replace_all)
-		self.bind("<Control-a>r", self.replace_all)
-
-		self.bind("<Control-Shift-Z>", self.parent.undo)
-		self.bind("<Control-Shift-z>", self.parent.undo)
-		self.bind("<Control-Shift-Y>", self.parent.redo)
-		self.bind("<Control-Shift-y>", self.parent.redo)
 		
-		self.bind("<Configure>", self.parent.find_place)
+		bind_keys_from_config(self)
 
 	def configure_self(self, arg=None) -> None:
 		self.font_size_set()
@@ -462,7 +424,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		 spacing1=0, insertborderwidth=0, insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
-		 selectborderwidth=0, borderwidth=1, relief="flat", tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"), wrap="none", exportselection=True,
+		 selectborderwidth=0, borderwidth=1, relief="flat", tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap="none", exportselection=True,
 		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
 
 	def mode_change(self, arg=None):
@@ -480,7 +442,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 
 	def find_mode_set(self, arg=None):
 		self.mode = "<search>"
-		if (self.get("1.0") not in ["?", "/"]): self.insert("1.0", "?")
+		if (self.get("1.0") not in ["?", "/"]): self.insert("1.0", self.parent.conf["default_find_mode"])
 		self.bind("<Return>", self.find)
 		self.bind("<KP_Enter>", self.find)
 		self.unbind("<Control-Z>")
@@ -490,8 +452,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.mode = "<replace>"
 		self.bind("<Return>", self.replace)
 		self.bind("<KP_Enter>", self.replace)
-		self.bind("<Control-Z>", self.parent.undo)
-		self.bind("<Control-z>", self.parent.undo)
+		self.bind("<Control-Z>", self.parent.txt.undo)
+		self.bind("<Control-z>", self.parent.txt.undo)
 
 	def find_match(self, keyword, start="match_end", end="end", regexp=False, count=None):
 		if (count == None):
@@ -509,7 +471,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 			elif (regexp := self.get("1.0", "1.1") == "/"):
 				self.regexp = True
 			else:
-				self.regexp = False
+				if (self.parent.defualt_findself == "?"): self.regexp = False
+				else: self.regexp = True
 				keyword = self.get("1.0", "end-1c")
 			
 		if (not keyword): keyword = self.get("1.1", "end-1c")
@@ -663,24 +626,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.input_label.configure(bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"])
 		self.input_label.pack()
 
-		self.bind("<KeyPress>", self.add_input)
-		self.bind("<Down>", self.scroll)
-		self.bind("<Up>", self.scroll)
-		self.bind("<Prior>", self.scroll)
-		self.bind("<Next>", self.scroll)
-		
-		self.bind("<Escape>", self.unplace)
-		# self.bind("<Control-w>", self.parent.win_destroy)
-		# self.bind("<Control-W>", self.parent.win_destroy)
-		self.bind("<Control-b>w", self.unplace)
-		self.bind("<Control-B>W", self.unplace)
-		self.bind("<Button-1>", lambda arg: self.focus_set())
-
-		self.bind("<Control_L>", self.add_selection)
-		self.bind("<Return>", self.use_selection)
-		self.bind("<Shift-Return>", lambda arg: self.use_selection())
-		self.bind("<KP_Enter>", self.use_selection)
-		self.bind("<Shift-KP_Enter>", lambda arg: self.use_selection())
+		bind_keys_from_config(self)
 
 	def configure_self(self, arg=None):
 		self.font_size_set()
@@ -902,7 +848,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		 spacing1=0, insertborderwidth=0, insertwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
-		 selectborderwidth=0, borderwidth=2, relief="ridge", tabs=(f"{self.font.measure(' ' * self.parent.tab_size)}"), wrap=self["wrap"], exportselection=True,
+		 selectborderwidth=0, borderwidth=2, relief="ridge", tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap=self["wrap"], exportselection=True,
 		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
 
 	def configure_wrap(self, arg=None) -> None:
@@ -1226,7 +1172,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		""" gets the amount of tabs in the last line and puts them at the start of a new one """
 		#this functions gets called everytime Enter/Return has been pressed
 		self.see(self.convert_line_index("float")+3)
-		offset = LINE_END
+		offset = self.parent.conf["line_end"]
 		
 		if (match := re.search(r"^\t+", self.current_line)):
 			offset += match.group()
@@ -1385,25 +1331,44 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.highlighter.set_languague(arg)
 
 	def unplace(self):
+		# self.pack_forget()
 		self.place_forget()
 
 	def switch_buffer(self, arg=None, next = True) -> str:
 		# if (self.parent.split_mode != 0):
 			# return "break"
+
+		if (self.parent.split_mode == "nosplit" and len(self.parent.file_handler.buffer_list) > 2):
+			if (next):
+				buffer_tab_index = self.parent.file_handler.buffer_tab_index+1
+	
+			elif (not next):
+				buffer_tab_index = self.parent.file_handler.buffer_tab_index-1
+	
+			if (buffer_tab_index >= len(self.parent.file_handler.buffer_list)):
+				buffer_tab_index = 1
+	
+			elif (buffer_tab_index < 1):
+				buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
 			
-		if (next):
-			buffer_tab_index = self.parent.file_handler.buffer_tab_index+1
+			self.parent.file_handler.load_buffer(buffer_index=buffer_tab_index)
+		else:
+			if (next):
+				self.parent.buffer_render_index = self.parent.buffer_render_index+1
+	
+			elif (not next):
+				self.parent.buffer_render_index = self.parent.buffer_render_index-1
+	
+			if (self.parent.buffer_render_index >= len(self.parent.buffer_render_list)):
+				self.parent.buffer_render_index = 0
+	
+			elif (self.parent.buffer_render_index < 0):
+				self.parent.buffer_render_index = len(self.parent.buffer_render_list)-1
 
-		elif (not next):
-			buffer_tab_index = self.parent.file_handler.buffer_tab_index-1
-
-		if (buffer_tab_index >= len(self.parent.file_handler.buffer_list)):
-			buffer_tab_index = 1
-
-		elif (buffer_tab_index < 1):
-			buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
-		
-		self.parent.file_handler.load_buffer(buffer_index=buffer_tab_index)
+			self.parent.txt = self.parent.buffer_render_list[self.parent.buffer_render_index]
+			self.parent.txt.focus_set()
+			self.parent.file_handler.set_current_file(buffer_name=self.parent.txt.full_name)
+			self.parent.reposition_widgets()
 
 		return "break"
 
@@ -1421,7 +1386,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 	def run_subprocess(self, argv=None, make=False) -> str:
 		if (make):
-			argv = self.make_argv.split(" ")
+			argv = self.make_argv
 			self.parent.command_out.change_ex(self.parent.command_out.open_line)
 		
 		def run():

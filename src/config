@@ -1,0 +1,18 @@
+theme="spacey"
+tab_size=4
+# CRLF or LF
+line_end=LF
+backup_files=0
+# determines if the command input and output are going to be placed on the bottom or top of the window
+# "down" or "up"
+orientate="down"
+show_buffer_tab=1
+start_width=80
+start_height=32
+font="Consolas"
+font_size=13
+smaller_font_size=11
+suggest=1
+# ? = normal searching / = regex searching
+default_find_mode="?"
+username=""

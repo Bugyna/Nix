@@ -97,6 +97,8 @@ class PARSER:
 			"crlf": self.crlf,
 			"toggle_filebar": self.toggle_buffer_tab_show,
 			"make": self.make,
+			"config|config_file": self.open_config_file,
+			"keybindings|keybinds": self.open_keybindings_file,
 		}
 
 	def parse_argument(self, arg=None):
@@ -132,7 +134,7 @@ class PARSER:
 			self.parent.highlighting = False
 
 	def suggest_set(self, arg=None):
-		self.parent.suggest = not self.paernt.suggest
+		self.parent.suggest = not self.parent.suggest
 
 	# elif (re.match(r"[0-9]", arg[0][0])):
 		# self.txt.mark_set(tkinter.INSERT, float(arg[0]))
@@ -150,13 +152,13 @@ class PARSER:
 		self.parent.notify(f"moved to: {index}")
 
 	def l_get(self, arg=None):
-		self.parent.notify(f"{self.parent.get_line_count()}")
+		self.parent.notify(f"{self.parent.txt.get_line_count()}")
 
 	def word_count_get(self, arg=None):
-		self.parent.notify(f"{self.parent.get_word_count()}")
+		self.parent.notify(f"{self.parent.txt.get_word_count()}")
 
 	def file_size_get(self, arg=None) -> None:
-		self.parent.notify(f"buffer size: {len(self.parent.txt.get('1.0', 'end'))}B >>>> file size: {os.path.getsize(self.parent.txt.full_name)}B")
+		self.parent.notify(f"buffer size: {len(self.parent.txt.get('1.0', 'end-1c'))}B >>>> file size: {os.path.getsize(self.parent.txt.full_name)}B")
 
 	def lyrics_get(self, arg=None):
 		def lyr():
@@ -164,7 +166,7 @@ class PARSER:
 			for word in arg[1:]:
 				command1 += "-"+word
 			command1 = command1.split(",")
-			url = f"http://www.songlyrics.com/{command1[0]}/{command1[1]}-lyrics/" #link to Stockholm's weather data
+			url = f"http://www.songlyrics.com/{command1[0]}/{command1[1]}-lyrics/"
 			html = requests.get(url).content #gets the html of the url
 			lyrics = BeautifulSoup(html, features="html.parser").find(id="songLyricsDiv").text
 			self.parent.command_out_set(lyrics)
@@ -175,7 +177,7 @@ class PARSER:
 		self.parent.txt.focus_set()
 
 	def time_set(self, arg=None):
-		self.parent.notify(self.get_time(), tags=[["1.0", "end"]])
+		self.parent.notify(self.parent.get_time(), tags=[["1.0", "end"]])
 
 	def blink(self, arg=None): #wonky as fuck
 		if (arg[1] == "on"):
@@ -198,23 +200,24 @@ class PARSER:
 			self.unsplit(arg)
 
 		elif (arg[1] == "vertical" or arg[1] == "v"):
-			self.parent.split_mode = 1
-			try: self.parent.txt_1 = self.parent.file_handler.buffer_list[self.parent.txt.buffer_index+1][0]
-			except IndexError: self.parent.txt_1 = self.parent.file_handler.buffer_list[1][0]
+			self.parent.split_mode = "vertical"
 			self.parent.notify("split vertically")
 
 		elif (arg[1] == "horizontal" or arg[1] == "h"):
-			self.parent.split_mode = 2
-			try: self.parent.txt_1 = self.parent.file_handler.buffer_list[self.parent.txt.buffer_index+1][0]
-			except IndexError: self.parent.txt_1 = self.parent.file_handler.buffer_list[1][0]
+			self.parent.split_mode = "horizontal"
 			self.parent.notify("split horizontally")
+
+		try:
+			self.parent.buffer_render_index += 1
+			self.parent.file_handler.load_buffer(buffer_index=self.parent.txt.buffer_index+1)
+		except IndexError: pass
 
 		self.parent.reposition_widgets()
 
 	def unsplit(self, arg=None):
-		self.parent.txt_1.place_forget()
-		self.parent.split_mode = 0
-		self.parent.txt_1 = None
+		del self.parent.buffer_render_list[1: -1]
+		self.parent.split_mode = "nosplit"
+		self.parent.buffer_render_index = 0
 		self.parent.reposition_widgets()
 
 	def win_quit(self, arg=None):
@@ -350,17 +353,17 @@ class PARSER:
 
 	def tab_size_set(self, arg=None):
 		if (arg[1:]):
-			self.parent.tab_size = int(arg[1])
+			self.parent.conf["tab_size"] = int(arg[1])
 			self.parent.txt.configure_self()
-			self.parent.notify(f"Current size: {self.parent.tab_size}")
+			self.parent.notify(f"Current size: {self.parent.conf['tab_size']}")
 		else:
-			self.parent.notify(f"please, specify new size. Current size: {self.parent.tab_size}")
+			self.parent.notify(f"please, specify new size. Current size: {self.parent.conf['tab_size']}")
 
 	def replace_spaces(self, arg=None):
-		self.parent.txt.replace_x_with_y(" "*self.parent.tab_size, "\t")
+		self.parent.txt.replace_x_with_y(" "*self.parent.conf["tab_size"], "\t")
 
 	def replace_tabs(self, arg=None):
-		self.parent.txt.replace_x_with_y("\t", " "*self.parent.tab_size)
+		self.parent.txt.replace_x_with_y("\t", " "*self.parent.conf["tab_size"])
 
 	def initialize_file(self, arg=None):
 		for init in list(self.parent.txt.highlighter.language_init.keys()):
@@ -401,10 +404,16 @@ class PARSER:
 		self.parent.convert_to_crlf()
 
 	def toggle_buffer_tab_show(self, arg=None):
-		self.parent.buffer_tab_show = not self.parent.buffer_tab_show
+		self.parent.conf["show_buffer_tab"] = not self.parent.conf["show_buffer_tab"]
 
 	def make(self, arg=None):
 		self.system_execute("sys make".split())
+
+	def open_config_file(self, arg=None):
+		self.parent.file_handler.load_file(filename=f"{os.path.dirname(__file__)}/config")
+	
+	def open_keybindings_file(self, arg=None):
+		self.parent.file_handler.load_file(filename=f"{os.path.dirname(__file__)}/keybinds_conf.json")
 
 	def command_not_found(self, arg=None):
 		res = ""

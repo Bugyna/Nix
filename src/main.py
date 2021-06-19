@@ -26,18 +26,52 @@ platform = platform.system()
 
 if (platform == "Windows"):
 	ctypes.windll.shcore.SetProcessDpiAwareness(True)
-	CONTROL_KEYSYM = 262156
-	WINDOW_MARGIN = 0
-	LINE_END = "\r\n"
-else:
-	CONTROL_KEYSYM = None
-	WINDOW_MARGIN = 24
-	LINE_END = "\n"
 
-class win(tkinter.Tk):
-	""" main object of Nix text editor"""
+CRLF="\r\n"
+LF="\n"
+
+class WIN(tkinter.Tk):
+	# """ 
+	# this whole project is very weird and I made a lot of pretty bad decisions, but ultimately it's working (at least a bit on Linux anyways) 
+	# It lags a lot on macOS and Windows, because tkinter sucks with a lot of text (especially with long lines) and can't process it very well, which makes it lag
+	# also making a text editor in Python is a very questionable idea on it's own
+	# summary: this editor sucks, but I can use it better than other editors so I don't care
+	# if you use mainly C, C++ check out 4coder (it's going to become free as of 1.7.2021), it's a really cool editor
+	# """
 	def __init__(self, file=None):
 		super().__init__()
+		
+		self.conf = {
+			"theme": "groove",
+			"tab_size": 4,
+			"orientate": "down",
+			"backup_files": 0,
+			"underline_pairs": 0,
+			"font_size": 12,
+			"smaller_font_size": 11,
+			"start_width": 80,
+			"start_height": 32,
+			"show_buffer_tab": 1,
+			"line_end": LF,
+			"suggest": 1,
+			"font": "Noto Mono",
+			"default_find_mode": "?",
+			"username": "user",
+			"default_split_mode": "vertical",
+			"keybinds_file": "keybinds_conf.json",
+			"themes_file": "themes",
+		}
+
+		self.load_config()
+
+		self.split_mode_options = {
+			"nosplit": self.nosplit,
+			"v": self.split_vertical,
+			"vertical": self.split_vertical,
+			"h": self.split_horizontal,
+			"horizontal": self.split_horizontal,
+		}
+		
 		self.theme_options = {
 			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#555555", "selectbg": "#220022", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
 			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB","numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#220022", "command_out_insert_bg": "#555555"}},
@@ -82,7 +116,7 @@ class win(tkinter.Tk):
 			 "highlighter": {"whitespace": "#111111", "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase_b": "#FFFFFF", "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#008800", "command_out_insert_bg": "#00FF00"}},
 			}
 
-		self.theme = self.theme_options["custom"]
+		self.theme = self.theme_options[self.conf["theme"]]
 
 		self.commands = {
 			"lget":"gets total amount of lines", "l":"use: l[number|number.number] :: puts your cursor on line[number]",
@@ -94,51 +128,31 @@ class win(tkinter.Tk):
 			"split": "use: split [option] (horizontal/h|vertical/v|n) :: splits buffers",
 			"unsplit": "use: unsplit :: unsplits buffers",
 			"ls": "shows files in current directory"
-			}
-
-		self.scroll_multiplier = 0
-
-		self.line_count = None
-
-		self.tab_offset = 0
-		self.tab_lock = False
-		self.tab_size = 4
+		}
 
 		self.found = []
 		self.found_index = 0
-		
-		self.last_index = "0.0"
-		self.text_len = 0
 
-		self.underline_pairs = False
-		self.backup_files = False
-		self.highlighting = True
 		self.fullscreen = False
-		self.split_mode = 0
-		self.orientate = "down"
+		self.split_mode = "nosplit"
 
 		self.show_speed = False
 		self.show_time = True
 		self.show_temperature = True
 		self.show_lineno = True
-		self.buffer_tab_show = True
-
-		self.suggest = True
 		
 		self.run = True
 
-		self.font_size = 12
-		self.sfont_size = 11
 		self.font_set()
 		
 		#configuring main window
 		# self.wm_attributes("-type", "splash")
 		self.resizable(True,True)
-		self.geometry(f"{self.font.measure(' ')*80}x{self.font.metrics('linespace')*32}")
+		self.geometry(f"{self.font.measure(' ')*self.conf['start_width']}x{self.font.metrics('linespace')*self.conf['start_height']}")
 		self.wm_minsize(20, 0)
 		self.update_win()
-		self.geometry(f"{self.winfo_width()}x{self.winfo_height()}+{self.winfo_x()+self.winfo_x()//3}+{(self.winfo_screenheight()-self.winfo_height())//2}") #CENTERING MAGIC #PROLLY DOESN'T WORK THOUGH
-		
+		self.geometry(f"{self.winfo_width()}x{self.winfo_height()}+{self.winfo_x()+self.winfo_width()//2}+{(self.winfo_screenheight()-self.winfo_height())//2}") #CENTERING MAGIC #PROLLY DOESN'T WORK THOUGH
+
 		# try: self.iconbitmap("icon.ico")
 		# except Exception as e: print(e)
 		try: self.tk.call('wm', 'iconphoto', self._w, tkinter.PhotoImage(file="/usr/local/bin/Nix/icon.png"))
@@ -146,19 +160,16 @@ class win(tkinter.Tk):
 		
 		self.canvas = tkinter.Canvas()
 		self.buffer_tab_frame = tkinter.Frame(self)
-		self.text_buffer_frame = tkinter.Frame(self)
+		self.buffer_frame = tkinter.Frame(self)
+		self.buffer_render_list = []
+		self.buffer_render_index = 0
 		
 		self.parser = PARSER(self)
 
 		self.file_handler = FILE_HANDLER(self)
-		self.video_handler = VIDEO_HANDLER(self)
-
-		self.init()
-
-	def init(self):
-		""" a completely useless initialize function """
+		# self.video_handler = VIDEO_HANDLER(self)
+		# self.music_player = MUSIC_PLAYER(self)
 		self.update_win()
-		# self.wm_attributes("-alpha", 1)
 
 		self.l = tkinter.Text(font=self.font, spacing1=0)
 		for i in range(1000):
@@ -172,19 +183,34 @@ class win(tkinter.Tk):
 		self.fps_label = tkinter.Label()
 		self.key_label = tkinter.Label()
 		
+
+		self.txt = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
+		self.file_handler.init(".~scratch") #see handlers.py/FILE_HANDLER
+		# self.curs = tkinter.Label(self.txt, bg=self.theme["window"]["fg"])
+		# self.txt is only meant to be a pointer to the focused text buffer
+		# this pointer points to buffer_render_list which is a list of pointers pointing to
+		# text buffers stored in the file_handler.buffer_list
+
 		# see widgets.py
 		self.find_entry = FIND_ENTRY(self)
 		self.command_entry = COMMAND_ENTRY(self)
 		self.command_out = COMMAND_OUT(self)
 
-		self.txt = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
-		self.file_handler.init(".~scratch") #see handlers.py/FILE_HANDLER
-		self.curs = tkinter.Label(self.txt, bg=self.theme["window"]["fg"])
+		self.canvas.configure(bd=0, highlightthickness=0)
+		self.buffer_tab_frame.configure(relief="ridge", borderwidth=0, highlightthickness=0)
+		self.buffer_frame.configure(relief="flat", borderwidth=0, highlightthickness=0)
 
-		# self.music_player = MUSIC_PLAYER(self)
+		self.time_label.configure(fill=None, anchor="w", justify="left")
+		self.temperature_label.configure(fill=None, anchor="w")
+		self.line_no.configure(fill=None, anchor="w", justify="left")
+		self.fps_label.configure(fill=None, anchor="w", justify="left")
+		self.key_label.configure(fill=None, anchor="w", justify="left")
 
-		self.bind("<Control-Escape>", self.win_destroy)
-		self.bind("<Configure>", self.reposition_widgets) #repositions the text widget to be placed correctly
+		self.command_entry.configure_self()
+		self.find_entry.configure_self()
+		self.command_out.configure_self()
+
+		bind_keys_from_config(self)
 
 		self.reposition_widgets()
 		self.theme_load()
@@ -193,21 +219,35 @@ class win(tkinter.Tk):
 		self.command_out.unplace() # weird fucking bug making the output widget appear for basically no reason
 
 		if (len(sys.argv) > 1): [self.file_handler.load_file(filename=arg) for arg in sys.argv[1:]]
+
+
+	def load_config(self):
+		# this is gross, but it works
+		try: file = open(f"{os.path.dirname(__file__)}/config", "r"); config = file.read(); file.close()
+		except Exception: return
+		for line in config.split("\n"):
+			if (line and line[0] != "#"):
+				line = line.split("=")
+				try: self.conf[line[0]] = globals()[line[1]]; continue
+				except Exception: pass
+				if (line[1][0] != "\""): self.conf[line[0]] = int(line[1])
+				else: self.conf[line[0]] = line[1].strip("\"")
 		
 	def theme_make(self):
-		if (type(self.txt) != TEXT): return
-		for key in self.theme["highlighter"].items():
-			if (key[0][-2:] == "bg"):
-				self.txt.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=self.txt.font)
-				self.command_out.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=self.command_out.font)
-				
-			elif (key[0][-2:] == "_b"):
-				self.txt.tag_configure(key[0][:-2], foreground=key[1], font=self.txt.font_bold)
-				self.command_out.tag_configure(key[0][:-2], foreground=key[1], font=self.command_out.font_bold)
-				
-			else:
-				self.txt.tag_configure(key[0], foreground=key[1], font=self.txt.font)
-				self.command_out.tag_configure(key[0], foreground=key[1], font=self.command_out.font)
+		for buffer in self.buffer_render_list: # because fuck effieciency, right?
+			if (type(buffer) != TEXT): return
+			for key in self.theme["highlighter"].items():
+				if (key[0][-2:] == "bg"):
+					buffer.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=buffer.font)
+					self.command_out.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=self.command_out.font)
+					
+				elif (key[0][-2:] == "_b"):
+					buffer.tag_configure(key[0][:-2], foreground=key[1], font=buffer.font_bold)
+					self.command_out.tag_configure(key[0][:-2], foreground=key[1], font=self.command_out.font_bold)
+					
+				else:
+					buffer.tag_configure(key[0], foreground=key[1], font=buffer.font)
+					self.command_out.tag_configure(key[0], foreground=key[1], font=self.command_out.font)
 
 		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
 		# self.txt.tag_lower("comments", "keywords")
@@ -222,22 +262,22 @@ class win(tkinter.Tk):
 		self.theme_make()
 		self.configure(bg=self.theme["window"]["bg"], cursor=None)
 
-		self.canvas.configure(bg=self.theme["window"]["bg"], bd=0, highlightthickness=0)
-		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], relief="ridge", borderwidth=0, highlightthickness=0)
-		self.text_buffer_frame.configure(bg=self.theme["window"]["bg"], relief="flat", borderwidth=0, highlightthickness=0)
+		self.canvas.configure(bg=self.theme["window"]["bg"])
+		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"])
+		self.buffer_frame.configure(bg=self.theme["window"]["bg"])
 
-		self.txt.configure_self()
-
-		self.time_label.configure(fill=None, anchor="w", justify="left", font=self.widget_font, textvariable=self.time_label_value,
-		 bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
-		self.temperature_label.configure(fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
-		self.line_no.configure(fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
-		self.fps_label.configure(text="<0.0KHz>", fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
-		self.key_label.configure(fill=None, anchor="w", justify="left", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.time_label.configure(font=self.widget_font, textvariable=self.time_label_value, bg = self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
+		self.temperature_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.line_no.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.fps_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.key_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 
 		self.command_entry.configure_self()
 		self.find_entry.configure_self()
 		self.command_out.configure_self()
+
+		for buffer in self.buffer_render_list:
+			buffer.configure_self()
 
 		for buffer_tab in self.file_handler.buffer_tab_list:
 			buffer_tab.configure_self()
@@ -246,14 +286,16 @@ class win(tkinter.Tk):
 		
 		self.update_win()
 
-	def font_set(self, arg=None, family="Noto Mono", retro=False):
+	def font_set(self, arg=None, family=None, retro=False):
+		if (not family): family=self.conf["font"]
 		if (retro): self.font_family = ["Ac437 IBM VGA 9x8", "normal", "bold", "roman"]
 		else: self.font_family = [family, "normal", "bold", "roman"]
-		self.font = font.Font(family=self.font_family[0], size=self.font_size, weight=self.font_family[1], slant=self.font_family[3])
-		self.font_bold = font.Font(family=self.font_family[0], size=self.font_size, weight="bold", slant=self.font_family[3]) 
-		self.smaller_font = font.Font(family=self.font_family[0],size=self.sfont_size, weight=self.font_family[1])
-		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.sfont_size, weight="bold")
-		self.widget_font = font.Font(family=self.font_family[0], size=self.sfont_size, weight=self.font_family[2])
+
+		self.font = font.Font(family=self.font_family[0], size=self.conf["font_size"], weight=self.font_family[1], slant=self.font_family[3])
+		self.font_bold = font.Font(family=self.font_family[0], size=self.conf["font_size"], weight="bold", slant=self.font_family[3]) 
+		self.smaller_font = font.Font(family=self.font_family[0],size=self.conf["smaller_font_size"], weight=self.font_family[1])
+		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.conf["smaller_font_size"], weight="bold")
+		self.widget_font = font.Font(family=self.font_family[0], size=self.conf["smaller_font_size"], weight=self.font_family[2])
 
 		#lazy workaround
 		try: self.theme_load()
@@ -265,12 +307,11 @@ class win(tkinter.Tk):
 		top_bar_y = fs//1.5+4
 		txt_y = fs*2
 
-		# TODO(@bugy): make separate frame for topbar info and use pack instead of place for more customizability
-		if (self.buffer_tab_show and len(self.file_handler.buffer_list) > 1):
-			self.buffer_tab_frame.place(x=0, y=top_bar_y+btf_bd, relwidth=1, height=fs+btf_bd+4, anchor="nw")
-			self.text_buffer_frame.place(x=0, y=txt_y+btf_bd, relwidth=1, height=self.winfo_height()-txt_y-btf_bd, anchor="nw")
+		if (self.conf["show_buffer_tab"] and len(self.file_handler.buffer_list) > 1):
+			self.buffer_tab_frame.place(x=0, y=top_bar_y+btf_bd, width=self.winfo_width(), height=fs+btf_bd+4, anchor="nw")
+			self.buffer_frame.place(x=0, y=txt_y+btf_bd, relwidth=1, height=self.winfo_height()-txt_y-btf_bd, anchor="nw")
 		else:
-			self.text_buffer_frame.place(x=0, y=top_bar_y, relwidth=1, height=self.winfo_height()-top_bar_y, anchor="nw")
+			self.buffer_frame.place(x=0, y=top_bar_y, relwidth=1, height=self.winfo_height()-top_bar_y, anchor="nw")
 		
 		if (self.command_entry.winfo_viewable()): self.command_entry_place()
 		if (self.command_out.winfo_viewable()): self.command_out_set(resize=True)
@@ -280,9 +321,8 @@ class win(tkinter.Tk):
 		if (self.show_speed): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
 		self.key_label.place(x=0, y=0, height=top_bar_y, anchor="nw")
 
-		if (self.split_mode == 0): self.txt.place(x=0, y=0, relwidth=1, relheight=1) # self.txt.pack(fill="both", expand=True)
-		elif (self.split_mode == 1): self.txt.place(x=0, y=0, relwidth=0.5, relheight=1); self.txt_1.place(relx=0.5, rely=0, relwidth=0.5, relheight=1)
-		elif (self.split_mode == 2): self.txt.place(x=0, y=0, relwidth=1, relheight=0.5); self.txt_1.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)
+		
+		self.split_mode_options[self.split_mode]()
 
 
 	def flashy_loading_bar(self, arg=None):
@@ -292,85 +332,38 @@ class win(tkinter.Tk):
 			for i in range(r):
 				time.sleep(0.2)
 				x = "["+chr(9608)*i+"."*(r-i)+"]"
-				self.command_out_set(x, justify="center")
+				self.notify(x, justify="center")
 
 		threading.Thread(target=a, daemon=True).start()
+
+	def split(self, arg=None):
+		self.split_mode = self.conf["default_split_mode"]
+		self.notify("split vertically")
+
+		try:
+			self.buffer_render_index += 1
+			self.file_handler.load_buffer(buffer_index=self.txt.buffer_index+1)
+		except IndexError: pass
+		self.reposition_widgets()
+
+	def nosplit(self, arg=None):
+		self.buffer_render_list[self.buffer_render_index].place(x=0, y=0, relwidth=1, relheight=1)
+
+	def split_vertical(self, arg=None):
+		w = 1/len(self.buffer_render_list)
+		for i, buffer in enumerate(self.buffer_render_list, 0):
+			buffer.place(relx=w*i, y=0, relwidth=w, relheight=1)
+
+	def split_horizontal(self, arg=None):
+		h = 1/len(self.buffer_render_list)
+		for i, buffer in enumerate(self.buffer_render_list, 0):
+			buffer.place(x=0, rely=h*i, relwidth=1, relheight=h)
 
 	def win_destroy(self, arg=None) -> str:
 		self.file_handler.closing_sequence()
 		self.run = False
 		self.quit()
 		return "break"
-
-	def moving(func): #something something event queue something
-		def wrapped_func(self, *args, **kwargs):
-			self.txt.tag_remove("cursor", "1.0", "end")
-			func(self, *args, **kwargs)
-			self.txt.tag_add("cursor", "insert")
-			self.txt.cursor_highlight()
-			return "break"
-
-		return wrapped_func
-
-	@moving
-	def move(self, arg=None, mod=[]):
-		key = arg.keysym
-		suffix = ["Line", "Char"]
-		prefix = ""
-		
-		if ("control" in mod):
-			suffix = ["Para", "Word"]
-
-		if ("shift" in mod):
-			prefix = "Select"
-
-		if (key == "Up"):
-			self.txt.event_generate(f"<<{prefix}Prev{suffix[0]}>>")
-			self.txt.see(self.txt.convert_line_index("float")-5)
-
-		elif (key == "Down"):
-			self.txt.event_generate(f"<<{prefix}Next{suffix[0]}>>")
-			self.txt.see(self.txt.convert_line_index("float")+5)
-
-		elif (key == "Left"):
-			self.txt.event_generate(f"<<{prefix}Prev{suffix[1]}>>")
-
-		elif (key == "Right"):
-			self.txt.event_generate(f"<<{prefix}Next{suffix[1]}>>")
-
-		if (prefix == ""): self.txt.sel_start = None; del self.txt.queue[:]
-		else: self.txt.sel_start = self.txt.index(self.txt.mark_names()[-1])
-		self.update_index()
-		# if (self.focus_displayof() == self.txt): self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.command_out.place_forget()
-
-		return "break"
-
-	def move_standard(self, arg=None):
-		self.move(arg)
-		return "break"
-
-	def move_jump(self, arg=None):
-		self.move(arg, ["control"])
-		return "break"
-
-	def move_select(self, arg=None):
-		self.move(arg, ["shift"])
-		return "break"
-
-	def move_jump_select(self, arg=None):
-		self.move(arg, ["control", "shift"])
-		return "break"
-		
-	def undo(self, arg=None):
-		""" Control-Z """
-		self.txt.undo()
-		return "break"
-
-	def redo(self, arg=None):
-		""" Control-Y """
-		self.txt.redo()
-		return "break"
-
 
 	def save_file(self, arg=None):
 		return self.file_handler.save_file(arg)
@@ -454,8 +447,8 @@ class win(tkinter.Tk):
 	def command_entry_place(self, arg=None):
 		""" Shows command entry widget """
 		h = self.command_entry.font.metrics("linespace")
-		if (self.orientate == "down"): self.command_entry.place(x=0, y=self.text_buffer_frame.winfo_height()-h-7, relwidth=1, height=h+7, anchor="nw")
-		elif (self.orientate == "up"): self.command_entry.place(x=-1, y=0, width=self.winfo_width()+2, height=h+5, anchor="nw")
+		if (self.conf["orientate"] == "down"): self.command_entry.place(x=0, y=self.buffer_frame.winfo_height()-h-7, relwidth=1, height=h+7, anchor="nw")
+		elif (self.conf["orientate"] == "up"): self.command_entry.place(x=-1, y=0, width=self.winfo_width()+2, height=h+5, anchor="nw")
 		
 		self.command_out.place_forget()
 		self.command_entry.tkraise(); self.command_entry.focus_set()
@@ -464,7 +457,7 @@ class win(tkinter.Tk):
 
 	def find_place(self, arg=None, text=""):
 		h = self.find_entry.font.metrics("linespace")
-		self.find_entry.place(x=0, y=self.text_buffer_frame.winfo_height()-h-40, width=self.winfo_width(), height=h+5, anchor="nw")
+		self.find_entry.place(x=0, y=self.buffer_frame.winfo_height()-h-40, width=self.buffer_frame.winfo_width(), height=h+5, anchor="nw")
 		self.find_entry.find_mode_set()
 		self.find_entry.tkraise(); self.find_entry.focus_set()
 
@@ -492,8 +485,8 @@ class win(tkinter.Tk):
 			h = font_size*((self.winfo_height()//2)/font_size)
 
 		self.command_out.tkraise()
-		if (self.orientate == "down"): self.command_out.place(x=0, y=self.text_buffer_frame.winfo_height(), width=self.winfo_width(), height=h, anchor="sw")
-		elif (self.orientate == "up"): self.command_out.place(x=0, y=0, width=self.winfo_width(), height=h, anchor="nw")
+		if (self.conf["orientate"] == "down"): self.command_out.place(x=0, y=self.buffer_frame.winfo_height(), width=self.winfo_width(), height=h, anchor="sw")
+		elif (self.conf["orientate"] == "up"): self.command_out.place(x=0, y=0, width=self.winfo_width(), height=h, anchor="nw")
 		
 		return "break"
 
@@ -524,11 +517,11 @@ class win(tkinter.Tk):
 		self.command_entry.input_history_index = 0
 		self.command_entry.unplace()
 
-	def text_unplace(self, arg=None):
+	def buffer_unplace(self, arg=None):
 		""" I have no idea why this is a separate function """
 		try:
-			self.txt.unplace()
-			self.txt_1.unplace()
+			for buffer in self.buffer_render_list:
+				buffer.unplace()
 		except Exception: pass
 
 	def get_rand_temperature(self):
@@ -619,7 +612,7 @@ class win(tkinter.Tk):
 
 		if (arg): # shows the characters that were released (eg. Control: D), but it can't handle more than one character (eg. Control: b-w)
 			text = re.sub("\|*Mod2", "", re.search("state=[a-zA-Z0-9\|]+", f"{arg}").group()[6:]) # magic with regex to show the keys you pressed in a nicer format
-			self.key_label["text"] = f"{text}: {arg.keysym}"
+			self.key_label["text"] = f"{text} {arg.keysym}"
 			if (arg.keysym in ("Up", "Down", "Left", "Right")): return # ends function if it was triggered by arrow keys (as they have different functions to handle them)
 		
 		self.update_index()
@@ -636,7 +629,7 @@ class win(tkinter.Tk):
 			if (self.focus_displayof() != self.command_out):
 				self.command_out.place_forget()
 
-			if (self.suggest): self.txt.highlighter.suggest(self.txt.cursor_index[0], self.txt.current_line)
+			if (self.conf["suggest"]): self.txt.highlighter.suggest(self.txt.cursor_index[0], self.txt.current_line)
 
 		self.txt.highlighter.highlight(self.txt.cursor_index[0], self.txt.current_line) # highlight current line
 
@@ -652,14 +645,14 @@ class win(tkinter.Tk):
 		def a(): # some annoying notifications
 			time.sleep(1650)
 			# try:
-			self.command_out_set("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+			self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
 				# notify2.init("Nix")
 				# notify2.Notification("POSTURE CHECK", "You've been programming for half an hour now. Consider stretching for a bit").show()
 			# except Exception:
 			# 	self.commmand_out_set("Consider downloading the notify2 module"); return
 			time.sleep(1650)
 			# try:
-			self.command_out_set("You've been programming for an hour now. Consider taking a break")
+			self.notify("You've been programming for an hour now. Consider taking a break")
 			# 	notify2.init("Nix")
 			# 	notify2.Notification("BREAK TIME", "You've been programming for an hour now. Consider taking a break").show()
 			# except Exception:
@@ -687,30 +680,31 @@ class win(tkinter.Tk):
 				# t0 = time.time()
 
 	def highlight_chunk(self, arg=None, start_index=None, stop_index=None):
-		if (not start_index): start_index = 1
-		if (not stop_index): stop_index = self.txt.get_line_count()+1 #+1 becuace for loops don't iterate over the last element or something in that sense
-		self.txt.convert_line_index("int", start_index)
-		self.txt.convert_line_index("int", stop_index)
-		def highlight(text):
-			if self.highlighting:
+		for buffer in self.buffer_render_list:
+			if (not start_index): start_index = 1
+			if (not stop_index): stop_index = buffer.get_line_count()
+			buffer.convert_line_index("int", start_index)
+			buffer.convert_line_index("int", stop_index)
+			def highlight(text):
 				for i in range(start_index, stop_index+1):
 					text.highlighter.highlight(i)
 					text.highlighter.lex_line(i)
-		threading.Thread(target=highlight, args=(self.txt, ), daemon=True).start()
+			threading.Thread(target=highlight, args=(buffer, ), daemon=True).start()
 		
 	def unhighlight_chunk(self, arg=None, start_index=None, stop_index=None):
-		if (not start_index): start_index = 1
-		if (not stop_index): stop_index = self.txt.get_line_count()
-		def unhighlight():
-			[self.txt.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)]
-		threading.Thread(target=unhighlight, daemon=True).start()
+		for buffer in self.buffer_render_list:
+			if (not start_index): start_index = 1
+			if (not stop_index): stop_index = buffer.get_line_count()
+			buffer.convert_line_index("int", start_index)
+			buffer.convert_line_index("int", stop_index)
+			def unhighlight():
+				[buffer.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)]
+			threading.Thread(target=unhighlight, args=(buffer, ), daemon=True).start()
 
 if __name__ == "__main__":
-	main_win = win()
-	main_win.after(0, main_win.main)
-	# main_win.txt.delete("1.0", "end")
-	# main_win.txt.insert("end", "This is a line motherfucker\r\n"*100)
-	main_win.mainloop()
+	win = WIN()
+	win.after(0, win.main)
+	win.mainloop()
 
 	print("thank you for using Nix")
 

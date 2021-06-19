@@ -143,7 +143,7 @@ class highlighter(object):
 		]
 
 
-		self.comment_keywords = ["todo", "TODO"]
+		self.comment_keywords = ["todo", "note"]
 
 		# FOR FUTURE REFERENCE
 		# self.language_options = {
@@ -180,7 +180,6 @@ class highlighter(object):
 
 		self.txt = txt
 		self.parent = parent
-		self.command_entry = parent.command_entry
 		self.theme = parent.theme
 
 		self.countingQuomarks = False
@@ -204,6 +203,7 @@ class highlighter(object):
 		self.last_pattern = []
 
 		# compiled regexes used by the highlighting functions
+		# TODO(@bugy): remake this BS so it doesn't use regex
 		self.quote_regex = re.compile(r"[\"\']")
 		self.abc_regex = re.compile(r"[a-zA-Z_]")
 		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$") #|^[A-Z]+_[A-Za-z0-9]+")
@@ -231,16 +231,16 @@ class highlighter(object):
 		self.html_comment_end_regex = re.compile(r"-->")
 
 		self.language_options = {
-			"(c|h)$": {"keywords": self.c_keywords, "numerical_keywords": self.c_numerical_keywords, "logical_keywords": self.c_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": "make"},
-			"(cpp|hpp|cc|hh)$": {"keywords": self.cpp_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": "make"},
-			"(py|pyw)$": {"keywords": self.py_keywords, "numerical_keywords": self.py_numerical_keywords, "logical_keywords": self.py_logical_keywords, "highlight": self.python_highlight, "comment_sign": "#", "make_argv": f"python3 {self.txt.full_name}"},
-			"html|htm|css": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.html_highlight, "comment_sign": "<!-- ", "make_argv": f"firefox {self.txt.full_name}"},
+			"(c|h)$": {"keywords": self.c_keywords, "numerical_keywords": self.c_numerical_keywords, "logical_keywords": self.c_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["make"]},
+			"(cpp|hpp|cc|hh)$": {"keywords": self.cpp_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["make"]},
+			"(py|pyw)$": {"keywords": self.py_keywords, "numerical_keywords": self.py_numerical_keywords, "logical_keywords": self.py_logical_keywords, "highlight": self.python_highlight, "comment_sign": "#", "make_argv": ["python3", f"{self.txt.full_name}"]},
+			"html|htm|css": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.html_highlight, "comment_sign": "<!-- ", "make_argv": ["firefox", f"{self.txt.full_name}"]},
 			"java|jsp|class": {"keywords": self.java_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
 			"php": {"keywords": self.php_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
-			"go": {"keywords": self.go_keywords, "numerical_keywords": self.go_numerical_keywords, "logical_keywords": self.go_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
-			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": "make"},
-			"sh": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#", "make_argv": f"./{self.txt.full_name}"},
-			"bat|cmd": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "::", "make_argv": f"./{self.txt.full_name}"},
+			"go": {"keywords": self.go_keywords, "numerical_keywords": self.go_numerical_keywords, "logical_keywords": self.go_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["go", "run", f"{self.txt.full_name}"]},
+			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["make"]},
+			"sh": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#", "make_argv": [f"./{self.txt.full_name}"]},
+			"bat|cmd": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "::", "make_argv": [f"./{self.txt.full_name}"]},
 			"json": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "//", "make_argv": ""},
 			"diary": {"keywords": ["Hello"], "numerical_keywords": [], "logical_keywords": [], "highlight": self.diary_highlight, "comment_sign": "~$", "make_argv": ""},
 		}
@@ -359,9 +359,9 @@ class highlighter(object):
 		last_separator = "1.0"
 		command_pattern = ""
 		if line == None:
-			line = self.command_entry.get("1.0", "end")
+			line = self.parent.command_entry.get("1.0", "end")
 
-		self.command_entry.tag_remove("command_keywords", "1.0", "end")
+		self.parent.command_entry.tag_remove("command_keywords", "1.0", "end")
 
 		for i, current_char in enumerate(line, 0):
 			# print(i ,current_char)
@@ -372,7 +372,7 @@ class highlighter(object):
 			elif (self.separator_regex.match(current_char)):
 				if (command_pattern in self.command_keywords):
 					index = f"1.{i}"
-					self.command_entry.tag_add("command_keywords", last_separator, index)
+					self.parent.command_entry.tag_add("command_keywords", last_separator, index)
 				last_separator = f"1.{i}"
 				
 
