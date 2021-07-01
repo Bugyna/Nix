@@ -16,12 +16,9 @@ except Exception: pass
 from highlighter import *
 
 if (platform == "Windows"):
+	import ctypes
 	ctypes.windll.shcore.SetProcessDpiAwareness(True)
-	CONTROL_KEYSYM = 262156
-	WINDOW_MARGIN = 0
-else:
-	CONTROL_KEYSYM = None
-	WINDOW_MARGIN = 24
+
 
 def bind_keys_from_config(widget, filename=f"{os.path.dirname(__file__)}/keybinds_conf.json"):
 	keybinds = json.load(open(filename, "r"))

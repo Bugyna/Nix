@@ -165,7 +165,7 @@ class WIN(tkinter.Tk):
 
 		# try: self.iconbitmap("icon.ico")
 		# except Exception as e: print(e)
-		try: self.tk.call('wm', 'iconphoto', self._w, tkinter.PhotoImage(file="/usr/local/bin/Nix/icon.png"))
+		try: self.tk.call('wm', 'iconphoto', self._w, tkinter.PhotoImage(file=f"{os.path.dirname(os.path.abspath(__file__))}/icon.png"))
 		except Exception as e: print(e)
 		
 		self.canvas = tkinter.Canvas()
