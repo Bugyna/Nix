@@ -24,6 +24,8 @@ import ctypes
 import platform
 platform = platform.system()
 
+import inspect
+
 if (platform == "Windows"):
 	ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
@@ -40,15 +42,17 @@ class WIN(tkinter.Tk):
 	# """
 	def __init__(self, file=None):
 		super().__init__()
-		
 		self.conf = {
-			"theme": "groove",
+			"theme": "spacey",
 			"tab_size": 4,
 			"orientate": "down",
 			"backup_files": 0,
 			"underline_pairs": 0,
 			"font_size": 12,
 			"smaller_font_size": 11,
+			"command_entry_font_size": 11,
+			"find_entry_font_size": 12,
+			"command_out_font_size": 11,
 			"start_width": 80,
 			"start_height": 32,
 			"show_buffer_tab": 1,
@@ -56,10 +60,19 @@ class WIN(tkinter.Tk):
 			"suggest": 1,
 			"font": "Noto Mono",
 			"default_find_mode": "?",
-			"username": "user",
+			"username": "",
 			"default_split_mode": "vertical",
 			"keybinds_file": "keybinds_conf.json",
 			"themes_file": "themes",
+			"show_speed": False,
+			"show_temperature": True,
+			"show_time": True,
+			"show_line_no": True,
+			"show_keypress": True,
+			"show_buffer_name": True,
+			"highlight_line": False,
+			"cursor_style": 2,
+			"allow_external_modules": 1,
 		}
 
 		self.load_config()
@@ -74,46 +87,49 @@ class WIN(tkinter.Tk):
 		
 		self.theme_options = {
 			"cake": {"window": {"bg" : "#000000", "fg": "#AAAAAA", "insertbg": "#555555", "selectbg": "#220022", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB","numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#220022", "command_out_insert_bg": "#555555"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB","numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#220022", "command_out_insert_bg": "#555555"}},
 
 			 "retro_cake": {"window": {"bg" : "#000000", "fg": "#CDAB81", "insertbg": "#AAAAAA", "selectbg": "#332233", "selectfg": "#AAAAAA", "widget_fg": "#CDAB81", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB","numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#220022", "command_out_insert_bg": "#555555"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB","numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#220022", "command_out_insert_bg": "#555555"}},
 
 			 "nat": {"window": {"bg" : "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A53300", "logical_keywords": "#2090F0", "functions": "#E0AF60", "upcase_b": "#BB5522","numbers": "#BB9900", "operators": "#f75f00", "special_chars": "#00A000", "quotes": "#00DCFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#001500", "command_out_insert_bg": "#005500"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#A53300", "logical_keywords": "#2090F0", "functions": "#E0AF60", "upcase_b": "#BB5522","numbers": "#BB9900", "operators": "#f75f00", "special_chars": "#00A000", "quotes": "#00DCFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#001500", "command_out_insert_bg": "#005500"}},
 
 			 "lens": {"window": {"bg" : "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#E4D8B4", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase_b": "#BB5522","numbers": "#E86F68", "operators": "#DE7E44", "special_chars": "#6C566D", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#001500", "command_out_insert_bg": "#6f8ea9"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#E4D8B4", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase_b": "#BB5522","numbers": "#E86F68", "operators": "#DE7E44", "special_chars": "#6C566D", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#001500", "command_out_insert_bg": "#6f8ea9"}},
 
 			 "tea": {"window": {"bg" : "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#A53300", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase_b": "#BB5522","numbers": "#E86F68", "operators": "#f75f00", "special_chars": "#00A000", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000",  "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#113311", "command_out_insert_bg": "#005500"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#A53300", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase_b": "#BB5522","numbers": "#E86F68", "operators": "#f75f00", "special_chars": "#00A000", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000",  "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#113311", "command_out_insert_bg": "#005500"}},
 
 			"thorfinn": {"window": {"bg" : "#020518", "fg": "#dde2e3", "insertbg": "#6f8ea9", "selectbg": "#120512", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#6f8ea9", "logical_keywords": "#b37c57", "functions": "#60412b", "upcase_b": "#796878", "numbers": "#3f5e89", "operators": "#f75c57", "special_chars": "#9aacb8", "quotes": "#005577", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#4F6CA5", "command_out_insert_bg": "#6f8ea9"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#6f8ea9", "logical_keywords": "#b37c57", "functions": "#60412b", "upcase_b": "#796878", "numbers": "#3f5e89", "operators": "#f75c57", "special_chars": "#9aacb8", "quotes": "#005577", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#4F6CA5", "command_out_insert_bg": "#6f8ea9"}},
 
 			"muffin" : {"window": {"bg" : "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "selectfg": "#FFFFFF", "widget_fg": "#000000", "select_widget": "#000000", "select_widget_fg": "#FFFFFF"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#000000", "command_out_insert_bg": "#111111"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#000000", "command_out_insert_bg": "#111111"}},
 
 			"toast" : {"window": {"bg" : "#000000", "fg": "#9F005F", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase_b": "#3055BB", "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair_bg": "#990000", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 
 			"groove": {"window": {"bg" : "#080808", "fg": "#EBDBB2", "insertbg": "#3055BB", "selectbg": "#242020", "selectfg": "#EBDBB2", "widget_fg": "#EBDBB2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#458588", "logical_keywords": "#CC241D", "functions": "#D65D0E", "upcase_b": "#3055BB", "numbers": "#B16286", "operators": "#9EC07C", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#3C3836", "command_keywords": "#FFFFFF", "pair_bg": "#FB4934", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#458588", "logical_keywords": "#CC241D", "functions": "#D65D0E", "upcase_b": "#3055BB", "numbers": "#B16286", "operators": "#9EC07C", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#3C3836", "command_keywords": "#FFFFFF", "pair_bg": "#FB4934", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 
 			"spacey": {"window": {"bg" : "#080808", "fg": "#b2b2b2", "insertbg": "#AF00D7", "selectbg": "#181022", "selectfg": "#EBDBB2", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#d70040", "logical_keywords": "#397c80", "functions": "#AF00D7", "upcase_b": "#3055BB", "numbers": "#AF87D7", "operators": "#D7875F", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#490648", "command_keywords": "#FFFFFF", "pair_bg": "#FB4934", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#d70040", "logical_keywords": "#397c80", "functions": "#AF00D7", "upcase_b": "#3055BB", "numbers": "#AF87D7", "operators": "#D7875F", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#490648", "command_keywords": "#FFFFFF", "pair_bg": "#FB4934", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 
 			"mono": {"window": {"bg" : "#080808", "fg": "#b2b2b2", "insertbg": "#FFFFFF", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase_b": "#FFFFFF", "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase_b": "#FFFFFF", "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#444444", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 
 			"hurty": {"window": {"bg" : "#b2b2b2", "fg": "#000000", "insertbg": "#000000", "selectbg": "#222222", "selectfg": "#999999", "widget_fg": "#000000", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
-			 "highlighter": {"whitespace": "#111111", "keywords_b": "#555555", "logical_keywords": "#555555", "functions_b": "#555555", "upcase_b": "#000000", "numbers": "#222222", "operators": "#111111", "special_chars": "#000000", "quotes": "#444444", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords_b": "#555555", "logical_keywords": "#555555", "functions_b": "#555555", "upcase_b": "#000000", "numbers": "#222222", "operators": "#111111", "special_chars": "#000000", "quotes": "#444444", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 			
 			"trix": {"window": {"bg" : "#080808", "fg": "#b2b2b2", "insertbg": "#00FF00", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#BB5555", "logical_keywords": "#00FFFF", "functions": "#00FF00", "upcase_b": "#BBBB00", "numbers": "#00BBFF", "operators": "#AA55FF", "special_chars": "#00FF00", "quotes": "#99BB00", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#0000FF", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#BB5555", "logical_keywords": "#00FFFF", "functions": "#00FF00", "upcase_b": "#BBBB00", "numbers": "#00BBFF", "operators": "#AA55FF", "special_chars": "#00FF00", "quotes": "#99BB00", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#0000FF", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
+
+			"papyrus": {"window": {"bg" : "#C5AB9A", "fg": "#000000", "insertbg": "#000000", "selectbg": "#222222", "selectfg": "#999999", "widget_fg": "#000000", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords_b": "#555555", "logical_keywords": "#555555", "functions_b": "#555555", "upcase_b": "#000000", "numbers": "#222222", "operators": "#111111", "special_chars": "#000000", "quotes": "#444444", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#555555", "command_out_insert_bg": "#FFFFFF"}},
 
 			"custom": {"window": {"bg" : "#080808", "fg": "#b2b2b2", "insertbg": "#00FF00", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
-			 "highlighter": {"whitespace": "#111111", "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase_b": "#FFFFFF", "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#222222", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#008800", "command_out_insert_bg": "#00FF00"}},
+			 "highlighter": {"whitespace_bg": "#FFFFFF", "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase_b": "#FFFFFF", "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#444444", "command_keywords": "#FFFFFF", "pair_bg": "#444444", "found_bg": "#145226", "found_select_bg": "#FFFFFF", "command_out_select_bg": "#008800", "command_out_insert_bg": "#00FF00"}},
 			}
 
 		self.theme = self.theme_options[self.conf["theme"]]
@@ -135,11 +151,6 @@ class WIN(tkinter.Tk):
 
 		self.fullscreen = False
 		self.split_mode = "nosplit"
-
-		self.show_speed = False
-		self.show_time = True
-		self.show_temperature = True
-		self.show_lineno = True
 		
 		self.run = True
 
@@ -163,8 +174,9 @@ class WIN(tkinter.Tk):
 		self.buffer_frame = tkinter.Frame(self)
 		self.buffer_render_list = []
 		self.buffer_render_index = 0
-		
+
 		self.parser = PARSER(self)
+		if (self.conf["allow_external_modules"]): self.load_modules()
 
 		self.file_handler = FILE_HANDLER(self)
 		# self.video_handler = VIDEO_HANDLER(self)
@@ -182,12 +194,13 @@ class WIN(tkinter.Tk):
 		self.line_no = tkinter.Label()
 		self.fps_label = tkinter.Label()
 		self.key_label = tkinter.Label()
+		self.buffer_name_label = tkinter.Label()
 		
 
-		self.txt = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
-		self.file_handler.init(".~scratch") #see handlers.py/FILE_HANDLER
-		# self.curs = tkinter.Label(self.txt, bg=self.theme["window"]["fg"])
-		# self.txt is only meant to be a pointer to the focused text buffer
+		self.buffer = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
+		self.file_handler.init(".scratch") #see handlers.py/FILE_HANDLER
+		# self.curs = tkinter.Label(self.buffer, bg=self.theme["window"]["fg"])
+		# self.buffer is only meant to be a pointer to the focused text buffer
 		# this pointer points to buffer_render_list which is a list of pointers pointing to
 		# text buffers stored in the file_handler.buffer_list
 
@@ -205,6 +218,7 @@ class WIN(tkinter.Tk):
 		self.line_no.configure(fill=None, anchor="w", justify="left")
 		self.fps_label.configure(fill=None, anchor="w", justify="left")
 		self.key_label.configure(fill=None, anchor="w", justify="left")
+		self.buffer_name_label.configure(fill=None, anchor="w", justify="left")
 
 		self.command_entry.configure_self()
 		self.find_entry.configure_self()
@@ -232,6 +246,25 @@ class WIN(tkinter.Tk):
 				except Exception: pass
 				if (line[1][0] != "\""): self.conf[line[0]] = int(line[1])
 				else: self.conf[line[0]] = line[1].strip("\"")
+
+	def add_module(self, module_name, module_class):
+		setattr(self, module_name, module_class(self))
+
+	def load_modules(self):
+		# who the fuck made python modules so stupid
+		# java levels of abstraction
+		
+		for file in os.listdir(f"{os.path.dirname(__file__)}/modules"):
+			if (file[-3:] == ".py"):
+				file = file[:-3] # take the extension out of the name
+				modules = __import__(f"modules.{file}") # import the modules in the modules directory
+				modules = modules.__dict__[file] # get the files inside the modules directory
+				for file in modules.__dict__.keys(): # iterate through the files
+					c = getattr(modules, file)
+					if (inspect.isclass(c)): # check for classes declared in the iterated file
+						self.add_module(file, c) # if it's a class we add it as a module
+		
+				del modules # delete the reduntant stuff
 		
 	def theme_make(self):
 		for buffer in self.buffer_render_list: # because fuck effieciency, right?
@@ -239,6 +272,7 @@ class WIN(tkinter.Tk):
 			for key in self.theme["highlighter"].items():
 				if (key[0][-2:] == "bg"):
 					buffer.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=buffer.font)
+					buffer.tag_configure(key[0][:-3], foreground=key[1], font=buffer.font)
 					self.command_out.tag_configure(key[0], background=key[1], foreground=self.theme["window"]["bg"], font=self.command_out.font)
 					
 				elif (key[0][-2:] == "_b"):
@@ -250,7 +284,7 @@ class WIN(tkinter.Tk):
 					self.command_out.tag_configure(key[0], foreground=key[1], font=self.command_out.font)
 
 		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
-		# self.txt.tag_lower("comments", "keywords")
+		# self.buffer.tag_lower("comments", "keywords")
 
 	def theme_set(self, theme=None):
 		if (type(theme) == list): theme = theme[-1] #failsave switch when selecting multiple themes through command_out widget
@@ -271,6 +305,7 @@ class WIN(tkinter.Tk):
 		self.line_no.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 		self.fps_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 		self.key_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.buffer_name_label.configure(text=self.buffer.name, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 
 		self.command_entry.configure_self()
 		self.find_entry.configure_self()
@@ -311,19 +346,18 @@ class WIN(tkinter.Tk):
 			self.buffer_tab_frame.place(x=0, y=top_bar_y+btf_bd, width=self.winfo_width(), height=fs+btf_bd+4, anchor="nw")
 			self.buffer_frame.place(x=0, y=txt_y+btf_bd, relwidth=1, height=self.winfo_height()-txt_y-btf_bd, anchor="nw")
 		else:
-			self.buffer_frame.place(x=0, y=top_bar_y, relwidth=1, height=self.winfo_height()-top_bar_y, anchor="nw")
-		
+			self.buffer_frame.place(x=0, y=top_bar_y, relwidth=1, height=self.winfo_height()-top_bar_y, anchor="nw")	
+	
 		if (self.command_entry.winfo_viewable()): self.command_entry_place()
 		if (self.command_out.winfo_viewable()): self.command_out_set(resize=True)
-		if (self.show_time): self.time_label.place(x=self.temperature_label.winfo_x(), y=0, height=top_bar_y, anchor="ne")
-		if (self.show_temperature): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
-		if (self.show_lineno): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=top_bar_y, anchor="nw")
-		if (self.show_speed): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
-		self.key_label.place(x=0, y=0, height=top_bar_y, anchor="nw")
+		if (self.conf["show_time"]): self.time_label.place(x=self.temperature_label.winfo_x(), y=0, height=top_bar_y, anchor="ne")
+		if (self.conf["show_temperature"]): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
+		if (self.conf["show_line_no"]): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=top_bar_y, anchor="nw")
+		if (self.conf["show_speed"]): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=top_bar_y, anchor="ne")
+		if (self.conf["show_keypress"]): self.key_label.place(x=0, y=0, height=top_bar_y, anchor="nw")
+		if (self.conf["show_buffer_name"]): self.buffer_name_label.place(x=self.buffer_frame.winfo_width()//2+self.buffer_name_label.winfo_width()//2, y=0, height=top_bar_y, anchor="ne")
 
-		
 		self.split_mode_options[self.split_mode]()
-
 
 	def flashy_loading_bar(self, arg=None):
 		def a():
@@ -342,7 +376,7 @@ class WIN(tkinter.Tk):
 
 		try:
 			self.buffer_render_index += 1
-			self.file_handler.load_buffer(buffer_index=self.txt.buffer_index+1)
+			self.file_handler.load_buffer(buffer_index=self.buffer.buffer_index+1)
 		except IndexError: pass
 		self.reposition_widgets()
 
@@ -350,12 +384,12 @@ class WIN(tkinter.Tk):
 		self.buffer_render_list[self.buffer_render_index].place(x=0, y=0, relwidth=1, relheight=1)
 
 	def split_vertical(self, arg=None):
-		w = 1/len(self.buffer_render_list)
+		w = round(1/len(self.buffer_render_list), 1)
 		for i, buffer in enumerate(self.buffer_render_list, 0):
 			buffer.place(relx=w*i, y=0, relwidth=w, relheight=1)
 
 	def split_horizontal(self, arg=None):
-		h = 1/len(self.buffer_render_list)
+		h = round(1/len(self.buffer_render_list), 1)
 		for i, buffer in enumerate(self.buffer_render_list, 0):
 			buffer.place(x=0, rely=h*i, relwidth=1, relheight=h)
 
@@ -390,7 +424,7 @@ class WIN(tkinter.Tk):
 	def window_select(self, widget="", arg=None):
 		if (widget == "file_menu"): self.file_menubar_label.focus_set(); self.file_menubar_label.configure(bg=self.theme["window"]["select_widget"], fg=self.theme["window"]["select_widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
 		elif (widget == "settings_menu"): self.settings_menubar_label.focus_set(); self.settings_menubar_label.configure(bg=self.theme["window"]["select_widget"], fg=self.theme["window"]["select_widget_fg"]); self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
-		elif (widget == "text"): self.txt.focus_set(); self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
+		elif (widget == "text"): self.buffer.focus_set(); self.file_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"]); self.settings_menubar_label.configure(bg=self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
 
 		return "break"
 
@@ -452,13 +486,21 @@ class WIN(tkinter.Tk):
 		
 		self.command_out.place_forget()
 		self.command_entry.tkraise(); self.command_entry.focus_set()
-			
+		
 		return "break"
 
-	def find_place(self, arg=None, text=""):
+	def find_place(self, arg=None):
 		h = self.find_entry.font.metrics("linespace")
 		self.find_entry.place(x=0, y=self.buffer_frame.winfo_height()-h-40, width=self.buffer_frame.winfo_width(), height=h+5, anchor="nw")
 		self.find_entry.find_mode_set()
+		self.find_entry.tkraise(); self.find_entry.focus_set()
+
+		return "break"
+
+	def find_place_with_token(self, arg=None):
+		h = self.find_entry.font.metrics("linespace")
+		self.find_entry.place(x=0, y=self.buffer_frame.winfo_height()-h-40, width=self.buffer_frame.winfo_width(), height=h+5, anchor="nw")
+		self.find_entry.find_mode_set(text=self.buffer.current_token)
 		self.find_entry.tkraise(); self.find_entry.focus_set()
 
 		return "break"
@@ -471,7 +513,7 @@ class WIN(tkinter.Tk):
 		elif (not resize):
 			self.command_out.stdout(arg=arg, tags=tags, justify=justify)
 			if (focus):
-				self.txt.focus_set()
+				self.buffer.focus_set()
 			elif (self.focus_get() != self.find_entry): # lazy workaround
 				self.command_out.focus_set()
 				self.command_out.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
@@ -510,7 +552,7 @@ class WIN(tkinter.Tk):
 		self.parser.parse_argument(command)
 
 		#sets focus back to text widget
-		self.txt.see("insert")
+		self.buffer.see("insert")
 		self.command_entry.delete("1.0", "end") #deletes command line input
 
 		#set command history to newest index
@@ -587,23 +629,42 @@ class WIN(tkinter.Tk):
 
 	def update_index(self, arg=None):
 		# called upon every keypress
-		if (self.txt.index("insert") == self.txt.sel_start): self.txt.sel_start = None
+		if (self.buffer.index("insert") == self.buffer.sel_start): self.buffer.sel_start = None
 
-		self.txt.cursor_index = self.txt.index("insert").split(".") # gets the cursor's position and makes it into a tuple/list [line, column]
-		self.line_no.configure(text=f"[{self.txt.index('insert')}]") #updates the line&column widget to show current cursor index/position
-		if (self.txt.sel_start): # show selection index on the top of the window if a selection is active
-			self.line_no.configure(text=f"[{self.txt.sel_start}][{self.txt.index('insert')}]")
+		self.buffer.cursor_index = self.buffer.index("insert").split(".") # gets the cursor's position and makes it into a tuple/list [line, column]
+		self.line_no.configure(text=f"[{self.buffer.index('insert')}]") #updates the line&column widget to show current cursor index/position
+		
+		if (self.buffer.sel_start): # show selection index on the top of the window if a selection is active
+			self.line_no.configure(text=f"[{self.buffer.sel_start}][{self.buffer.index('insert')}]")
 
-		self.txt.highlighter.bracket_pair_make(self.txt.get("insert")) # highlights matching brackets
-		self.txt.highlighter.bracket_pair_highlight(self.txt.cursor_index[0], self.txt.current_line)
+		self.buffer.highlighter.bracket_pair_make(self.buffer.get("insert")) # highlights matching brackets
+		self.buffer.highlighter.bracket_pair_highlight(self.buffer.cursor_index[0], self.buffer.current_line)
 
-		self.txt.current_line = self.txt.get(f"insert linestart", f"insert lineend+1c") #+1c so the line includes the newline character
+		self.buffer.current_line = self.buffer.get(f"insert linestart", f"insert lineend+1c") #+1c so the line includes the newline character
+		self.buffer.current_token = self.buffer.get("insert wordstart", "insert wordend")
+		# self.buffer.tag_remove("whitespace_bg", "1.0", "end")
+		# self.buffer.tag_add("whitespace_bg", "insert wordstart", "insert wordend")
+		
+		if (len(self.buffer.current_token) <= 1):
+			self.buffer.current_token = self.buffer.get("insert -1c wordstart", "insert -1c wordend")
+			# self.buffer.tag_remove("whitespace_bg", "1.0", "end")
+			# self.buffer.tag_add("whitespace_bg", "insert -1c wordstart", "insert -1c wordend")
+			
+		elif (self.buffer.current_token[0] == "\n"):
+			self.buffer.current_token = self.buffer.get("insert wordstart +1c", "insert wordend")
+			if (len(self.buffer.current_token) <= 1): self.buffer.current_token = ""
+			# self.buffer.tag_remove("whitespace_bg", "1.0", "end")
+			# self.buffer.tag_add("whitespace_bg", "insert wordstart +1c", "insert wordend")
+
+		if (self.conf["highlight_line"]): self.buffer.tag_remove("whitespace_bg", "1.0", "end"); self.buffer.tag_add("whitespace_bg", "insert linestart", "insert lineend")
+		self.buffer.see("insert")
+			
 		# custom cursor thingy
-		# coords = self.txt.bbox("insert")
-		# self.curs.place(x=coords[0]-2, y=coords[1]-2, w=1, h=self.txt.font.metrics("linespace"))
-		# self.curs.place(x=coords[0]-2, y=coords[1]+self.txt.font.metrics("linespace")-2, w=self.txt.font_size-3, h=1)
-		# threading.Thread(target=t, args=(self.txt.cursor_index[0],), deamon=True).start()
-		self.l.see(float(self.txt.cursor_index[0])+20)
+		# coords = self.buffer.bbox("insert")
+		# self.curs.place(x=coords[0]-2, y=coords[1]-2, w=1, h=self.buffer.font.metrics("linespace"))
+		# self.curs.place(x=coords[0]-2, y=coords[1]+self.buffer.font.metrics("linespace")-2, w=self.buffer.font_size-3, h=1)
+		# threading.Thread(target=t, args=(self.buffer.cursor_index[0],), deamon=True).start()
+		# self.l.see(float(self.buffer.cursor_index[0])+20)
 		if (arg): return "break"
 
 	def update_buffer(self, arg=None):
@@ -612,16 +673,20 @@ class WIN(tkinter.Tk):
 
 		if (arg): # shows the characters that were released (eg. Control: D), but it can't handle more than one character (eg. Control: b-w)
 			text = re.sub("\|*Mod2", "", re.search("state=[a-zA-Z0-9\|]+", f"{arg}").group()[6:]) # magic with regex to show the keys you pressed in a nicer format
-			self.key_label["text"] = f"{text} {arg.keysym}"
+			if (text): self.key_label["text"] = f"{text}: {arg.keysym}"
+			else: self.key_label["text"] = f"{arg.keysym}"
 			if (arg.keysym in ("Up", "Down", "Left", "Right")): return # ends function if it was triggered by arrow keys (as they have different functions to handle them)
 		
 		self.update_index()
-		if (self.txt.change_index != len(self.txt.get("1.0", "end"))): # checks if any changes have been made to the text
-			self.title(f"Nix: <*{self.txt.name}>")
-			self.file_handler.buffer_tab.change_name(extra_char="*")
-			self.txt.change_index = len(self.txt.get("1.0", "end"))
-			self.txt.typing_index_set() # Alt-N: sets your cursor to the position you were last typing in
-			self.txt.lexer.lex() # lex text for variables, functions, structures and class etc.
+		if (self.buffer.change_index != len(self.buffer.get("1.0", "end"))): # checks if any changes have been made to the text
+			if (self.buffer.file_start_time != os.stat(self.buffer.full_name).st_mtime):
+				self.file_handler.buffer_tab.change_name(extra_char="!*")
+			else: self.file_handler.buffer_tab.change_name(extra_char="*")
+			
+			self.buffer_name_label["text"] = self.file_handler.buffer_tab["text"]
+			self.buffer.change_index = len(self.buffer.get("1.0", "end"))
+			self.buffer.typing_index_set() # Alt-N: sets your cursor to the position you were last typing in
+			self.buffer.lexer.lex() # lex text for variables, functions, structures and class etc.
 
 			# if the following widgets are not focused they are hidden
 			if (self.focus_displayof() != self.command_entry):
@@ -629,9 +694,14 @@ class WIN(tkinter.Tk):
 			if (self.focus_displayof() != self.command_out):
 				self.command_out.place_forget()
 
-			if (self.conf["suggest"]): self.txt.highlighter.suggest(self.txt.cursor_index[0], self.txt.current_line)
+			if (self.conf["suggest"]): self.buffer.highlighter.suggest(self.buffer.cursor_index[0], self.buffer.current_line)
 
-		self.txt.highlighter.highlight(self.txt.cursor_index[0], self.txt.current_line) # highlight current line
+		elif (self.buffer.file_start_time != os.stat(self.buffer.full_name).st_mtime):
+			self.file_handler.buffer_tab.change_name(extra_char="!")
+			self.buffer_name_label["text"] = self.file_handler.buffer_tab["text"]
+
+		self.buffer.highlighter.highlight(self.buffer.cursor_index[0], self.buffer.current_line) # highlight current line
+		self.buffer_name_label["text"] = self.file_handler.buffer_tab["text"]
 
 	def update_win(self):
 		""" updates the window whole window (all of it's widgets)"""
@@ -640,7 +710,7 @@ class WIN(tkinter.Tk):
 
 	def main(self):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
-		self.txt.focus_set()
+		self.buffer.focus_set()
 		t0 = time.time(); self.c = 0
 		def a(): # some annoying notifications
 			time.sleep(1650)
@@ -701,11 +771,12 @@ class WIN(tkinter.Tk):
 				[buffer.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)]
 			threading.Thread(target=unhighlight, args=(buffer, ), daemon=True).start()
 
+
 if __name__ == "__main__":
 	win = WIN()
 	win.after(0, win.main)
 	win.mainloop()
-
+	os.remove(".scratch")
 	print("thank you for using Nix")
 
 

@@ -11,6 +11,13 @@ from widgets import *
 from handlers import *
 from highlighter import *
 
+def wrap(func):
+	def wrapped_func(*args, **kwargs):
+		ret = func(*args, **kwargs)
+		return ret
+
+	return wrapped_func
+
 # I have no idea why I did it this way
 # Like sure it's kinda extendable and you can kinda add new functions easily, but it's like really fucking annoying
 # I'll remake it someday, probably, maybe, hopefully, not really
@@ -31,16 +38,17 @@ def ld(s, t, n):
 class PARSER:
 	def __init__(self, parent):
 		""" OOP GONE WRONG NOT CLICKBAIT I HATE THIS """
+		# this really is completely utterly shit and it's really badly extensible if you want to write an extra library or something
+		# I have no idea how to make this extensible
 		self.parent = parent
 
 		# if you want to add more functions to react with widgets of the main window you'll have to write a "wrapper" for them in here
 		# becuase if you do something like 
 		# self.commands = {
-			# "replace_tab": self.parent.txt.replace_tabs,
+			# "replace_tab": self.parent.buffer.replace_tabs,
 		# }
 		# then it will only work with the text widget that was referenced at the time of declaration of this class
 
-		# O(n) because fuck you
 		self.commands = { 
 			"help": self.help,
 			"highlighting": self.highlighting_set,
@@ -100,8 +108,9 @@ class PARSER:
 			"config|config_file": self.open_config_file,
 			"keybindings|keybinds": self.open_keybindings_file,
 		}
-
+		
 	def parse_argument(self, arg=None):
+		# O(n) somethign because fuck speed all I want is trash features
 		for key in self.commands.keys():
 			if (re.match(f"\\b({key})\\b", arg[0])):
 				self.command_execute = self.commands[key]
@@ -146,19 +155,19 @@ class PARSER:
 		arg = "".join(arg)
 		if (arg[0] == "l"): arg = arg[1:]
 		if (len(arg.split(".")) < 2): arg = float(arg)
-		index = self.parent.txt.index(arg)
-		self.parent.txt.mark_set("insert", index)
-		self.parent.txt.see(index)
+		index = self.parent.buffer.index(arg)
+		self.parent.buffer.mark_set("insert", index)
+		self.parent.buffer.see(index)
 		self.parent.notify(f"moved to: {index}")
 
 	def l_get(self, arg=None):
-		self.parent.notify(f"{self.parent.txt.get_line_count()}")
+		self.parent.notify(f"{self.parent.buffer.get_line_count()}")
 
 	def word_count_get(self, arg=None):
-		self.parent.notify(f"{self.parent.txt.get_word_count()}")
+		self.parent.notify(f"{self.parent.buffer.get_word_count()}")
 
 	def file_size_get(self, arg=None) -> None:
-		self.parent.notify(f"buffer size: {len(self.parent.txt.get('1.0', 'end-1c'))}B >>>> file size: {os.path.getsize(self.parent.txt.full_name)}B")
+		self.parent.notify(f"buffer size: {len(self.parent.buffer.get('1.0', 'end-1c'))}B >>>> file size: {os.path.getsize(self.parent.buffer.full_name)}B")
 
 	def lyrics_get(self, arg=None):
 		def lyr():
@@ -174,7 +183,7 @@ class PARSER:
 
 	def temp(self, arg=None):
 		self.parent.get_temperature()
-		self.parent.txt.focus_set()
+		self.parent.buffer.focus_set()
 
 	def time_set(self, arg=None):
 		self.parent.notify(self.parent.get_time(), tags=[["1.0", "end"]])
@@ -182,8 +191,8 @@ class PARSER:
 	def blink(self, arg=None): #wonky as fuck
 		if (arg[1] == "on"):
 			for buffer in self.parent.file_handler.buffer_list:
-				buffer[0]["insertontime"] = 700
-				buffer[0]["insertofftime"] = 300
+				buffer[0]["insertontime"] = 500
+				buffer[0]["insertofftime"] = 500
 
 		elif (arg[1] == "off"):
 			for buffer in self.parent.file_handler.buffer_list:
@@ -193,7 +202,7 @@ class PARSER:
 		else:
 			self.parent.notify(f"ERROR: Invalid argument {arg[1:]}", tags=[["1.0", "1.7"]])
 			
-		self.parent.txt.focus_set()
+		self.parent.buffer.focus_set()
 
 	def split(self, arg=None): #also wonky as fuck
 		if (arg[1] == "n"):
@@ -209,7 +218,7 @@ class PARSER:
 
 		try:
 			self.parent.buffer_render_index += 1
-			self.parent.file_handler.load_buffer(buffer_index=self.parent.txt.buffer_index+1)
+			self.parent.file_handler.load_buffer(buffer_index=self.parent.buffer.buffer_index+1)
 		except IndexError: pass
 
 		self.parent.reposition_widgets()
@@ -300,14 +309,14 @@ class PARSER:
 		self.parent.music_player.stop_song()
 
 	def system_execute(self, arg=None):
-		self.parent.txt.run_subprocess(argv=arg[1:])
+		self.parent.buffer.run_subprocess(argv=arg[1:])
 
 	def python_execute(self, arg=None):
 		print("ARGS: ", " ".join(arg[1:]))
 		exec(" ".join(arg[1:]))
 
 	def buffer_execute(self, arg=None):
-		arg = self.parent.txt.get("1.0", "end-1c")
+		arg = self.parent.buffer.get("1.0", "end-1c")
 		exec(arg)
 
 	def ls(self, arg=None):
@@ -354,21 +363,21 @@ class PARSER:
 	def tab_size_set(self, arg=None):
 		if (arg[1:]):
 			self.parent.conf["tab_size"] = int(arg[1])
-			self.parent.txt.configure_self()
+			self.parent.buffer.configure_self()
 			self.parent.notify(f"Current size: {self.parent.conf['tab_size']}")
 		else:
 			self.parent.notify(f"please, specify new size. Current size: {self.parent.conf['tab_size']}")
 
 	def replace_spaces(self, arg=None):
-		self.parent.txt.replace_x_with_y(" "*self.parent.conf["tab_size"], "\t")
+		self.parent.buffer.replace_x_with_y(" "*self.parent.conf["tab_size"], "\t")
 
 	def replace_tabs(self, arg=None):
-		self.parent.txt.replace_x_with_y("\t", " "*self.parent.conf["tab_size"])
+		self.parent.buffer.replace_x_with_y("\t", " "*self.parent.conf["tab_size"])
 
 	def initialize_file(self, arg=None):
-		for init in list(self.parent.txt.highlighter.language_init.keys()):
-			if (re.match(init, self.parent.txt.highlighter.lang)):
-				self.parent.txt.insert("1.0", self.parent.txt.highlighter.language_init[init])
+		for init in list(self.parent.buffer.highlighter.language_init.keys()):
+			if (re.match(init, self.parent.buffer.highlighter.lang)):
+				self.parent.buffer.insert("1.0", self.parent.buffer.highlighter.language_init[init])
 				break
 
 			self.parent.highlight_chunk()
@@ -377,25 +386,25 @@ class PARSER:
 		pass
 
 	def lex(self, arg=None):
-		self.parent.txt.lexer.lex()
+		self.parent.buffer.lexer.lex()
 
 	def lex_print(self, arg=None):
-		self.parent.txt.lexer.print_res()
+		self.parent.buffer.lexer.print_res()
 
 	def lexer_switch(self, arg=None): # TEMPORARY UNTIL I COMPLETELY IMPLEMENT LEXERS
 		if (arg[1].lower() == "python"):
-			self.parent.txt.lexer = LEXER(self.parent, self.parent.txt)
+			self.parent.buffer.lexer = LEXER(self.parent, self.parent.buffer)
 		elif (arg[1].lower() == "c"):
-			self.parent.txt.lexer = C_LEXER(self.parent, self.parent.txt)
+			self.parent.buffer.lexer = C_LEXER(self.parent, self.parent.buffer)
 
 	def add_tag(self, arg=None):
-		index = self.parent.precise_index_sort(self.parent.txt.index("insert"), self.parent.selection_start_index)
-		self.parent.txt.tag_raise(arg[1])
-		self.parent.txt.tag_add(arg[1], index[0], index[1])
+		index = self.parent.precise_index_sort(self.parent.buffer.index("insert"), self.parent.selection_start_index)
+		self.parent.buffer.tag_raise(arg[1])
+		self.parent.buffer.tag_add(arg[1], index[0], index[1])
 
 	def remove_tag(self, arg=None):
-		index = self.parent.precise_index_sort(self.parent.txt.index("insert"), self.parent.selection_start_index)
-		self.parent.txt.tag_remove(arg[1], index[0], index[1])
+		index = self.parent.precise_index_sort(self.parent.buffer.index("insert"), self.parent.selection_start_index)
+		self.parent.buffer.tag_remove(arg[1], index[0], index[1])
 
 	def lf(self, arg=None):
 		self.parent.convert_to_lf()
@@ -405,6 +414,7 @@ class PARSER:
 
 	def toggle_buffer_tab_show(self, arg=None):
 		self.parent.conf["show_buffer_tab"] = not self.parent.conf["show_buffer_tab"]
+		self.parent.reposition_widgets()
 
 	def make(self, arg=None):
 		self.system_execute("sys make".split())
@@ -420,5 +430,8 @@ class PARSER:
 		for c in arg:
 			res += c+" "
 		self.parent.notify(f"command <{res[:-1]}> not found", [["1.0", "1.7"], [f"1.{8+len(res)+2}", "end"]])
+
+
+
 
 

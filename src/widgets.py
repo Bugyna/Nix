@@ -168,7 +168,7 @@ class BUFFER(tkinter.Frame):
 			buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
 		
 		self.parent.file_handler.load_buffer(buffer_index=buffer_tab_index)
-		self.parent.notify(f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]])
+		self.parent.notify(f"buffer [{self.parent.buffer.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.buffer.name)}"], [f"1.{8+len(self.parent.buffer.name)}", f"1.{9+len(self.parent.buffer.name)}", "logical_keywords"]])
 
 		return "break"
 
@@ -225,7 +225,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.name = os.path.basename(name)
 		self.buffer_index = len(self.parent.file_handler.buffer_list)
 
-		self.font_size = 11
+		self.font_size = self.parent.conf["font_size"]
 		self.smaller_font_size = self.font_size - 2
 		self.font_weight = "normal"
 		self.font = self.parent.font
@@ -233,7 +233,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		
 		self.block_cursor = True
 		self.terminal_like_cursor = True
-		self.cursor_mode = 1
+		self.cursor_mode = self.parent.conf["cursor_style"]
 
 		self.blink = False
 		self.insert_offtime = 0; self.insert_ontime = 1
@@ -257,7 +257,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 	def unplace(self, arg=None):
 		""" hides command entry widget 'tis a kinda useless function"""
 		self.place_forget()
-		self.parent.txt.focus_set()
+		self.parent.buffer.focus_set()
 		return "break"
 	
 	def focus_self(self, arg=None):
@@ -334,19 +334,113 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		return "break"
 
 	def cursor_xy_get(self, arg=None):
-		return self.parent.txt.bbox('insert')[:2]
+		return self.parent.buffer.bbox('insert')[:2]
 
 	def cursor_coords_get(self, arg=None):
-		return self.parent.txt.bbox('insert')
+		return self.parent.buffer.bbox('insert')
 
 	def insert_time(self, arg=None):
 		self.insert("insert", self.get_time())
+
+	def convert_line_index(self, type: str, index=None):
+		""" gets the cursor's position """
+		if (not index): index = self.cursor_index[0]
+		if (type == "int"): return int(float(index))
+		elif (type == "float"): return float(index)
+
+	def inline_index_sort(self, index1, index2):
+		if (int(index1.split(".")[1]) <= int(index2.split(".")[1])): return (index1, index2)
+		else: return (index2, index1)
+
+	def multiline_index_sort(self, index1, index2):
+		self.queue = [self.convert_line_index("int", index1), self.convert_line_index("int", index2)]
+		self.queue.sort()
+		return self.queue[0], self.queue[1] + 1
+
+	def sameline_check(self, index1, index2):
+		return self.convert_line_index("int", index1) == self.convert_line_index("int", index2)
+
+	def precise_index_sort(self, index1, index2):
+		print(index1, index2)
+		s1, s2 = index1, index2
+		if (self.sameline_check(s1, s2)):
+			if (int(s1.split(".")[1]) <= int(s2.split(".")[1])): return (index1, index2)
+			else: return (index2, index1)
+		else:
+			if (self.convert_line_index("int", s1) <=  self.convert_line_index("int", s2)): (index1, index2)
+			else: return (index2, index1)
+			
+	def del_selection(self):
+		self.sel_start = None
+		self.mark_unset(self.mark_names()[-1])
+		self.tag_remove("sel", "1.0", "end")
+
+	def queue_get(self, arg=None):
+		self.queue = [self.convert_line_index("int", self.sel_start), self.convert_line_index("int", self.index("insert"))]
+		self.queue.sort()
+		return self.queue[0], self.queue[1] + 1
+
+	def change_case(self, arg=None, case=None):
+		self.sel_start = self.index(self.mark_names()[-1])
+		index_range = [self.sel_start, self.index("insert")]
+
+		index_range = self.inline_index_sort(*index_range)
+		
+		if (case == "lowercase"):
+			text = self.get(index_range[0], index_range[1])
+			self.delete(index_range[0], index_range[1])
+			text = text.lower()
+			self.insert(index_range[0], text)
+
+		else:
+			text = self.get(index_range[0], index_range[1])
+			self.delete(index_range[0], index_range[1])
+			text = text.upper()
+			self.insert(index_range[0], text)
+
+		self.parent.highlight_chunk(start_index=float(index_range[0]), stop_index=float(index_range[1]))
+
+		del index_range
+		del text
+		return "break"
+
+	def change_case_to_lowercase(self, arg=None):
+		self.change_case(case="lowercase")
+		
+	def change_case_to_uppercase(self, arg=None):
+		self.change_case(case="uppercase")
+
+	def char_enclose(self, arg=None) -> str:
+		self.sel_start = self.index(self.mark_names()[-1])
+		index = self.inline_index_sort(self.index("insert"), self.sel_start)
+
+		if (arg.keysym == "parenleft"): c1 = "("; c2 = ")"
+		elif (arg.keysym == "bracketleft"): c1 = "["; c2 = "]"
+		elif (arg.keysym == "braceleft"): c1 = "{"; c2 = "}"
+		elif (arg.keysym == "apostrophe" or arg.keysym == "quotedbl"): c1 = "\""; c2 = "\""
+		self.insert(index[1], c2)
+		self.insert(index[0], c1)
+		self.mark_set("insert", f"insert -1{len(c2)}") # sets the insert cursor back the length of the string we're enclosing with
+
+		return "break"
+
+	def delete_prev_word(self, arg=None):
+		self.delete("insert-1c wordstart", "insert-1c wordend")
+		if (arg): return "break"
+
+	def delete_next_word(self, arg=None):
+		self.delete("insert wordstart", "insert wordend")
+		if (arg): return "break"
+
+	def delete_line(self, arg=None):
+		self.delete("insert linestart", "insert lineend")
+		if (arg): return "break"
 
 class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def __init__(self, parent, name="COMMAND_ENTRY"):
 		super().__init__(parent, name)
 
-		self.font_size = 9
+		self.font_size = self.parent.conf["command_entry_font_size"]
 		self.smaller_font_size = self.font_size - 2
 		self.font_weight = "normal"
 		self.font = self.parent.smaller_font
@@ -367,7 +461,7 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
 
 	def on_key(self, arg=None) -> None:
-		self.parent.txt.highlighter.command_highlight()
+		self.parent.buffer.highlighter.command_highlight()
 		self.see("insert")
 
 	def insert_newline(self, arg=None) -> str:
@@ -403,7 +497,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def __init__(self, parent, name="FIND_ENTRY"):
 		super().__init__(parent, name)
 		
-		self.font_size = 9
+		self.font_size = self.parent.conf["find_entry_font_size"]
 		self.smaller_font_size = self.font_size - 2
 		self.font_weight = "bold"
 		self.font = self.parent.smaller_font_bold
@@ -440,9 +534,10 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 
 		return "break"
 
-	def find_mode_set(self, arg=None):
+	def find_mode_set(self, arg=None, text=None):
 		self.mode = "<search>"
 		if (self.get("1.0") not in ["?", "/"]): self.insert("1.0", self.parent.conf["default_find_mode"])
+		if (text): self.insert("end-1c", text)
 		self.bind("<Return>", self.find)
 		self.bind("<KP_Enter>", self.find)
 		self.unbind("<Control-Z>")
@@ -452,16 +547,16 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.mode = "<replace>"
 		self.bind("<Return>", self.replace)
 		self.bind("<KP_Enter>", self.replace)
-		self.bind("<Control-Z>", self.parent.txt.undo)
-		self.bind("<Control-z>", self.parent.txt.undo)
+		self.bind("<Control-Z>", self.parent.buffer.undo)
+		self.bind("<Control-z>", self.parent.buffer.undo)
 
 	def find_match(self, keyword, start="match_end", end="end", regexp=False, count=None):
 		if (count == None):
 			count = tkinter.IntVar()
-		index = self.parent.txt.search(keyword, start, end, regexp=regexp, count=count)
+		index = self.parent.buffer.search(keyword, start, end, regexp=regexp, count=count)
 		if (index == ""): return None
 		if (count.get()) == 0: return None # degenerate pattern which matches zero-lenght strings
-		return [ index, self.parent.txt.index(f"{index}+{count.get()}c") ]
+		return [ index, self.parent.buffer.index(f"{index}+{count.get()}c") ]
 
 	def find(self, arg=None, keyword=None, regexp=None):
 		"""  """
@@ -480,39 +575,39 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.find_history.append(self.get("1.0", "end-1c"))
 
 		for index in self.found:
-			self.parent.txt.tag_remove("found_select_bg", index[0], index[1])
-			self.parent.txt.tag_remove("found_bg", index[0], index[1])
+			self.parent.buffer.tag_remove("found_select_bg", index[0], index[1])
+			self.parent.buffer.tag_remove("found_bg", index[0], index[1])
 
 		self.found_index = 0
 		self.found = []
 		self.find_query = keyword
 		
-		self.parent.txt.mark_set("match_end", "1.0")
+		self.parent.buffer.mark_set("match_end", "1.0")
 
 		count = tkinter.IntVar()
 		while True:
 			if (index := self.find_match(keyword, start="match_end", end="end", regexp=self.regexp, count=count)):
-				self.parent.txt.mark_set("match_end", index[1])
+				self.parent.buffer.mark_set("match_end", index[1])
 				self.found.append(index)
 			else: break
 		
 		for index in self.found:
-			self.parent.txt.tag_add("found_bg", index[0], index[1])
+			self.parent.buffer.tag_add("found_bg", index[0], index[1])
 
-		self.parent.txt.mark_unset("match_end")
+		self.parent.buffer.mark_unset("match_end")
 		self.scroll_through_found()
 		return "break"
 
 	def replace(self, arg=None):
 		result_count = len(self.found)
-		match = self.parent.txt.get(self.found[self.found_index][0], self.found[self.found_index][1])
+		match = self.parent.buffer.get(self.found[self.found_index][0], self.found[self.found_index][1])
 		self.parent.command_out_set(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
 				
 		start, end = self.found[self.found_index][0], self.found[self.found_index][1]
-		self.parent.txt.delete(start, end)
-		self.parent.txt.insert(start, self.get("1.0", "end-1c"))
+		self.parent.buffer.delete(start, end)
+		self.parent.buffer.insert(start, self.get("1.0", "end-1c"))
 		# self.parent.highlight_chunk(start_index=start, stop_index=end)
-		self.parent.txt.highlighter.highlight(line_no=self.parent.txt.convert_line_index("int", start))
+		self.parent.buffer.highlighter.highlight(line_no=self.parent.buffer.convert_line_index("int", start))
 		f = self.found.pop(self.found_index)
 		
 		# fixes offset in line caused by replacing previous matches in line
@@ -553,16 +648,16 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 					offset = -5
 
 		for index in self.found:
-			self.parent.txt.tag_remove("sel", index[0], index[1])
-			self.parent.txt.tag_remove("underline", index[0], index[1])
+			self.parent.buffer.tag_remove("sel", index[0], index[1])
+			self.parent.buffer.tag_remove("underline", index[0], index[1])
 		
-		self.parent.txt.mark_set("insert", self.found[self.found_index][1])
-		self.parent.txt.mark_set(self.parent.txt.mark_names()[-1], self.found[self.found_index][0])
-		self.parent.txt.see(float(self.found[self.found_index][0])+offset)
-		self.parent.txt.tag_add("sel", self.found[self.found_index][0], self.found[self.found_index][1])
-		self.parent.txt.tag_add("underline", self.found[self.found_index][0], self.found[self.found_index][1])
+		self.parent.buffer.mark_set("insert", self.found[self.found_index][1])
+		self.parent.buffer.mark_set(self.parent.buffer.mark_names()[-1], self.found[self.found_index][0])
+		self.parent.buffer.see(float(self.found[self.found_index][0])+offset)
+		self.parent.buffer.tag_add("sel", self.found[self.found_index][0], self.found[self.found_index][1])
+		self.parent.buffer.tag_add("underline", self.found[self.found_index][0], self.found[self.found_index][1])
 		
-		match = self.parent.txt.get(self.found[self.found_index][0], self.found[self.found_index][1])		
+		match = self.parent.buffer.get(self.found[self.found_index][0], self.found[self.found_index][1])		
 		self.parent.command_out_set(f"{self.found_index+1} out of {result_count} results : {self.found[self.found_index]} match: {match} {self.mode}")
 		
 		return "break"
@@ -594,12 +689,12 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		return "break"
 
 	def unplace(self, arg=None):
-		self.parent.txt.tag_remove("found_bg", "1.0", "end")
-		self.parent.txt.tag_remove("underline", "1.0", "end")
+		self.parent.buffer.tag_remove("found_bg", "1.0", "end")
+		self.parent.buffer.tag_remove("underline", "1.0", "end")
 		
 		self.delete("1.0", "end")
 		self.place_forget()
-		self.parent.txt.focus_set()
+		self.parent.buffer.focus_set()
 		self.found_index = 0
 		self.found = []
 	
@@ -611,7 +706,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		self.font_bold = self.parent.font_bold
 		self.font = self.parent.smaller_font_bold
-		self.font_size = 9
+		self.font_size = self.parent.conf["command_out_font_size"]
 		self.font_weight = "bold"
 
 		self.arg = ""
@@ -671,7 +766,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.modified_stdout(result, tags)
 
 	def unplace(self, arg=None):
-		self.parent.txt.focus_set()
+		self.parent.buffer.focus_set()
 		self.place_forget()
 
 	def scroll(self, arg):
@@ -778,9 +873,9 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 				match = re.search(r"[0-9]+", line)
 
 			if (match):
-				index = self.parent.txt.convert_line_index("float", match)
-				self.parent.txt.mark_set("insert", index)
-				self.parent.txt.see("insert")
+				index = self.parent.buffer.convert_line_index("float", match)
+				self.parent.buffer.mark_set("insert", index)
+				self.parent.buffer.see("insert")
 		
 		return "break"
 		
@@ -811,7 +906,7 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 		self.insert("1.0", "COMPLETELY ARBITARY TEXT")
 
 	def suggest(self, arg=None) -> None:
-		coords = self.parent.txt.bbox("insert")
+		coords = self.parent.buffer.bbox("insert")
 		self.place(x=coords[0]+coords[3], y=coords[1]+50, width=100, height=100)
 		self.tkraise()
 
@@ -827,6 +922,8 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.highlighter = highlighter(self.parent, self)
 		self.set_highlighter()
 		self.cursor_highlight = self.normal_highlight
+		try: self.file_start_time = os.stat(self.full_name).st_mtime
+		except FileNotFoundError: self.file_start_time = 0
 
 		self.clipboard_register = ""
 		self.sel_start = None
@@ -835,6 +932,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.cursor_index = ["1", "0"]
 		self.queue = []
 		self.current_line = ""
+		self.current_token = ""
 
 		# self.text_len = ""
 		self.change_index = ""
@@ -866,51 +964,13 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.convert_to_lf()
 		self.replace_x_with_y("\n", "\r\n", True)
 
-	def convert_line_index(self, type: str, index=None):
-		""" gets the cursor's position """
-		if (not index): index = self.cursor_index[0]
-		if (type == "int"): return int(float(index))
-		elif (type == "float"): return float(index)
-
-	def inline_index_sort(self, index1, index2):
-		if (int(index1.split(".")[1]) <= int(index2.split(".")[1])): return (index1, index2)
-		else: return (index2, index1)
-
-	def multiline_index_sort(self, index1, index2):
-		self.queue = [self.convert_line_index("int", index1), self.convert_line_index("int", index2)]
-		self.queue.sort()
-		return self.queue[0], self.queue[1] + 1
-
-	def sameline_check(self, index1, index2):
-		return self.convert_line_index("int", index1) == self.convert_line_index("int", index2)
-
-	def precise_index_sort(self, index1, index2):
-		print(index1, index2)
-		s1, s2 = index1, index2
-		if (self.sameline_check(s1, s2)):
-			if (int(s1.split(".")[1]) <= int(s2.split(".")[1])): return (index1, index2)
-			else: return (index2, index1)
-		else:
-			if (self.convert_line_index("int", s1) <=  self.convert_line_index("int", s2)): (index1, index2)
-			else: return (index2, index1)
-			
-	def del_selection(self):
-		self.sel_start = None
-		self.mark_unset(self.mark_names()[-1])
-		self.tag_remove("sel", "1.0", "end")
-
-	def queue_get(self, arg=None):
-		self.queue = [self.convert_line_index("int", self.sel_start), self.convert_line_index("int", self.index("insert"))]
-		self.queue.sort()
-		return self.queue[0], self.queue[1] + 1
-
 	def moving(func): #something something event queue something
 		def wrapped_func(self, *args, **kwargs):
 			self.tag_remove("cursor", "1.0", "end")
-			func(self, *args, **kwargs)
+			ret = func(self, *args, **kwargs)
 			self.tag_add("cursor", "insert")
 			self.cursor_highlight()
-			return "break"
+			return ret
 
 		return wrapped_func
 
@@ -1059,48 +1119,12 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.parent.update_buffer()
 		return "break"
 
+	@moving
 	def mouse_left_motion(self, arg=None):
 		if (not self.sel_start):
-			self.sel_start = self.index("insert")
-		self.mark_set("insert", "current")
+			self.sel_start = self.index("current")
+		self.mark_set("current", "insert")
 		self.parent.update_buffer()
-
-	def change_case(self, arg=None):
-		self.sel_start = self.index(self.mark_names()[-1])
-		index_range = [self.sel_start, self.index("insert")]
-
-		index_range = self.inline_index_sort(*index_range)
-		
-		if (arg.state == 20): # without shift
-			text = self.get(index_range[0], index_range[1])
-			self.delete(index_range[0], index_range[1])
-			text = text.lower()
-			self.insert(index_range[0], text)
-
-		elif (arg.state == 21): # shift
-			text = self.get(index_range[0], index_range[1])
-			self.delete(index_range[0], index_range[1])
-			text = text.upper()
-			self.insert(index_range[0], text)
-
-		self.parent.highlight_chunk(start_index=float(index_range[0]), stop_index=float(index_range[1]))
-
-		del index_range
-		del text
-		return "break"
-
-	def char_enclose(self, arg=None) -> str:
-		self.sel_start = self.index(self.mark_names()[-1])
-		index = self.inline_index_sort(self.index("insert"), self.sel_start)
-
-		if (arg.keysym == "parenleft"): c1 = "("; c2 = ")"
-		elif (arg.keysym == "bracketleft"): c1 = "["; c2 = "]"
-		elif (arg.keysym == "braceleft"): c1 = "{"; c2 = "}"
-		elif (arg.keysym == "apostrophe" or arg.keysym == "quotedbl"): c1 = "\""; c2 = "\""
-		self.insert(index[1], c2)
-		self.insert(index[0], c1)
-
-		return "break"
 
 	def comment_line(self, arg=None) -> str:
 		""" I wish I knew what the fuck is going on in here I am depressed """
@@ -1261,17 +1285,12 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.insert("insert", self.buffer_clipboard)
 		if (arg): return "break"
 
-	def delete_prev_word(self, arg=None):
-		self.delete("insert-1c wordstart", "insert-1c wordend")
-		if (arg): return "break"
-
-	def delete_next_word(self, arg=None):
-		self.delete("insert wordstart", "insert wordend")
-		if (arg): return "break"
-
-	def delete_line(self, arg=None):
-		self.delete("insert linestart", "insert lineend")
-		if (arg): return "break"
+	def copy_token(self, arg=None):
+		self.parent.clipboard_clear()
+		self.parent.clipboard_append(self.current_token)
+		self.parent.update()
+		
+		return "break"
 
 	def moving_index_set(self, arg=None, index="insert"):
 		self.moving_index = self.index(index)
@@ -1365,9 +1384,9 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			elif (self.parent.buffer_render_index < 0):
 				self.parent.buffer_render_index = len(self.parent.buffer_render_list)-1
 
-			self.parent.txt = self.parent.buffer_render_list[self.parent.buffer_render_index]
-			self.parent.txt.focus_set()
-			self.parent.file_handler.set_current_file(buffer_name=self.parent.txt.full_name)
+			self.parent.buffer = self.parent.buffer_render_list[self.parent.buffer_render_index]
+			self.parent.buffer.focus_set()
+			self.parent.file_handler.set_current_file(buffer_name=self.parent.buffer.full_name)
 			self.parent.reposition_widgets()
 
 		return "break"
@@ -1402,3 +1421,4 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def run_make(self, arg=None):
 		return self.run_subprocess(make=True)
 
+		

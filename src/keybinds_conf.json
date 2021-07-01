@@ -37,6 +37,17 @@
 			"<Control-Button-4>" : "font_size_set",
 			"<Control-Button-5>" : "font_size_set",
 			"<Insert>" : "cursor_mode_set",
+			
+			"<Control-Caps_Lock>" : "change_case_to_lowercase",
+			"<Control-Shift-Caps_Lock>" : "change_case_to_uppercase",
+			"<Control-quotedbl>" : "char_enclose",
+			"<Control-parenleft>" : "char_enclose",
+			"<Control-bracketleft>" : "char_enclose",
+			"<Control-braceleft>" : "char_enclose",
+			"<Control-BackSpace>" : "delete_prev_word",
+			"<Control-Delete>" : "delete_next_word",
+			"<Control-Shift-BackSpace>" : "delete_line",
+			"<Control-Shift-Delete>" : "delete_line",
 	
 			"<F1>" : "bell",
 			"<F2>" : "insert_time"
@@ -142,7 +153,9 @@
 			
 			"<Control-E>" : "show_last_output",
 			"<Control-e>" : "show_last_output",
-			
+
+			"<Control-Shift-F>" : "find_place_with_token",
+			"<Control-Shift-f>" : "find_place_with_token",			
 			"<Control-F>" : "find_place",
 			"<Control-f>" : "find_place",
 			"<Control-G>" : "nt_place",
@@ -223,24 +236,14 @@
 			"<Control-Q>" : "configure_wrap",
 			"<Control-q>" : "configure_wrap",
 			
-			"<Control-L>" : "change_case",
-			"<Control-l>" : "change_case",
-			"<Control-Shift-L>" : "change_case",
-			"<Control-Shift-l>" : "change_case",
 			"<Control-B>C" : "buffer_clipboard_set",
 			"<Control-b>c" : "buffer_clipboard_set",
 			"<Control-B>V" : "buffer_clipboard_paste",
 			"<Control-b>v" : "buffer_clipboard_paste",
 			"<Control-V>" : "paste",
 			"<Control-v>" : "paste",
-			"<Control-quotedbl>" : "char_enclose",
-			"<Control-parenleft>" : "char_enclose",
-			"<Control-bracketleft>" : "char_enclose",
-			"<Control-braceleft>" : "char_enclose",
-			"<Control-BackSpace>" : "delete_prev_word",
-			"<Control-Delete>" : "delete_next_word",
-			"<Control-Shift-BackSpace>" : "delete_line",
-			"<Control-Shift-Delete>" : "delete_line",
+			"<Control-Shift-C>" : "copy_token",
+			"<Control-Shift-c>" : "copy_token",
 			
 			"<Alt-S>" : "selection_index_swap",
 			"<Alt-s>" : "selection_index_swap",
@@ -262,3 +265,4 @@
 		}
 	}
 }
+

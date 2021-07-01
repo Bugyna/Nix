@@ -15,4 +15,6 @@ smaller_font_size=11
 suggest=1
 # ? = normal searching / = regex searching
 default_find_mode="?"
+highlight_line=0
 username=""
+allow_external_modules=1

@@ -39,25 +39,26 @@ class FILE_HANDLER(object):
 		self.buffer_list.append([TEXT(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
 		self.buffer_dict[buffer_name] = self.buffer_list[-1]
 		self.parent.buffer_render_list.insert(self.parent.buffer_render_index, self.buffer_list[-1][0])
-		self.parent.txt = self.parent.buffer_render_list[self.parent.buffer_render_index]
+		self.parent.buffer = self.parent.buffer_render_list[self.parent.buffer_render_index]
 		self.buffer_tab = self.buffer_list[-1][1]
 		self.buffer_tab_list.append(self.buffer_list[-1][1])
-		self.parent.title(f"Nix: <{self.parent.txt.name}>")
-		self.parent.txt.insert("1.0", "\nhttps://www.asciiart.eu/")
-		self.parent.txt.insert("1.0", art[random.randint(0, len(art)-1)])
-		self.parent.txt.mark_set("insert", len(self.parent.txt.get("1.0", "end").split("\n"))/2)
+		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
+		self.parent.buffer.insert("1.0", "\nhttps://www.asciiart.eu/")
+		self.parent.buffer.insert("1.0", art[random.randint(0, len(art)-1)])
+		self.parent.buffer.mark_set("insert", len(self.parent.buffer.get("1.0", "end").split("\n"))/2)
+		open(buffer_name, "w").close()
 		
-		self.parent.txt.tag_add("center", "1.0", "end")
+		self.parent.buffer.tag_add("center", "1.0", "end")
 
 	def load_scratch(self, arg=None):
 		self.parent.buffer_unplace()
 		self.parent.buffer_render_list.insert(self.parent.buffer_render_index, self.buffer_list[0][0])
-		self.parent.txt = self.parent.buffer_render_list[self.parent.buffer_render_index]
-		self.parent.txt.focus_set()
+		self.parent.buffer = self.parent.buffer_render_list[self.parent.buffer_render_index]
+		self.parent.buffer.focus_set()
 		self.parent.reposition_widgets()
 		
-		self.parent.title(f"Nix: <{self.parent.txt.name}>")
-		self.parent.txt.font_size_set()
+		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
+		self.parent.buffer.font_size_set()
 		self.parent.theme_load()
 
 		if (arg): return "break"
@@ -86,7 +87,7 @@ class FILE_HANDLER(object):
 		self.load_buffer(buffer_name=buffer_name)
 
 	def close_buffer(self, arg=None, buffer_name: str=None):
-		if (not buffer_name): buffer_name = self.parent.txt.full_name
+		if (not buffer_name): buffer_name = self.parent.buffer.full_name
 		buffer_index = self.buffer_dict[buffer_name][0].buffer_index
 		if (buffer_index == 0): return # can't close the scratch buffer because I am a bad programmer and it would fuck things up
 		for i, buffer in enumerate(self.parent.buffer_render_list, 0):
@@ -118,33 +119,39 @@ class FILE_HANDLER(object):
 
 	def load_buffer(self, arg=None, buffer_name: str = None, buffer_index: int = None):
 		if (buffer_index is not None): buffer_name = self.buffer_list[buffer_index][0].full_name
-		self.set_current_file(buffer_name=buffer_name)
 
 		# self.parent.buffer_unplace()
-		p = self.parent.txt
+		p = self.parent.buffer
 		if (len(self.parent.buffer_render_list)-1 < self.parent.buffer_render_index): self.parent.buffer_render_list.insert(self.parent.buffer_render_index, self.buffer_dict[buffer_name][0])
 		else: self.parent.buffer_render_list[self.parent.buffer_render_index] = self.buffer_dict[buffer_name][0]
-		self.parent.txt = self.parent.buffer_render_list[self.parent.buffer_render_index]
+		self.parent.buffer = self.parent.buffer_render_list[self.parent.buffer_render_index]
 			
 		self.buffer_tab = self.buffer_dict[buffer_name][1]
-		self.buffer_tab_index = self.parent.txt.buffer_index # text widget's buffer_index is the same as their buffer tab's buffer_index
+		self.buffer_tab_index = self.parent.buffer.buffer_index # text widget's buffer_index is the same as their buffer tab's buffer_index
 
-		if (buffer_index != 0): self.current_file_name = self.current_buffer = self.parent.txt.full_name; self.current_dir = os.path.dirname(self.current_buffer)
+		# if (buffer_index != 0): self.current_file_name = self.current_buffer = self.parent.buffer.full_name; self.current_dir = os.path.dirname(self.current_buffer)
+		self.set_current_file(buffer_name=buffer_name)
 		
-		self.parent.title(f"Nix: <{self.parent.txt.name}>")
-		if (type(self.parent.txt) == "TEXT"): self.parent.txt.font_size_set()
+		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
+		
+		if (type(self.parent.buffer) == "TEXT"): self.parent.buffer.font_size_set()
 		self.parent.theme_load()
+		
 		if (self.parent.conf["show_buffer_tab"]): self.buffer_tab.focus_highlight()
+		
 		self.parent.reposition_widgets()
-		self.parent.command_out_set(arg=f"buffer [{self.parent.txt.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.txt.name)}"], [f"1.{8+len(self.parent.txt.name)}", f"1.{9+len(self.parent.txt.name)}", "logical_keywords"]], focus=True)
-		self.parent.txt.focus_set()
+		self.parent.command_out_set(arg=f"buffer [{self.parent.buffer.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.buffer.name)}"], [f"1.{8+len(self.parent.buffer.name)}", f"1.{9+len(self.parent.buffer.name)}", "logical_keywords"]], focus=True)
+		self.parent.buffer.focus_set()
 		p.unplace() # weird (seemingly) optimalization trick
 		
 		if (arg): return "break"
 
 	def set_current_file(self, arg=None, buffer_name=None):
-		self.current_file_name = self.current_buffer = self.parent.txt.full_name; self.current_dir = os.path.dirname(self.current_buffer)
-		self.parent.txt.buffer_index
+		self.current_file_name = self.current_buffer = self.parent.buffer.full_name
+		tmp = os.path.dirname(self.current_buffer)
+		if (tmp): self.current_dir = tmp
+		
+		self.buffer_tab_index = self.parent.buffer.buffer_index
 
 		if (self.parent.conf["show_buffer_tab"]):
 			self.buffer_tab.configure_self()
@@ -184,9 +191,9 @@ class FILE_HANDLER(object):
 		self.new_buffer(self.current_file_name)
 
 		self.current_dir = os.path.dirname(self.current_file_name)
-		self.parent.title(f"Nix: <{self.parent.txt.name}>")
+		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
 		
-		self.parent.txt.set_highlighter()
+		self.parent.buffer.set_highlighter()
 		self.current_file.close()
 
 		if (arg): return "break"
@@ -197,17 +204,18 @@ class FILE_HANDLER(object):
 			size0 = os.path.getsize(self.current_file_name)
 
 			self.current_file = open(self.current_file_name, "w")
-			self.current_file.write(self.parent.txt.get("1.0", "end-1c"))
+			self.current_file.write(self.parent.buffer.get("1.0", "end-1c"))
 			self.current_file.close()
+			self.parent.buffer.file_start_time = os.stat(self.current_file_name).st_mtime
 
-			self.parent.txt.set_highlighter()
+			self.parent.buffer.set_highlighter()
 			size1 = os.path.getsize(self.current_file_name)
 			
 			self.current_dir = os.path.dirname(self.current_file_name)
 			self.parent.title(f"Nix: <{os.path.basename(self.current_file_name)}>")
 			self.buffer_tab.change_name(extra_char=" ")
-			# self.parent.notify(f"total of {self.parent.txt.get_line_count()} lines saved")
-			self.parent.notify(rf"saved [{size1-size0}B|{size1}B|{self.parent.txt.get_line_count()}L] to {os.path.basename(self.current_file_name)}")
+			
+			self.parent.notify(rf"saved [{size1-size0}B|{size1}B|{self.parent.buffer.get_line_count()}L] to {os.path.basename(self.current_file_name)}")
 			
 		elif (not self.current_file_name):
 			self.new_file()
@@ -219,10 +227,10 @@ class FILE_HANDLER(object):
 	def save_file_as(self, arg=None, filename=None):
 		""" saves current text into a new file """
 
-		self.current_dir = os.path.dirname(self.parent.txt.full_name)
+		self.current_dir = os.path.dirname(self.parent.buffer.full_name)
 		filename = f"{self.current_dir}/{filename}"
-		os.rename(self.parent.txt.full_name, filename)
-		self.rename_buffer(self.parent.txt.full_name, filename)
+		os.rename(self.parent.buffer.full_name, filename)
+		self.rename_buffer(self.parent.buffer.full_name, filename)
 		self.save_file()
 		self.parent.highlight_chunk()
 
@@ -230,18 +238,14 @@ class FILE_HANDLER(object):
 
 	def load_file(self, arg=None, filename=None):
 		""" opens a file and loads it's content into the text widget """
+		print("loading: ", self.current_dir)
 		
 		try: self.buffer_dict[filename]; self.load_buffer(buffer_name=filename) # Checks for existing buffers
 		except KeyError: pass
 
-		if (filename): #if the filename arguments is given: set the current filename to be the argument (pretty self explanatory)
+		if (filename):
+			if (os.path.isfile(f"{self.current_dir}/{filename}")): self.current_file_name = f"{self.current_dir}/{filename}"
 			self.current_file_name = os.path.abspath(filename)
-		
-		elif (filename == None): #if the filename argument is not provided open a file menu to provide a filename
-			try:
-				self.current_file_name = self.current_buffer = self.parent.filename.askopenfilename(initialdir=f"{self.current_dir}/", title="Select file", filetypes=(self.supported_filetypes, ("all files","*.*")))
-			except TypeError: #throws an error when closing the menu without choosing anything
-				pass
 
 		try:
 			self.current_file = open(self.current_file_name, "r+") #opens the file
@@ -264,13 +268,13 @@ class FILE_HANDLER(object):
 			file.write(file_content)
 			file.close()
 
-		self.parent.txt.delete("1.0", "end") #deletes the buffer so there's not any extra text
-		self.parent.txt.insert("1.0", file_content) #puts all of the file's text in the text widget
-		self.parent.txt.change_index = len(file_content)+1
+		self.parent.buffer.delete("1.0", "end") #deletes the buffer so there's not any extra text
+		self.parent.buffer.insert("1.0", file_content) #puts all of the file's text in the text widget
+		self.parent.buffer.change_index = len(file_content)+1
 		# if (platform == "Windows"): self.parent.convert_to_crlf()
 		# else: self.parent.convert_to_lf()
-		self.parent.txt.mark_set("insert", "1.0") #puts the cursor at the start of the file
-		self.parent.txt.see("insert")
+		self.parent.buffer.mark_set("insert", "1.0") #puts the cursor at the start of the file
+		self.parent.buffer.see("insert")
 	
 		self.current_file.close()
 	
@@ -278,11 +282,11 @@ class FILE_HANDLER(object):
 		t1 = time.time() # timer| gets current time in miliseconds
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		# puts the time it took to load and highlight the text in the command output widget
-		self.parent.notify(f"total lines: {self.parent.txt.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
-			["1.12", f"1.{13+len(str(self.parent.txt.get_line_count()))}"], 
-			[f"1.{15+len(str(self.parent.txt.get_line_count()))+11}", f"1.{15+len(str(self.parent.txt.get_line_count()))+11+len(str(elapsed_time))}"]
+		self.parent.notify(f"total lines: {self.parent.buffer.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
+			["1.12", f"1.{13+len(str(self.parent.buffer.get_line_count()))}"], 
+			[f"1.{15+len(str(self.parent.buffer.get_line_count()))+11}", f"1.{15+len(str(self.parent.buffer.get_line_count()))+11+len(str(elapsed_time))}"]
 			]) # wild...
-		self.parent.title(f"Nix: <{self.parent.txt.name}>")
+		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
 
 		del file_content
 
