@@ -17,9 +17,7 @@ import threading
 import psutil
 
 from highlighter import *
-from parser import *
-
-import ctypes
+from command_parser import *
 
 import platform
 platform = platform.system()
@@ -27,6 +25,7 @@ platform = platform.system()
 import inspect
 
 if (platform == "Windows"):
+	import ctypes
 	ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
 CRLF="\r\n"
@@ -253,8 +252,8 @@ class WIN(tkinter.Tk):
 	def load_modules(self):
 		# who the fuck made python modules so stupid
 		# java levels of abstraction
-		
-		for file in os.listdir(f"{os.path.dirname(__file__)}/modules"):
+
+		for file in os.listdir(f"{os.path.dirname(os.path.abspath(__file__))}/modules"):
 			if (file[-3:] == ".py"):
 				file = file[:-3] # take the extension out of the name
 				modules = __import__(f"modules.{file}") # import the modules in the modules directory
