@@ -1,8 +1,11 @@
 import PyInstaller.__main__
 
 PyInstaller.__main__.run([
-    'main.py',
-    '--onefile',
-    '--noconsole',
-    "--icon", "icon.png"
+	'src/main.py',
+	# '--onefile',
+	'--noconsole',
+	'--add-data=src/*:.',
+	'--add-data=src/modules/*:.',
+	'--hidden-import=PILLOW',
+	'--hidden-import=PIL',
 ])
