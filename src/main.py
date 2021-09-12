@@ -891,22 +891,32 @@ class WIN(tkinter.Tk):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
 		self.buffer.focus_set()
 		t0 = time.time(); self.c = 0
-		def a(): # some annoying notifications
-			time.sleep(1650)
+		counter = 0
+		def a(counter=0): # some annoying notifications
+			time.sleep(1)
+			self.get_time()
+			counter += 1
+			if (counter == 1650):
+				self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+			elif (counter == 3600):
+				self.notify("You've been programming for an hour now. Consider taking a break")
+				counter = 0
+			# time.sleep(1650)
 			# try:
-			self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+			# self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
 				# notify2.init("Nix")
 				# notify2.Notification("POSTURE CHECK", "You've been programming for half an hour now. Consider stretching for a bit").show()
 			# except Exception:
 			# 	self.commmand_out_set("Consider downloading the notify2 module"); return
-			time.sleep(1650)
+			# time.sleep(1650)
 			# try:
-			self.notify("You've been programming for an hour now. Consider taking a break")
+			# self.notify("You've been programming for an hour now. Consider taking a break")
 			# 	notify2.init("Nix")
 			# 	notify2.Notification("BREAK TIME", "You've been programming for an hour now. Consider taking a break").show()
 			# except Exception:
 			# 	self.commmand_out_set("Consider downloading the notify2 module"); return
 			a()
+			# self.after(0, self.get_time())
 
 		# def b():
 			# while (self.run):
@@ -921,7 +931,6 @@ class WIN(tkinter.Tk):
 		# while (self.run):
 			# self.update_win()
 			# self.get_time()
-			# pass
 
 			# if (int(time.time()-t0) >= 1): # updates the processor frequency value every second
 				# def a():
