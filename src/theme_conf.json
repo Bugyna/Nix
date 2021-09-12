@@ -1,0 +1,120 @@
+{
+	"cake":
+	{
+		"window": {"bg": "#000000", "fg": "#AAAAAA", "insertbg": "#555555", "selectbg": "#220022", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase": { "foreground" : "#3055BB", "bold" : true}, "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#220022"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"retro_cake":
+	{
+		"window": {"bg": "#000000", "fg": "#CDAB81", "insertbg": "#AAAAAA", "selectbg": "#332233", "selectfg": "#AAAAAA", "widget_fg": "#CDAB81", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#A500FF", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase": { "foreground" : "#3055BB", "bold" : true}, "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#220022"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"nat":
+	{
+		"window": {"bg": "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#A53300", "logical_keywords": "#2090F0", "functions": "#E0AF60", "upcase": {"foreground" : "#BB5522", "bold" : true}, "numbers": "#BB9900", "operators": "#f75f00", "special_chars": "#00A000", "quotes": "#00DCFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#001500"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"lens":
+	{
+		"window": {"bg": "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#E4D8B4", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase": {"foreground" : "#BB5522", "bold" : true}, "numbers": "#E86F68", "operators": "#DE7E44", "special_chars": "#6C566D", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#001500"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"tea":
+	{
+		"window": {"bg": "#070304", "fg": "#AAAAAA", "insertbg": "#005500", "selectbg": "#001500", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#A53300", "logical_keywords": "#2090F0", "functions": "#83B799", "upcase": {"foreground" : "#BB5522", "bold" : true}, "numbers": "#E86F68", "operators": "#f75f00", "special_chars": "#00A000", "quotes": "#E2CD6D", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#113311"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"thorfinn":
+	{
+		"window": {"bg": "#020518", "fg": "#dde2e3", "insertbg": "#6f8ea9", "selectbg": "#120512", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#6f8ea9", "logical_keywords": "#b37c57", "functions": "#60412b", "upcase": {"foreground" : "#796878", "bold" : true}, "numbers": "#3f5e89", "operators": "#f75c57", "special_chars": "#9aacb8", "quotes": "#005577", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#4F6CA5"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"muffin":
+	{
+		"window": {"bg": "#CCCCCC", "fg": "#000000", "insertbg": "#111111", "selectbg": "#111111", "selectfg": "#FFFFFF", "widget_fg": "#000000", "select_widget": "#000000", "select_widget_fg": "#FFFFFF"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#00BABA", "functions": "#3023DD", "logical_keywords": "#ff00bb", "upcase": {"foreground" : "#3055BB", "bold" : true}, "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#74091D", "comments": "#111111", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#000000"}, "error": {"background" : "#FF0000"}}	
+	},
+	
+	"toast":
+	{
+		"window": {"bg": "#000000", "fg": "#9F005F", "insertbg": "#FFFFFF", "selectbg": "#555555", "selectfg": "#AAAAAA", "widget_fg": "#AAAAAA", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#f70000", "logical_keywords": "#ff00bb", "functions": "#3023DD", "upcase": {"foreground" : "#3055BB", "bold" : true}, "numbers": "#FF0000", "operators": "#f75f00", "special_chars": "#ff00bb", "quotes": "#00FDFD", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#990000"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"groove":{
+		"window": {"bg": "#080808", "fg": "#EBDBB2", "insertbg": "#3055BB", "selectbg": "#242020", "selectfg": "#EBDBB2", "widget_fg": "#EBDBB2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#458588", "logical_keywords": "#CC241D", "functions": "#D65D0E", "upcase": {"foreground" : "#3055BB", "bold" : true}, "numbers": "#B16286", "operators": "#9EC07C", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#3C3836", "command_keywords": "#FFFFFF", "pair": {"background" : "#FB4934"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"spacey":
+	{
+		"window": {"bg": "#080808", "fg": "#b2b2b2", "insertbg": "#AF00D7", "selectbg": "#181022", "selectfg": "#EBDBB2", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#d70040", "logical_keywords": "#397c80", "functions": "#AF00D7", "upcase": {"foreground" : "#3055BB", "bold" : true}, "numbers": "#AF87D7", "operators": "#D7875F", "special_chars": "#D5C4A1", "quotes": "#689D6A", "comments": "#490648", "command_keywords": "#FFFFFF", "pair": {"background" : "#FB4934"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"mono":
+	{
+		"window": {"bg": "#080808", "fg": "#b2b2b2", "insertbg": "#FFFFFF", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase": {"foreground" : "#FFFFFF", "bold" : true}, "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#444444", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"hurty":
+	{
+		"window": {"bg": "#b2b2b2", "fg": "#000000", "insertbg": "#000000", "selectbg": "#222222", "selectfg": "#999999", "widget_fg": "#000000", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords_b": "#555555", "logical_keywords": "#555555", "functions_b": "#555555", "upcase": {"foreground" : "#000000", "bold" : true}, "numbers": "#222222", "operators": "#111111", "special_chars": "#000000", "quotes": "#444444", "comments": "#222222", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"trix":
+	{
+		"window": {"bg": "#080808", "fg": "#b2b2b2", "insertbg": "#00FF00", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#BB5555", "logical_keywords": "#00FFFF", "functions": "#00FF00", "upcase": {"foreground" : "#BBBB00", "bold" : true}, "numbers": "#00BBFF", "operators": "#AA55FF", "special_chars": "#00FF00", "quotes": "#99BB00", "comments": "#222222", "command_keywords": "#FFFFFF", "pair": {"background" : "#0000FF"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"papyrus":
+	{
+		"window": {"bg": "#957B6A", "fg": "#000000", "insertbg": "#000000", "selectbg": "#222222", "selectfg": "#999999", "widget_fg": "#000000", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords_b": "#555555", "logical_keywords": "#555555", "functions_b": "#555555", "upcase": {"foreground" : "#000000", "bold" : true}, "numbers": "#222222", "operators": "#111111", "special_chars": "#000000", "quotes": "#444444", "comments": "#222222", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"rich":
+	{
+		"window": {"bg": "#100810", "fg": "#CCCCCC", "insertbg": "#EA6F92", "selectbg": "#000000", "selectfg": "#999999", "widget_fg": "#FFFFFF", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#FA9D5F", "logical_keywords": "#D05E4F", "functions": "#134D7D", "upcase": {"foreground" : "#F1D3B7", "bold" : true}, "numbers": "#BC8976", "operators": "#B89836", "special_chars": "#922A49", "quotes": "#7BA1D2", "comments": "#35274E", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"sail":
+	{
+		"window": {"bg": "#051A2B", "fg": "#CCCCCC", "insertbg": "#5ED2FF", "selectbg": "#000000", "selectfg": "#999999", "widget_fg": "#FFFFFF", "select_widget": "#FFFFFF", "select_widget_fg": "#000000"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#C10000", "logical_keywords": "#C59CC2", "functions": "#134D7D", "upcase": {"foreground" : "#F1D3B7", "bold" : true}, "numbers": "#BC8976", "operators": "#B89836", "special_chars": "#922A49", "quotes": "#7BA1D2", "comments": "#9A4A70", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"tai":
+	{
+		"window": {"bg": "#050505", "fg": "#BBBBBB", "insertbg": "#AAAAAA", "selectbg": "#352F35", "selectfg": "#DDCCCC", "widget_fg": "#BBBBBB", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF", "foreground" : "#000000", "underline" : true}, "keywords": "#720000", "logical_keywords": "#5555AA", "functions": "#A00072", "upcase": {"foreground" : "#72A055", "bold" : true }, "numbers": "#0055FF", "operators": "#228888", "special_chars": "#5500FF", "quotes": "#005500", "comments": "#555555", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"biscuit":
+	{
+		"window": {"bg": "#000000", "fg": "#A8A0A0", "insertbg": "#A8A0A0", "selectbg": "#CCCCCC", "selectfg": "#000000", "widget_fg": "#BBBBBB", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF", "foreground" : "#000000"}, "keywords": "#CCCCCC", "logical_keywords": "#FFFFFF", "functions": "#A8A0A0", "upcase": {"foreground" : "#A8A0A0", "bold" : true }, "numbers": "#228888", "operators": "#44CC44", "special_chars": "#228888", "quotes": "#005500", "comments": "#AA1188", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"test":
+	{
+		"window": {"bg": "#957B6A", "fg": "#222222", "insertbg": "#000000", "selectbg": "#222222", "selectfg": "#999999", "widget_fg": "#000000", "select_widget": "#0000000", "select_widget_fg": "#FFFFFF"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#520000", "logical_keywords": "#000000", "functions": "#000000", "upcase": {"foreground" : "#AF87D7", "bold" : true}, "numbers": "#0055FF", "operators": "#228888", "special_chars": "#5500FF", "quotes": "#005500", "comments": "#222222", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
+	
+	"custom":
+	{
+		"window": {"bg": "#080808", "fg": "#b2b2b2", "insertbg": "#00FF00", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#CCCCCC", "logical_keywords": "#CCCCCC", "functions": "#CCCCCC", "upcase": {"foreground" : "#FFFFFF", "bold" : true}, "numbers": "#999999", "operators": "#888888", "special_chars": "#FFFFFF", "quotes": "#777777", "comments": "#444444", "command_keywords": "#FFFFFF", "pair": {"background" : "#444444"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#008800"}, "error": {"background" : "#FF0000"}}
+	}
+}

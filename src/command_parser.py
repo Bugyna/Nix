@@ -4,7 +4,8 @@ import os
 import sys
 import threading
 import requests
-from bs4 import BeautifulSoup
+try: from bs4 import BeautifulSoup # usually don't get imported when running as root
+except Exception: pass
 
 from gr import *
 from widgets import *
@@ -50,107 +51,110 @@ class PARSER:
 		# then it will only work with the text widget that was referenced at the time of declaration of this class
 
 		self.commands = { 
-			"help": self.help,
-			"highlighting": self.highlighting_set,
-			"suggest": self.suggest_set,
-			r"([0-9]+)|(^l[0-9]+$)|(^l[0-9]+.[0-9]+$)": self.l,
-			"lget": self.l_get,
-			"word_count(_get)*": self.word_count_get,
-			"fget|fsize|file_size": self.file_size_get,
-			"lyrics": self.lyrics_get,
-			"temp": self.temp,
-			"time": self.time_set,
-			"blink": self.blink,
-			"split": self.split,
-			"unsplit": self.unsplit,
-			"q|quit": self.win_quit,
-			"sharpness": self.sharpness_set,
-			"alpha|transparency": self.alpha_set,
-			"convert": self.convert,
-			"cap": self.video_capture,
-			"screenshot|printscreen": self.screenshot,
-			"resize": self.win_resize,
-			"buffers": self.buffer_list,
-			"(buffer_)*close": self.buffer_close,
-			"save": self.file_save,
-			"saveas": self.file_saveas,
-			"open|load": self.file_load,
-			"reopen|reload": self.file_reload,
-			"rm|del": self.file_delete,
-			"play": self.music_play,
-			"pause": self.music_pause,
-			"unpause": self.music_unpause,
-			"stop": self.music_stop,
-			"sys": self.system_execute,
-			"exec": self.python_execute,
-			"buffer_exec|bexec": self.buffer_execute,
-			"ls|dir": self.ls,
-			"cd": self.cd,
-			"mkdir|new_dir(ectory)": self.new_directory,
-			"rmdir|rm_dir(ectory)": self.delete_directory,
-			"theme": self.theme,
-			"retro": self.retro,
-			"tab_size|set_tab|set_tab_size": self.tab_size_set,
-			"flashy": self.parent.flashy_loading_bar,
-			"replace_space(s*)": self.replace_spaces,
-			"replace_tab(s*)": self.replace_tabs,
-			"init": self.initialize_file,
-			"del_empty_files": self.delete_empty_files,
-			"lex": self.lex,
-			"lex_print": self.lex_print,
-			"lexer": self.lexer_switch,
-			"tag(_add)*": self.add_tag,
-			"tag_remove": self.remove_tag,
-			"lf": self.lf,
-			"crlf": self.crlf,
-			"toggle_filebar": self.toggle_buffer_tab_show,
-			"make": self.make,
-			"config|config_file": self.open_config_file,
-			"keybindings|keybinds": self.open_keybindings_file,
+			'help' : [self.help, 'help'],
+			'suggest' : [self.suggest_set, 'toggles suggesting'],
+			'([0-9]+)|(^l[0-9]+$)|(^l[0-9]+.[0-9]+$)' : [self.l, 'moves to line | usage: [line number] or [line number].[column number]'],
+			'lget|get_line_count' : [self.l_get, 'gets line count'],
+			'word_count(_get)*' : [self.word_count_get, 'gets word count'],
+			'fget|fsize|file_size' : [self.file_size_get, 'gets file size'],
+			'lyrics' : [self.lyrics_get, 'scrapes lyrics | usage: lyrics [artist name], [song name]'],
+			'split' : [self.split, 'splits buffers | usage: split [vertical|horizontal]'],
+			'unsplit' : [self.unsplit, 'unsplits buffers'],
+			'q|quit' : [self.win_quit, 'exits editor'],
+			'alpha|transparency' : [self.alpha_set, 'set window alpha | usage: alpha [number 0-100]'],
+			'convert' : [self.convert, 'converts number into other numeral systems | usage: convert 0x[number] for hexadecimal or 0b[number] for binary or [number] for decimal'],
+			'resize' : [self.win_resize, 'resizes window | usage: resize [width px] [height px]'],
+			'buffers' : [self.buffer_list, 'lists all opened buffers'],
+			'(buffer_)*close' : [self.buffer_close, 'closes current buffer'],
+			'save' : [self.file_save, 'saves current file'],
+			'save(_)*as' : [self.file_save_as, 'save current file as | usage: saveas [filename]'],
+			'open|load' : [self.file_load, 'loads file | usage: open [filename]'],
+			'reopen|reload' : [self.file_reload, 'reloads current file'],
+			'rm|del' : [self.file_delete, 'delete file | usage: rm [filename]'],
+			'sys' : [self.system_execute, 'run system commands (as if in a normal terminal) | usage: sys [command]'],
+			'exec' : [self.python_execute, 'executes python code | usage: exec [python code]'],
+			'buffer_exec|bexec' : [self.buffer_execute, 'executes python code in current buffer'],
+			'ls|dir' : [self.ls, 'list currrent directory'],
+			'cd' : [self.cd, 'changes directory | usage: cd [directory name]'],
+			'mkdir|new_dir(ectory)' : [self.new_directory, 'creates directory | usage: mkdir [directory name]'],
+			'rmdir|rm_dir(ectory)' : [self.delete_directory, 'deletes directory | usage: rmdir [directory name]'],
+			'theme' : [self.theme, 'changes theme interactively or to the specified one | usage: theme (interactive) | theme [theme name]'],
+			'tab_size|set_tab|set_tab_size' : [self.tab_size_set, 'sets tab size | usage: tab_size: [number]'],
+			'replace_space(s*)' : [self.replace_spaces, 'replaces all indentaion(spaces) with tabs'],
+			'replace_tab(s*)' : [self.replace_tabs, 'replaces all tabs with spaces'],
+			'init' : [self.initialize_file, 'initializes file with standard code for current filetype by extension'],
+			'lex' : [self.lex, 'use lexer'],
+			'lex_print' : [self.lex_print, 'print lexer results'],
+			'lexer' : [self.lexer_switch, 'change lexer | usage lexer [lexer type]'],
+			'tag(_add)*' : [self.add_tag, 'adds a tag to selected text | usage: tag_add [tag name]'],
+			'tag_remove' : [self.remove_tag, 'removes a tag in selected text | usage: tag_remove [tag name]'],
+			'lf' : [self.lf, 'converts all line feed to LF'],
+			'crlf' : [self.crlf, 'converts all line feed to CRLF'],
+			'toggle_filebar' : [self.toggle_buffer_tab_show, 'toggles a UI bar with opened file'],
+			'make' : [self.make, 'runs a make in your current directory'],
+			'conf|conf_file|config|config_file' : [self.open_conf_file, 'open file with config'],
+			'keybindings|keybinds' : [self.open_keybindings_file, 'open file with keybindings'],
+			'reload_conf(ig)*(_file)*' : [self.reload_conf, 'reloads the conf file'],
+			'reload_keybinds' : [self.reload_keybinds, 'reloads keybindings'],
+			'reload_modules' : [self.reload_modules, 'reloads external modules'],
+			'load_modules_from' : [self.load_modules_from, 'loads external modules from directory | usage: load_modules_from [directory]'],
+			'font' : [self.change_font, 'change font | usage: font | font [font name]'],
+			'(set_)*timer' : [self.set_timer, 'sets timer | usage: timer [time in seconds]'],
+			'(write_)*hack' : [self.write_hack, 'inserts a comment saying HACK | usage: hack | hack [explanation]'],
+			'(write_)*todo' : [self.write_todo, 'inserts a comment saying TODO | usage: todo | todo [explanation]'],
+			'(write_)*note' : [self.write_note, 'inserts a comment saying note | usage: note | note [explanation]'],
+			'todo_set' : [self.todo_set, 'todo'],
+			'(list_)*(sub)*proc' : [self.list_subprocess, 'subproc'],
+			'create_temp(_buffer)*' : [self.create_temp_buffer, 'creates temporary buffer | usage: create_temp | create_temp [buffer name]'],
 		}
-		
+
+		# for i in range(len(self.commands.values())): # autogenerate power go brr
+			# print(f"'{list(self.commands.keys())[i]}' : [self.{list(self.commands.values())[i].__name__}, '{list(self.docs.values())[i]}'],")
+
 	def parse_argument(self, arg=None):
 		# O(n) somethign because fuck speed all I want is trash features
 		for key in self.commands.keys():
 			if (re.match(f"\\b({key})\\b", arg[0])):
+				arg_f = arg
+				
+				for i in range(len(arg)):
+					if (re.search(r"\*", arg[i])):
+						a = arg.pop(i)
+						for file in self.parent.file_handler.directory_list_get(expr=a)[::-1]:
+							arg.insert(i, file)
+
 				self.command_execute = self.commands[key]
-				self.command_execute(arg)
+				
+				if (type(self.command_execute) == list or type(self.command_execute) == tuple):
+					self.command_execute = self.commands[key][0]
+					
+				try:
+					self.command_execute(arg)
+					
+				except Exception as e: self.parent.error(f"{e}\n{self.get_docs(key)}")
 				break
 		else:
 			self.command_execute = self.command_not_found
 			self.command_execute(arg)
 
-	def execute(self, arg=None):
-		pass
+	def get_docs(self, arg=None):
+		if (type(arg) == str): arg = [arg]
+		
+		try: return arg[0] + " : " + self.commands[arg[0]][1]
+		except Exception: return arg[0] + " : "
 
 	def help(self, arg=None):
-		try:
-			self.parent.command_out_set(f"{self.commands[arg[1]]}")
-		except IndexError:
+		if (not arg[1:]):
 			x = ""
-			for item in list(self.commands.keys()):
-				x += "\n"+item
+			for c in self.commands.keys():
+				x += "\n"+self.get_docs(c)
 			self.parent.command_out_set(x)
-
-	def highlighting_set(self, arg=None):
-		if (arg[1] == "on"):
-			self.parent.notify("highlighting on")
-			self.parent.highlight_chunk()
-			self.parent.highlighting = True
-		elif (arg[1] == "off"):
-			self.parent.unhighlight_chunk()
-			self.parent.notify("highlighting off")
-			self.parent.highlighting = False
+		else:
+			self.parent.notify(self.get_docs(arg[1:]))
 
 	def suggest_set(self, arg=None):
-		self.parent.suggest = not self.parent.suggest
+		self.parent.conf["suggest"] = not self.parent.conf["suggest"]
 
-	# elif (re.match(r"[0-9]", arg[0][0])):
-		# self.txt.mark_set(tkinter.INSERT, float(arg[0]))
-		# self.txt.see(float(arg[0])+2)
-		# self.command_out_set(f"moved to: {float(arg[0])}")
-
-	# elif (re.match(r"^l[0-9]+$|^l[0-9]+.[0-9]+$|^lget$", arg[0])):
 	def l(self, arg=None):
 		arg = "".join(arg)
 		if (arg[0] == "l"): arg = arg[1:]
@@ -167,9 +171,11 @@ class PARSER:
 		self.parent.notify(f"{self.parent.buffer.get_word_count()}")
 
 	def file_size_get(self, arg=None) -> None:
-		self.parent.notify(f"buffer size: {len(self.parent.buffer.get('1.0', 'end-1c'))}B >>>> file size: {os.path.getsize(self.parent.buffer.full_name)}B")
+		self.parent.notify(f"buffer size: {len(self.parent.buffer.get('1.0', 'end'))+1}B >>>> file size: {os.path.getsize(self.parent.buffer.full_name)}B")
 
 	def lyrics_get(self, arg=None):
+		if (not arg[1:]): self.parent.notify("Usage: lyrics [artist name], [song name]"); return
+		self.parent.notify("scraping.../")
 		def lyr():
 			command1 = ""
 			for word in arg[1:]:
@@ -179,6 +185,7 @@ class PARSER:
 			html = requests.get(url).content #gets the html of the url
 			lyrics = BeautifulSoup(html, features="html.parser").find(id="songLyricsDiv").text
 			self.parent.command_out_set(lyrics)
+			
 		threading.Thread(target=lyr).start()
 
 	def temp(self, arg=None):
@@ -224,9 +231,12 @@ class PARSER:
 		self.parent.reposition_widgets()
 
 	def unsplit(self, arg=None):
-		del self.parent.buffer_render_list[1: -1]
+		p = self.parent.buffer
+		self.parent.buffer_unplace()
+		self.parent.buffer_render_list = [p]
 		self.parent.split_mode = "nosplit"
 		self.parent.buffer_render_index = 0
+		self.parent.file_handler.load_buffer(buffer_name=self.parent.buffer.full_name)
 		self.parent.reposition_widgets()
 
 	def win_quit(self, arg=None):
@@ -241,8 +251,8 @@ class PARSER:
 
 	def alpha_set(self, arg=None):
 		if (arg[1] == "default"): arg[1] = 90
-		self.parent.wm_attributes("-alpha", int(arg[1])/100)
-		self.parent.notify(f"alpha: {arg[1]}")
+		self.parent.alpha_set(int(arg[1]))
+		self.parent.notify(f"alpha set to {arg[1]}")
 
 	def convert(self, arg=None):
 		try:
@@ -255,7 +265,7 @@ class PARSER:
 
 			self.parent.notify(f"DECIMAL: {decimal}, HEXADECIMAL: {hex(decimal)}, BINARY: {bin(decimal)}")
 		except ValueError:
-			self.parent.notify("Error: wrong format; please, add prefix (0x | 0b)")
+			self.parent.error(f"{self.get_docs[arg[0]]}")
 
 	def video_capture(self, arg=None):
 		if (arg[1] == "start"):
@@ -284,14 +294,14 @@ class PARSER:
 	def file_save(self, arg=None):
 		self.parent.file_handler.save_file()
 	
-	def file_saveas(self, arg=None):
-		self.parent.file_handler.save_file_as(filename=arg[1])
+	def file_save_as(self, arg=None):
+		self.parent.file_handler.save_file_as(new_filename=arg[1])
 
 	def file_load(self, arg=None):
 		self.parent.file_handler.load_file(filename="".join(arg[1:]))
 
 	def file_reload(self, arg=None):
-		self.parent.file_handler.load_file(filename=self.file_handler.current_file.name)
+		self.parent.file_handler.load_file(filename=self.parent.buffer.full_name)
 
 	def file_delete(self, arg=None):
 		self.parent.file_handler.del_file(filename="".join(arg[1:]))
@@ -309,6 +319,7 @@ class PARSER:
 		self.parent.music_player.stop_song()
 
 	def system_execute(self, arg=None):
+		if (not arg[1:]): self.parent.error(f"{self.get_docs(arg[0])}"); return
 		self.parent.buffer.run_subprocess(argv=arg[1:])
 
 	def python_execute(self, arg=None):
@@ -320,23 +331,20 @@ class PARSER:
 		exec(arg)
 
 	def ls(self, arg=None):
-		self.parent.file_handler.ls(arg)
+		self.parent.nt_place(arg)
 
 	def cd(self, arg=None):
-		if (str(arg[1:])[0] == "/"):
-			path = os.path.normpath(arg[1])
-		else:
-			path = os.path.normpath(f"{self.parent.file_handler.current_dir}/{arg[1]}")
+		arg = "\ ".join(arg[1:])
+		path = os.path.abspath(f"{self.parent.file_handler.current_dir}/{arg}")
 			
-		if (os.path.isdir(path)):
-			self.parent.file_handler.current_dir = path
-			self.parent.notify(arg=f"current directory: {self.parent.file_handler.current_dir}")
-		else:
-			self.parent.notify(arg=f"Error: File/Directory not found")
+		if (not self.parent.file_handler.cd(path)):
+			path = os.path.abspath(arg)
+			self.parent.file_handler.cd(path)
 
 	def new_directory(self, arg=None):
 		if (arg[1:]):
-			self.parent.file_handler.new_directory(filename=arg[1])
+			arg = "\ ".join(arg[1:])
+			self.parent.file_handler.new_directory(filename=arg)
 		else:
 			self.parent.notify("error: no name specified")
 
@@ -355,10 +363,6 @@ class PARSER:
 			for key in self.parent.theme_options.keys():
 				result += key+"\n"
 			self.parent.command_out_set(result, [["1.0", "end"]])
-
-	def retro(self, arg=None):
-		if (self.parent.font_family[0] != "Ac437 IBM VGA 9x8"): self.parent.font_set(retro=True)
-		else: self.parent.font_set(retro=False) # retro is turned off by default so there is no need to actually put retro=False in the parameters, but I think it's more readable this way
 
 	def tab_size_set(self, arg=None):
 		if (arg[1:]):
@@ -380,7 +384,7 @@ class PARSER:
 				self.parent.buffer.insert("1.0", self.parent.buffer.highlighter.language_init[init])
 				break
 
-			self.parent.highlight_chunk()
+		self.parent.highlight_chunk()
 
 	def delete_empty_files(self, arg=None): #TODO
 		pass
@@ -398,12 +402,12 @@ class PARSER:
 			self.parent.buffer.lexer = C_LEXER(self.parent, self.parent.buffer)
 
 	def add_tag(self, arg=None):
-		index = self.parent.precise_index_sort(self.parent.buffer.index("insert"), self.parent.selection_start_index)
+		index = self.parent.buffer.index_sort(self.parent.buffer.index("insert"), self.parent.buffer.mark_names()[-1])
 		self.parent.buffer.tag_raise(arg[1])
 		self.parent.buffer.tag_add(arg[1], index[0], index[1])
 
 	def remove_tag(self, arg=None):
-		index = self.parent.precise_index_sort(self.parent.buffer.index("insert"), self.parent.selection_start_index)
+		index = self.parent.buffer.index_sort(self.parent.buffer.index("insert"), self.parent.buffer.mark_names()[-1])
 		self.parent.buffer.tag_remove(arg[1], index[0], index[1])
 
 	def lf(self, arg=None):
@@ -414,16 +418,86 @@ class PARSER:
 
 	def toggle_buffer_tab_show(self, arg=None):
 		self.parent.conf["show_buffer_tab"] = not self.parent.conf["show_buffer_tab"]
+		self.parent.buffer_tab.place_forget()
 		self.parent.reposition_widgets()
 
 	def make(self, arg=None):
 		self.system_execute("sys make".split())
 
-	def open_config_file(self, arg=None):
-		self.parent.file_handler.load_file(filename=f"{os.path.dirname(__file__)}/config")
+	def open_conf_file(self, arg=None):
+		self.parent.file_handler.load_file(filename=f"{os.path.dirname(__file__)}/conf")
 	
 	def open_keybindings_file(self, arg=None):
 		self.parent.file_handler.load_file(filename=f"{os.path.dirname(__file__)}/keybinds_conf.json")
+
+	def reload_conf(self, arg=None):
+		self.parent.load_conf()
+
+	def reload_keybinds(self, arg=None):
+		for w in self.parent.winfo_children():
+			if (w.winfo_children()):
+				for ww in self.parent.winfo_children():
+					bind_keys_from_conf(w)
+			bind_keys_from_conf(w)
+
+	def reload_modules(self, arg=None):
+		self.parent.reload_modules()
+
+	def reload_themes(self, arg=None):
+		self.parent.theme_options = laod_themes()
+
+	def load_modules_from(self, arg=None):
+		if (not arg[1:]): self.parent.error(f"{self.get_docs(arg[0:])}"); return
+		arg = "".join(arg[1:])
+		self.parent.reload_modules(dir=arg)
+
+	def change_font(self, arg=None):
+		if (not arg[1:]): arg.append(self.parent.conf["font"])
+		arg = " ".join(arg[1:])
+		self.parent.font_set(family=arg)
+		self.parent.notify(f"font was changed to {arg}")
+
+	def set_timer(self, arg=None):
+		if (not arg[1:]): self.parent.error(f"{self.get_docs(arg[0:])}"); return
+
+		def timer(self):
+			time.sleep(int(arg[1]))
+			self.parent.command_out_set(arg="TIME UP", tags=[["1.0", "end", "error"]])
+
+		threading.Thread(target=timer, args=(self, ), daemon=True).start()
+
+	def write(self, arg=None):
+		self.parent.buffer.insert("insert", arg)
+
+	def write_hack(self, arg=None):
+		self.write(self.parent.buffer.highlighter.comment_sign+" HACK: ")
+		if (arg[1:]): self.write(" ".join(arg[1:]))
+
+	def write_todo(self, arg=None):
+		self.write(self.parent.buffer.highlighter.comment_sign+" TODO: ")
+		if (arg[1:]): self.write(" ".join(arg[1:]))
+
+	def write_note(self, arg=None):
+		self.write(self.parent.buffer.highlighter.comment_sign+" NOTE: ")
+		if (arg[1:]): self.write(" ".join(arg[1:]))
+
+	def todo_set(self, arg=None):
+		if (arg[1:]): arg = " ".join(arg[1:])
+		else: arg = None
+		self.parent.buffer.todo_set(text=arg)
+
+	def list_subprocess(self, arg=None):
+		s = ""
+		if (not self.parent.subprocesses): self.parent.command_out_set(arg="None"); return
+		
+		for proc in self.parent.subprocesses:
+			s += f"proc: {proc.args} id: {proc.pid}\n"
+		self.parent.command_out_set(arg=s)
+
+	def create_temp_buffer(self, arg=None):
+		if (not arg[1:]): arg = f"{time.time()}"
+		else: arg = " ".join(arg[1:])
+		self.parent.file_handler.new_buffer(buffer_name=arg, buffer_type="temp")
 
 	def command_not_found(self, arg=None):
 		res = ""

@@ -1,97 +1,95 @@
 {
 	"WIN":
 	{
-		"parent":
-		{
-			
-		},
-		
-		"self":
-		{
-			"<Control-Escape>" : "win_destroy",
-			"<Configure>" : "reposition_widgets"
-		}
+		"<Control-Escape>" : "win_destroy",
+		"<Configure>" : "reposition_widgets"
 	},
 
 	"DEFAULT_TEXT_BUFFER":
 	{
-		"parent":
-		{
-			"<F11>" : "set_fullscreen",
-			"<Control-space>" : "command_entry_place",
-			"<Alt-Right>" : "win_expand",
-			"<Alt-Left>" : "win_expand",
-			"<Alt-Up>" : "win_expand",
-			"<Alt-Down>" : "win_expand",
-			"<Alt-Shift-Right>" : "win_shrink",
-			"<Alt-Shift-Left>" : "win_shrink",
-			"<Alt-Shift-Up>" : "win_shrink",
-			"<Alt-Shift-Down>" : "win_shrink"
-		},
-		
-		"self":
-		{
-			"<Control-period>" : "font_size_set",
-			"<Control-comma>" : "font_size_set",
-			"<Control-MouseWheel>" : "font_size_set",
-			"<Control-Button-4>" : "font_size_set",
-			"<Control-Button-5>" : "font_size_set",
-			"<Insert>" : "cursor_mode_set",
+		"<F12>" : "parent.win_minimize",
+		"<F11>" : "parent.set_fullscreen",
+		"<Control-space>" : "parent.command_entry_place",
+		"<Alt-Right>" : "parent.win_expand",
+		"<Alt-Left>" : "parent.win_expand",
+		"<Alt-Up>" : "parent.win_expand",
+		"<Alt-Down>" : "parent.win_expand",
+		"<Alt-Shift-Right>" : "parent.win_shrink",
+		"<Alt-Shift-Left>" : "parent.win_shrink",
+		"<Alt-Shift-Up>" : "parent.win_shrink",
+		"<Alt-Shift-Down>" : "parent.win_shrink",
 			
-			"<Control-Caps_Lock>" : "change_case_to_lowercase",
-			"<Control-Shift-Caps_Lock>" : "change_case_to_uppercase",
-			"<Control-quotedbl>" : "char_enclose",
-			"<Control-parenleft>" : "char_enclose",
-			"<Control-bracketleft>" : "char_enclose",
-			"<Control-braceleft>" : "char_enclose",
-			"<Control-BackSpace>" : "delete_prev_word",
-			"<Control-Delete>" : "delete_next_word",
-			"<Control-Shift-BackSpace>" : "delete_line",
-			"<Control-Shift-Delete>" : "delete_line",
+		"<Control-period>" : "font_size_set",
+		"<Control-comma>" : "font_size_set",
+		"<Control-MouseWheel>" : "font_size_set",
+		"<Control-Button-4>" : "font_size_set",
+		"<Control-Button-5>" : "font_size_set",
+		"<Insert>" : "cursor_mode_set",
+		
+		"<Control-Caps_Lock>" : "change_case_to_lowercase",
+		"<Control-Shift-Caps_Lock>" : "change_case_to_uppercase",
+		"<Control-apostrophe>" : "char_enclose",
+		"<Control-quotedbl>" : "char_enclose",
+		"<Control-parenleft>" : "char_enclose",
+		"<Control-bracketleft>" : "char_enclose",
+		"<Control-braceleft>" : "char_enclose",
+		"<Control-BackSpace>" : "delete_prev_word",
+		"<Control-Delete>" : "delete_next_word",
+		"<Control-Shift-BackSpace>" : "delete_line_before_cursor_tab_sensitive",
+		"<Control-Shift-Delete>" : "delete_line_after_cursor",
+		"<Control-d>" : "delete_next_word",
+		"<Control-D>" : "delete_next_word",
+		"<Control-Shift-d>" : "delete_prev_word",
+		"<Control-Shift-D>" : "delete_prev_word",
+		"<Alt-d>" : "delete_line",
+		"<Alt-D>" : "delete_line",
 	
-			"<F1>" : "bell",
-			"<F2>" : "insert_time"
-		}
+		"<F1>" : "bell",
+		"<F2>" : "insert_time"
 	},
 
 	"COMMAND_ENTRY":
 	{
-		"parent":
-		{
-			"<Return>" : "cmmand",
-			"<KP_Enter>" : "cmmand"
-		},
-		
-		"self":
-		{
-			"<Shift-Return>" : "insert_newline",
-			"<Shift-KP_Enter>" : "insert_newline",
-			"<Up>" : "history",
-			"<Down>" : "history",
-			"<Escape>" : "unplace",
-			"<KeyRelease>" : "on_key"
-		}
+		"<Return>" : "parent.cmmand",
+		"<KP_Enter>" : "parent.cmmand",
+		"<Shift-Return>" : "insert_newline",
+		"<Shift-KP_Enter>" : "insert_newline",
+		"<Up>" : "history",
+		"<Down>" : "history",
+		"<Escape>" : "unplace",
+		"<KeyRelease>" : "on_key"
 	},
 
 	"FIND_ENTRY":
 	{
-		"parent":
+		"<Up>" : "scroll_through_found",
+		"<Down>" : "scroll_through_found",
+		"<Shift-Up>" : "scroll_through_find_history",
+		"<Shift-Down>" : "scroll_through_find_history",
+		"<Escape>" : "move_to_find_index",
+
+		"<Control-W>" : "move_to_start_index",
+		"<Control-w>" : "move_to_start_index",
+
+		"<Control-Tab>" : "parent.buffer.switch_buffer_next",
+		"<Control-ISO_Left_Tab>" : "parent.buffer.switch_buffer_next",
+		"<Control-Shift-ISO_Left_Tab>" : "parent.buffer.switch_buffer_prev",
+		"<Control-Shift-Tab>" : "parent.buffer.switch_buffer_prev",
+
+		"find" :
 		{
-			"<Configure>" : "find_place"
-		},
-		
-		"self":
-		{
-			"<Return>" : "find",
+			"<KeyRelease>" : "find",
+			"<Return>" : "move_to_find_index",
 			"<KP_Enter>" : "find",
-			"<Up>" : "scroll_through_found",
-			"<Down>" : "scroll_through_found",
-			"<Shift-Up>" : "scroll_through_find_history",
-			"<Shift-Down>" : "scroll_through_find_history",
-			"<Escape>" : "unplace",
-	
 			"<Control-R>" : "mode_change",
-			"<Control-r>" : "mode_change",
+			"<Control-r>" : "mode_change"
+			
+		},
+
+		"replace" :
+		{
+			"<Return>" : "replace",
+			"<KP_Enter>" : "replace",
 			"<Control-F>" : "mode_change",
 			"<Control-f>" : "mode_change",
 			"<Control-A>R" : "replace_all",
@@ -101,168 +99,196 @@
 
 	"COMMAND_OUT":
 	{
-		"parent":
-		{
-			
-		},
+		"<KeyPress>" : "add_input",
+		"<Shift-Prior>" : "scroll",
+		"<Shift-Next>" : "scroll",
+
+		"<Control-C>" : "copy",
+		"<Control-c>" : "copy",
 		
-		"self":
-		{
-			"<KeyPress>" : "add_input",
-			"<Down>" : "scroll",
-			"<Up>" : "scroll",
-			"<Prior>" : "scroll",
-			"<Next>" : "scroll",
-			
-			"<Escape>" : "unplace",
-	
-			"<Control-b>w" : "unplace",
-			"<Control-B>W" : "unplace",
-			"<Button-1>" : "focus_self",
-	
-			"<Control_L>" : "add_selection",
-			"<Return>" : "use_selection",
-			"<KP_Enter>" : "use_selection"
-		}
+		"<Control-Shift-C>" : "copy_line",
+		"<Control-Shift-c>" : "copy_line",
+		
+		"<Escape>" : "unplace",
+
+		"<Control-b>w" : "unplace",
+		"<Control-B>W" : "unplace",
+		"<Button-1>" : "focus_self",
+
+		"<Control-Tab>" : "parent.buffer.switch_buffer_next",
+		"<Control-ISO_Left_Tab>" : "parent.buffer.switch_buffer_next",
+		"<Control-Shift-ISO_Left_Tab>" : "parent.buffer.switch_buffer_prev",
+		"<Control-Shift-Tab>" : "parent.buffer.switch_buffer_prev",
+
+		"<Control_L>" : "add_selection",
+		"<Return>" : "use_selection",
+		"<KP_Enter>" : "use_selection"
 	},
-			
+
+	"SUGGEST_WIDGET":
+	{
+		"<KeyPress>" : "unplace",
+		"<Up>" : "move_up",
+		"<Down>" : "move_down",
+		"<Return>" : "write",
+		"<Escape>" : "unplace"
+	},
+	
 	"TEXT" :
 	{
-		"parent":
-		{
-			"<KeyRelease>" : "update_buffer",
-			"<Control-S>" : "save_file",
-			"<Control-s>" : "save_file",
-			"<Control-Shift-S>" : "save_file_as",
-			"<Control-Shift-s>" : "save_file_as",
-			"<Control-N>" : "new_file",
-			"<Control-n>" : "new_file",
-			"<Control-O>" : "load_file",
-			"<Control-o>" : "load_file",
-			"<Control-B>L" : "load_file",
-			"<Control-b>l" : "load_file",
-			
-			"<Control-B>W" : "close_buffer",
-			"<Control-b>w" : "close_buffer",
-			"<Control-w>" : "win_destroy",
-			"<Control-W>" : "win_destroy",
-			"<Control-B><Delete>" : "del_file",
-			"<Control-b><Delete>" : "del_file",
-			"<Control-B>S" : "load_scratch",
-			"<Control-b>s" : "load_scratch",
-			
-			"<Control-E>" : "show_last_output",
-			"<Control-e>" : "show_last_output",
-
-			"<Control-Shift-F>" : "find_place_with_token",
-			"<Control-Shift-f>" : "find_place_with_token",			
-			"<Control-F>" : "find_place",
-			"<Control-f>" : "find_place",
-			"<Control-G>" : "nt_place",
-			"<Control-g>" : "nt_place",
-			"<Control-bar>": "split"
-		},
+		"<KeyRelease>" : "parent.update_buffer",
+		"<Control-S>" : "parent.file_handler.save_file",
+		"<Control-s>" : "parent.file_handler.save_file",
+		"<Control-N>" : "parent.file_handler.new_file",
+		"<Control-n>" : "parent.file_handler.new_file",
+		"<Control-O>" : "parent.file_handler.load_file",
+		"<Control-o>" : "parent.file_handler.load_file",
+		"<Control-B>L" : "parent.file_handler.load_file",
+		"<Control-b>l" : "parent.file_handler.load_file",
 		
-		"self" :
+		"<Control-B>W" : "parent.file_handler.close_buffer",
+		"<Control-b>w" : "parent.file_handler.close_buffer",
+		"<Control-w>" : "parent.win_destroy",
+		"<Control-W>" : "parent.win_destroy",
+		"<Control-B><Delete>" : "parent.file_handler.del_file",
+		"<Control-b><Delete>" : "parent.file_handler.del_file",
+		"<Control-B>S" : "parent.file_handler.load_scratch",
+		"<Control-b>s" : "parent.file_handler.load_scratch",
+		
+		"<Control-E>" : "parent.show_last_output",
+		"<Control-e>" : "parent.show_last_output",
+
+		"<Alt-W>" : "parent.suggest",
+		"<Alt-w>" : "parent.suggest",
+
+		"<Control-T>" : "todo_set",
+		"<Control-t>" : "todo_set",
+
+		"<Control-Shift-F>" : "parent.find_place_with_token",
+		"<Control-Shift-f>" : "parent.find_place_with_token",			
+		"<Control-F>" : "parent.find_place",
+		"<Control-f>" : "parent.find_place",
+		"<Control-G>" : "parent.nt_place",
+		"<Control-g>" : "parent.nt_place",
+		"<Control-backslash>": "parent.split",
+		"<Control-bar>": "parent.parser.unsplit",
+
+		"<Escape>": "focus_self",
+		"<Button-1>" : "mouse_left",
+		"<B1-Motion>" : "mouse_left_motion",
+		
+		"<Up>" : "move_standard",
+		"<Down>" : "move_standard",
+		"<Left>" : "move_standard",
+		"<Right>" : "move_standard",
+		
+		"<Control-Up>" : "move_jump",
+		"<Control-Down>" : "move_jump",
+		"<Control-Left>" : "move_jump",
+		"<Control-Right>" : "move_jump",
+		
+		"<Shift-Up>" : "move_select",
+		"<Shift-Down>" : "move_select",
+		"<Shift-Left>" : "move_select",
+		"<Shift-Right>" : "move_select",
+		
+		"<Control-Shift-Up>" : "move_jump_select",
+		"<Control-Shift-Down>" : "move_jump_select",
+		"<Control-Shift-Left>" : "move_jump_select",
+		"<Control-Shift-Right>" : "move_jump_select",
+		
+		"<Home>" : "home",
+		"<Shift-Home>" : "home_select",
+		"<End>" : "end",
+		"<Shift-End>" : "end_select",
+		
+		"<Shift-Return>" : "run_make",
+		
+		"<MouseWheel>" : "scroll",
+		"<Button-4>" : "scroll",
+		"<Button-5>" : "scroll",
+		"<Shift-MouseWheel>" : "scroll_fast",
+		"<Shift-Button-4>" : "scroll_fast",
+		"<Shift-Button-5>" : "scroll_fast",
+		
+		"<Return>" : "keep_indent",
+		"<KP_Enter>" : "keep_indent",
+		"<Control-slash>" : "comment_line",
+		
+		"<Control-Z>" : "undo",
+		"<Control-z>" : "undo",
+		"<Control-Y>" : "redo",
+		"<Control-y>" : "redo",
+		"<Control-A>" : "select_all",
+		"<Control-a>" : "select_all",
+		
+		"<Control-K>" : "get_selection_count",
+		"<Control-k>" : "get_selection_count",
+		
+		"<Tab>" : "indent",
+		"<Control-Tab>" : "switch_buffer_next",
+		"<Shift-ISO_Left_Tab>" : "unindent",
+		"<Control-Shift-ISO_Left_Tab>" : "switch_buffer_prev",
+		"<Shift-Tab>" : "unindent",
+		"<Control-Shift-Tab>" : "switch_buffer_prev",
+
+		"<Control-B>" : "empty_break",
+		"<Control-b>" : "empty_break",
+		"<Control-semicolon>" : "list_buffer",
+		"<Control-B><KeyPress><Left>" : "switch_buffer_prev",
+		"<Control-b><KeyPress><Left>" : "switch_buffer_prev",
+		"<Control-B><KeyPress><Right>" : "switch_buffer_next",
+		"<Control-b><KeyPress><Right>" : "switch_buffer_next",
+		
+		"<Control-Q>" : "toggle_line_wrap",
+		"<Control-q>" : "toggle_line_wrap",
+		
+		"<Control-B>C" : "buffer_clipboard_set",
+		"<Control-b>c" : "buffer_clipboard_set",
+		"<Control-B>V" : "buffer_clipboard_paste",
+		"<Control-b>v" : "buffer_clipboard_paste",
+		"<Control-V>" : "paste",
+		"<Control-v>" : "paste",
+		"<Control-Shift-C>" : "copy_token",
+		"<Control-Shift-c>" : "copy_token",
+		
+		"<Alt-S>" : "selection_index_swap",
+		"<Alt-s>" : "selection_index_swap",
+		
+		"<Alt-Shift-M>" : "moving_index_set",
+		"<Alt-Shift-m>" : "moving_index_set",
+		"<Alt-M>" : "jump_to_moving_index",
+		"<Alt-m>" : "jump_to_moving_index",
+		"<Alt-N>" : "jump_to_typing_index",
+		"<Alt-n>" : "jump_to_typing_index",
+		"<Alt-B>" : "jump_to_scope_start",
+		"<Alt-b>" : "jump_to_scope_start",
+		"<Alt-Shift-B>" : "jump_to_scope_end",
+		"<Alt-Shift-b>" : "jump_to_scope_end",
+		"<Alt-i>" : "parent.VIM_MOVE_MODULE.mode_set_move",
+		"<Alt-I>" : "parent.VIM_MOVE_MODULE.mode_set_move",
+		
+		"<Alt-comma>" : "split_args",
+		"<Alt-bracketleft>" : "move_to_scope_start",
+		"<Alt-bracketright>" : "move_to_scope_end",
+		"<Escape>" : "parent.command_out.unplace",
+
+		"vim_mode" : {
+			"h" : "move_left",
+			"l" : "move_right",
+			"j" : "move_down",
+			"k" : "move_up"
+		},
+
+		"suggest" :
 		{
-
-			"<Escape>": "focus_self",
-			"<Button-1>" : "mouse_left",
-			"<B1-Motion>" : "mouse_left_motion",
-			
-			"<Up>" : "move_standard",
-			"<Down>" : "move_standard",
-			"<Left>" : "move_standard",
-			"<Right>" : "move_standard",
-			
-			"<Control-Up>" : "move_jump",
-			"<Control-Down>" : "move_jump",
-			"<Control-Left>" : "move_jump",
-			"<Control-Right>" : "move_jump",
-			
-			"<Shift-Up>" : "move_select",
-			"<Shift-Down>" : "move_select",
-			"<Shift-Left>" : "move_select",
-			"<Shift-Right>" : "move_select",
-			
-			"<Control-Shift-Up>" : "move_jump_select",
-			"<Control-Shift-Down>" : "move_jump_select",
-			"<Control-Shift-Left>" : "move_jump_select",
-			"<Control-Shift-Right>" : "move_jump_select",
-			
-			"<Home>" : "home",
-			"<Shift-Home>" : "home_select",
-			"<End>" : "end",
-			"<Shift-End>" : "end_select",
-			
-			"<Shift-Return>" : "run_make",
-			
-			"<MouseWheel>" : "scroll",
-			"<Button-4>" : "scroll",
-			"<Button-5>" : "scroll",
-			"<Shift-MouseWheel>" : "scroll_fast",
-			"<Shift-Button-4>" : "scroll_fast",
-			"<Shift-Button-5>" : "scroll_fast",
-			
-			"<Return>" : "keep_indent",
-			"<KP_Enter>" : "keep_indent",
-			"<Control-slash>" : "comment_line",
-			
-			"<Control-Z>" : "undo",
-			"<Control-z>" : "undo",
-			"<Control-Y>" : "redo",
-			"<Control-y>" : "redo",
-			"<Control-A>" : "select_all",
-			"<Control-a>" : "select_all",
-			
-			"<Control-K>" : "get_selection_count",
-			"<Control-k>" : "get_selection_count",
-			
-			"<Tab>" : "indent",
-			"<Control-Tab>" : "switch_buffer_next",
-			"<Shift-ISO_Left_Tab>" : "unindent",
-			"<Control-Shift-ISO_Left_Tab>" : "switch_buffer_prev",
-			"<Shift-Tab>" : "unindent",
-			"<Control-Shift-Tab>" : "switch_buffer_prev",
-
-			"<Control-B>" : "empty_break",
-			"<Control-b>" : "empty_break",
-			"<Control-semicolon>" : "list_buffer",
-			"<Control-B><KeyPress><Left>" : "switch_buffer_prev",
-			"<Control-b><KeyPress><Left>" : "switch_buffer_prev",
-			"<Control-B><KeyPress><Right>" : "switch_buffer_next",
-			"<Control-b><KeyPress><Right>" : "switch_buffer_next",
-			
-			"<Control-Q>" : "configure_wrap",
-			"<Control-q>" : "configure_wrap",
-			
-			"<Control-B>C" : "buffer_clipboard_set",
-			"<Control-b>c" : "buffer_clipboard_set",
-			"<Control-B>V" : "buffer_clipboard_paste",
-			"<Control-b>v" : "buffer_clipboard_paste",
-			"<Control-V>" : "paste",
-			"<Control-v>" : "paste",
-			"<Control-Shift-C>" : "copy_token",
-			"<Control-Shift-c>" : "copy_token",
-			
-			"<Alt-S>" : "selection_index_swap",
-			"<Alt-s>" : "selection_index_swap",
-			
-			"<Alt-Shift-M>" : "moving_index_set",
-			"<Alt-Shift-m>" : "moving_index_set",
-			"<Alt-M>" : "jump_to_moving_index",
-			"<Alt-m>" : "jump_to_moving_index",
-			"<Alt-N>" : "jump_to_typing_index",
-			"<Alt-n>" : "jump_to_typing_index",
-			"<Alt-B>" : "jump_to_scope_start",
-			"<Alt-b>" : "jump_to_scope_start",
-			"<Alt-Shift-B>" : "jump_to_scope_end",
-			"<Alt-Shift-b>" : "jump_to_scope_end",
-			
-			"<Alt-comma>" : "split_args",
-			"<Alt-bracketleft>" : "move_to_scope_start",
-			"<Alt-bracketright>" : "move_to_scope_end"
+			"<Up>" : "parent.suggest_widget.move_up",
+			"<Down>" : "parent.suggest_widget.move_down",
+			"<Return>" : "parent.suggest_widget.write",
+			"<KeyPress>" : "parent.suggest_widget.unplace",
+			"<Escape>" : "parent.suggest_widget.unplace"
 		}
 	}
 }
+
 

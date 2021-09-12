@@ -1,0 +1,31 @@
+[ ] commit to git
+
+[/] autocompletion -> clean up
+
+
+# reworks
+[/] regex highlighting -> modular through conf files
+[ ] conf files should be .py
+[X] modal keybinding
+[ ] lexer
+[ ] render buffer_tabs properly (move it when current buffer tab is out of bounds)
+[/] better theme config options # like setting bg fg underline etc. -> rewrite theme_conf to work with the new system
+[ ] add optional arguments to bindings
+# maybe
+[ ] rework buffer saving system
+[/] commands parsing options (like -h) #?
+
+# features
+[ ] finding in multiple buffers at once
+[ ] switching buffers in cout and find
+[ ] filebar scrolling
+[/] command repeat keybind
+[ ] font size increase/decrease for all
+[ ] proper fuzzy filter
+
+# fixes
+[X] fix splitting........... # that was quick
+[ ] fix file paths (* problems) + fix command input saving
+[/] fix file handling
+[X] fix cout repeat when filtering
+[X] fix cursor

@@ -19,7 +19,7 @@ class highlighter(object):
 			"sh", "diary", "bat", "json"
 		]
 
-		self.command_keywords = list(parent.commands.keys())
+		self.command_keywords = list(parent.parser.commands.keys())
 
 		self.py_keywords = [
 			'await', 'import', 'pass', 'break', 'in',
@@ -161,13 +161,13 @@ class highlighter(object):
 
 		# I could've totally fit this in normal strings... Too late now
 		self.language_init = {
-			"(c|h)$": "#include <stlib.h>\n#include <stdio.h>\n\nint main (int argc, char* argv[]) {\n\n\treturn 0;\n}",
+			"(c|h)$": "#include <stdlib.h>\n#include <stdio.h>\n\nint main (int argc, char* argv[]) {\n\n\treturn 0;\n}",
 			#I have no idea how c++ strings work :D
 			"(cpp|hpp|cc|hh)$": "#include <iostream>\n\nusing namespace std;\n\nint main(int argc, char* argv[]) {\t\n\t\n\treturn 0;\n}",
 			"(py|pyw)$": "\n\ndef main():\n\tpass\n\nif __name__ == \"__main__\":\n\tmain()",
-			"html|htm|css": "<!DOCTYPE HTML>\n<html lang=\"en\">\n</head>\n\t<title> placeholder </title>\n\n<head>\n\n<body>\n\n</body>\n</html>",
+			"html|htm|css": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n</body>\n</html>",
 			"java|jsp|class": "",
-			"php": "<!DOCTYPE HTML>\n<html lang=\"en\">\n</head>\n\t<title> placeholder </title>\n\n<head>\n\n<body>\n\n\t<?php\n\t\t\n\t?>\n</body>\n</html>",
+			"php": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n\t<?php\n\t\t\n\t?>\n</body>\n</html>",
 			"go": "",
 			"sh": "\n",
 			"bat|cmd": "",
@@ -175,15 +175,23 @@ class highlighter(object):
 		}
 
 
-		# self.keyword_regex = r"[0-9]+|((\"\')(.)+(\"\'))|\y(__bases__|__builtin__|__class__|__debug__|__dict__|__doc__|__file__|__members__|__methods__|__name__|__self__|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield)\y"
-
+		# self.all_regex = r"[A-Z_0-9]{2,}|#(.)*|([\%\+\-\*\/\=\<\>\!\^\&\|]+)|[\@\$\\]+|[\{\}\[\]\(\)]+|[^a-zA-Z]*[0-9]{1,}|([\"\']|\"(.)*\"|\'(.)\')|\y(__bases__|__builtin__|__class__|__debug__|__dict__|__doc__|__file__|__members__|__methods__|__name__|__self__|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield)\y"
+		self.all_regex = r"\w+(?=\()|\b[A-Z_0-9]{2,}\b|#(.)*|([\%\+\-\*\/\=\<\>\!\^\&\|]+)|[\@\$\\]+|[\{\}\[\]\(\)]+|\b[0-9]+\b|((\"(.)*\")|(\'(.)*\'))|\b(self|True|False|None|__bases__|__builtin__|__class__|__debug__|__dict__|__doc__|__file__|__members__|__methods__|__name__|__self__|and|as|assert|async|await|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|nonlocal|not|or|pass|raise|return|try|while|with|yield)\b"
+		
+		self.keyword_regex = re.compile(r"(__bases__|__builtin__|__class__|__debug__|__dict__|__doc__|__file__|__members__|__methods__|__name__|__self__|as|assert|async|await|break|class|continue|def|del|from|global|import|in|is|lambda|nonlocal|pass|raise|return|yield)")
+		self.numerical_keyword_regex = re.compile(r"\b(False|True|None)\b")
+		self.logical_keyword_regex = re.compile(r"\b(and|or|not|if|elif|else|for|try|except|finally|while|with|self|xor)\b")
+			
+		self.upcase_regex = re.compile(r"\b([A-Z_]{2,}|[A-Z_]+[A-Z_0-9]+)\b")
+		self.function_identifier_regex = re.compile(r"\w+")
 
 		self.buffer = buffer
 		self.parent = parent
 		self.theme = parent.theme
 
-		self.countingQuomarks = False
+		self.in_quote = False
 		self.in_comment = False
+		
 		self.human_error = []
 		self.brackets = [[],[],[]]
 		self.bracket_pairs = {}
@@ -200,22 +208,24 @@ class highlighter(object):
 		self.objs = []
 		self.funcs = []
 		self.pattern = ""
-		self.last_pattern = []
+		self.last_pattern = ""
 
 		# compiled regexes used by the highlighting functions
 		# TODO(@bugy): remake this BS so it doesn't use regex
-		self.quote_regex = re.compile(r"[\"\']")
+		# self.quote_regex = re.compile(r"((\"(.)*\")|(\'(.)*\'))")
+		self.quote_regex = re.compile(r"\"|\'")
+		self.comment_regex = re.compile(r"#(.)*")
 		self.abc_regex = re.compile(r"[a-zA-Z_]")
 		self.abc_upcase_regex = re.compile(r"^[A-Z_]+$") #|^[A-Z]+_[A-Za-z0-9]+")
 		self.separator_regex = re.compile(r"[\s\.\,\:\;]")
-		self.num_regex = re.compile(r"[0-9]")
-		self.special_num_regex = re.compile(r"^0b+[0-1]+$|^0x+[0-9a-fA-F]+$")
-		self.special_char_regex = re.compile(r"[\!\&\^\|\@\$\\]")
-		self.brackets_regex = re.compile(r"[\{\}\[\]\(\)]")
+		self.number_regex = re.compile(r"[0-9]+")
+		self.special_number_regex = re.compile(r"^0b+[0-1]+$|^0x+[0-9a-fA-F]+$")
+		self.special_char_regex = re.compile(r"[\$\&\^\|\@\$\\]+")
+		self.brackets_regex = re.compile(r"[\{\}\[\]\(\)]+")
 		self.left_brackets_regex = re.compile(r"[\(\[\{]")
 		self.right_brackets_regex = re.compile(r"[\)\]\}]")
 		self.function_separator_regex = re.compile(r"[\(]")
-		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>]")
+		self.operator_regex = re.compile(r"[\%\+\-\*\/\=\<\>\!]+")
 		self.string_special_char_regex = re.compile(r"[\\\{\}]")
 		self.whitespace_regex = re.compile(r"[\t]")
 		self.c_preprocessor_regex = re.compile(r"\#")
@@ -223,26 +233,30 @@ class highlighter(object):
 		self.html_separator_regex = re.compile(r"[\;\ \=]")
 		self.html_tag_start_regex = re.compile(r"[\<]")
 		self.html_tag_end_regex = re.compile(r"[\>]")
-		self.html_num_regex = re.compile(r"\#*[0-9]")
+		self.html_number_regex = re.compile(r"\#*[0-9A-Fa-f]")
 		self.html_L_bracket_regex = re.compile(r"[\{]")
 		self.html_R_bracket_regex = re.compile(r"[\}]")
-		self.html_color_num_regex = re.compile(r"^\#[0-9A-Fa-f]+$|^\-*[0-9]+[a-z]*$|^[0-9]*deg$")
+		self.html_color_number_regex = re.compile(r"^\#[0-9A-Fa-f]+$|^\-*[0-9]+[a-z]*$|^[0-9]*deg$")
 		self.html_comment_start_regex = re.compile(r"<!--")
 		self.html_comment_end_regex = re.compile(r"-->")
+
+		self.color_code_regex = re.compile(r"(^\#[0-9a-fA-F]{6}$)")
 
 		self.language_options = {
 			"(c|h)$": {"keywords": self.c_keywords, "numerical_keywords": self.c_numerical_keywords, "logical_keywords": self.c_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["make"]},
 			"(cpp|hpp|cc|hh)$": {"keywords": self.cpp_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["make"]},
 			"(py|pyw)$": {"keywords": self.py_keywords, "numerical_keywords": self.py_numerical_keywords, "logical_keywords": self.py_logical_keywords, "highlight": self.python_highlight, "comment_sign": "#", "make_argv": ["python3", f"{self.buffer.full_name}"]},
-			"html|htm|css": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.html_highlight, "comment_sign": "<!-- ", "make_argv": ["firefox", f"{self.buffer.full_name}"]},
-			"java|jsp|class": {"keywords": self.java_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
+			"html|htm|css": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.html_highlight, "comment_sign": "<!-- ", "make_argv": ["firefox -new-window", self.buffer.full_name]},
+			"java|jsp|class": {"keywords": self.java_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["firefox", "-new-window", self.buffer.full_name]},
 			"php": {"keywords": self.php_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
 			"go": {"keywords": self.go_keywords, "numerical_keywords": self.go_numerical_keywords, "logical_keywords": self.go_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["go", "run", f"{self.buffer.full_name}"]},
-			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["make"]},
+			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["rustc", f"{self.buffer.full_name}"]},
 			"sh": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#", "make_argv": [f"./{self.buffer.full_name}"]},
 			"bat|cmd": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "::", "make_argv": [f"./{self.buffer.full_name}"]},
 			"json": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "//", "make_argv": ""},
 			"diary": {"keywords": ["Hello"], "numerical_keywords": [], "logical_keywords": [], "highlight": self.diary_highlight, "comment_sign": "~$", "make_argv": ""},
+			"asm": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": ";;", "make_argv": ""},
+			"None": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#", "make_argv": ""},
 		}
 
 	def set_languague(self, arg: str=None):
@@ -250,38 +264,43 @@ class highlighter(object):
 		
 		for key in self.language_options:
 			if (re.match(key, self.lang)):
-				lang_set = self.language_options[key]
-				self.keywords = lang_set["keywords"]
-				self.numerical_keywords = lang_set["numerical_keywords"]
-				self.logical_keywords = lang_set["logical_keywords"]
-				self.highlight = lang_set["highlight"]
-				self.comment_sign = lang_set["comment_sign"]
-				self.commment_regex = re.compile(rf"{self.comment_sign}")
-				self.buffer.make_argv = lang_set["make_argv"]
-				self.buffer.lexer = LEXER(self.parent, self.buffer)
-				# self.buffer.lexer.keywords = self.keywords	
+				self.set_lang_options(key)
 				return
 		
-		self.comment_sign = "\t"
-		self.highlight = self.no_highlight
-		self.buffer.lexer = LEXER(self.parent, self.buffer)
-		# self.buffer.lexer.keywords = self.keywords
+		self.set_lang_options("None")
 
+	def set_lang_options(self, key):
+		lang_set = self.language_options[key]
+		self.keywords = lang_set["keywords"]
+		self.numerical_keywords = lang_set["numerical_keywords"]
+		self.logical_keywords = lang_set["logical_keywords"]
+		self.highlight = lang_set["highlight"]
+		self.comment_sign = lang_set["comment_sign"]
+		self.commment_regex = re.compile(rf"{self.comment_sign}")
+		self.buffer.make_argv = lang_set["make_argv"]
+		self.buffer.lexer = C_LEXER(self.parent, self.buffer)
+		# self.buffer.lexer.keywords = self.keywords	
+
+	def set_pattern(self, pattern):
+		if (self.pattern): self.last_pattern = self.pattern
+		self.pattern = pattern
 
 	def suggest(self, line_no: int = None, line: str = None) -> None:
 		# if (not line):
 			# line = self.buffer.get(float(line_no), self.get_line_lenght(line_no))
 
-		token = self.buffer.get("insert -1c wordstart", "insert")
-		tt = ""
-		for m in self.vars:
-			if (re.match(token, m)):
-				tt += m+":variable | "
-		for m in self.funcs:
-			if (re.match(token, m)):
-				tt += m+":function | "
-
-		self.parent.notify(tt)		
+		token = self.buffer.current_token
+		if (re.match(r"[a-zA-Z_]+([0-9])*", token)):
+			ret = ""
+			for m in self.vars:
+				if (re.match(token, m)):
+					ret += m+":variable | "
+			for m in self.funcs:
+				if (re.match(token, m)):
+					ret += m+":function | "
+	
+			if (ret): self.parent.notify(ret)
+		else: return
 				
 		# token = ""
 		# for i, current_char in enumerate(line, 0):
@@ -369,90 +388,107 @@ class highlighter(object):
 	def command_highlight(self, line: str=None):
 		last_separator = "1.0"
 		command_pattern = ""
-		if line == None:
+		if (line == None):
 			line = self.parent.command_entry.get("1.0", "end")
 
 		self.parent.command_entry.tag_remove("command_keywords", "1.0", "end")
 
 		for i, current_char in enumerate(line, 0):
-			# print(i ,current_char)
 			if (self.abc_regex.match(current_char)):
 				command_pattern += current_char
 				continue
 
 			elif (self.separator_regex.match(current_char)):
-				if (command_pattern in self.command_keywords):
-					index = f"1.{i}"
-					self.parent.command_entry.tag_add("command_keywords", last_separator, index)
+				for c in self.command_keywords:
+					if (re.match(c, command_pattern)):
+						index = f"1.{i}"
+						self.parent.command_entry.tag_add("command_keywords", last_separator, index)
 				last_separator = f"1.{i}"
 				
 
-	def bracket_pair_highlight(self, line_no: int, line: str) -> None: 
+	def bracket_pair_highlight(self) -> None:
 		self.buffer.tag_remove("pair_bg", "1.0", "end")
-		self.buffer.tag_remove("underline", "1.0", "end")
+	
 		index = self.buffer.index("insert")
+		# try: print("curr index: ", index, "potent: ", self.bracket_pairs[index]) 
+		# except KeyError as e: print("Keyerror: ", e)
 		if (self.brackets_regex.match(self.buffer.get(index))):
 			try:
 				self.buffer.tag_add("pair_bg", self.bracket_pairs[index])
-				if (self.parent.sameline_check(index, self.bracket_pairs[index])):
-					i1, i2 = self.parent.inline_index_sort(index, self.bracket_pairs[index])
-					if (self.parent.underline_pairs): self.buffer.tag_add("underline", f"{i1}+1c", i2)
+				# if (self.parent.sameline_check(index, self.bracket_pairs[index])):
+					# i1, i2 = self.parent.inline_index_sort(index, self.bracket_pairs[index])
+					# if (self.parent.underline_pairs): self.buffer.tag_add("underline", f"{i1}+1c", i2)
 			except Exception: pass
+				# self.bracket_pairs.pop(self.bracket_pairs[index])
+				# self.bracket_pairs.pop(index)
 		# try: self.buffer.tag_add("pair_bg", self.bracket_pairs[self.buffer.index("insert")])
 		# except Exception:
 			# try: self.buffer.tag_add("pair_bg", self.bracket_pairs[self.buffer.index("insert-1c")])
 			# except Exception: pass
 
 
-	def bracket_pair_make(self, char: str = None):
+	def bracket_pair_make(self, char: str):
 		self.brackets = [] #clearing useless things
 		self.human_error = []
-		self.bracket_pairs = {}
+		# self.bracket_pairs = {}
+		self.buffer.tag_remove("pair_bg", "1.0", "end")
 
 		if (self.left_brackets_regex.match(char)):
-			direction = 1
+			self.seek_bracket_after()
 
 		elif (self.right_brackets_regex.match(char)):
-			direction = -1
+			self.seek_bracket_before()
 		
-		else: return
-		
+		else:
+			index = self.buffer.index("insert")
+			try: self.braclet_pairs.pop(self.braclet_pairs[index]); self.braclet_pairs.pop(index)
+			except Exception: pass
+			return
+
+		self.bracket_pair_highlight()
+
+	def seek_bracket_before(self):
 		i = 0
 		index = "insert"
+		while (i <= 5000):
+			index = f"insert-{i}c"
+			pattern = self.buffer.get(index)
+			if (not self.brackets_regex.match(pattern)): i+=1; continue
 
-		# I am stoopid and this is a botch and a workaround
-		while (True):
-			if (i >= 5000): break #self.buffer.tag_add("error_bg", self.brackets[-1]); 
-			index = f"insert+{i}c" if direction == 1 else f"insert-{i}c"
+			if (self.left_brackets_regex.match(pattern)):
+
+				self.bracket_pairs[self.buffer.index(index)] = self.brackets[-1]
+				self.bracket_pairs[self.brackets[-1]] = self.buffer.index(index)
+
+				self.brackets.pop()
+				if (not self.brackets):
+					break
+
+			elif (self.right_brackets_regex.match(pattern)):
+				self.brackets.append(self.buffer.index(index))
+			
+			i += 1
+
+	def seek_bracket_after(self):
+		i = 0
+		index = "insert"
+		while (i <= 5000):
+			index = f"insert+{i}c"
 			pattern = self.buffer.get(index)
 			if (not self.brackets_regex.match(pattern)): i+=1; continue
 			
-			if (direction == 1):
-				if (self.left_brackets_regex.match(pattern)):
-					self.brackets.append(self.buffer.index(index))
+			if (self.left_brackets_regex.match(pattern)):
+				self.brackets.append(self.buffer.index(index))
 
-				elif (self.right_brackets_regex.match(pattern)):
+			elif (self.right_brackets_regex.match(pattern)):
 
-					self.bracket_pairs[self.buffer.index(index)] = self.brackets[-1]
-					self.bracket_pairs[self.brackets[-1]] = self.buffer.index(index)
+				self.bracket_pairs[self.buffer.index(index)] = self.brackets[-1]
+				self.bracket_pairs[self.brackets[-1]] = self.buffer.index(index)
 
-					self.brackets.pop()
-					if (not self.brackets):
-						break
+				self.brackets.pop()
+				if (not self.brackets):
+					break
 
-			else:
-				if (self.left_brackets_regex.match(pattern)):
-
-					self.bracket_pairs[self.buffer.index(index)] = self.brackets[-1]
-					self.bracket_pairs[self.brackets[-1]] = self.buffer.index(index)
-
-					self.brackets.pop()
-					if (not self.brackets):
-						break
-
-				elif (self.right_brackets_regex.match(pattern)):
-					self.brackets.append(self.buffer.index(index))
-			
 			i += 1
 
 	def rm_highlight(self, last_separator, line_end_index):
@@ -466,9 +502,13 @@ class highlighter(object):
 		self.buffer.tag_remove("operators", last_separator, line_end_index)
 		self.buffer.tag_remove("quotes", last_separator, line_end_index)
 		self.buffer.tag_remove("upcase", last_separator, line_end_index)
+		for tag in self.buffer.tag_names():
+			if (tag[0] == "#"): self.buffer.tag_remove(tag, last_separator, line_end_index)
 
 	def highlight_keyword(self, last_separator, index) -> None:
-		if (not self.in_comment):
+		# print(self.last_pattern+self.pattern, " : ", self.color_code_regex.match(self.last_pattern+self.pattern))
+		
+		if (not self.in_comment and not self.in_quote):
 			if (self.pattern in self.keywords): #self.pattern in self.keywords #self.py_keywords_regex.match(self.pattern)
 				self.buffer.tag_add("keywords", last_separator, index)
 			
@@ -484,30 +524,115 @@ class highlighter(object):
 			elif (self.abc_upcase_regex.match(self.pattern) and len(self.pattern) > 1):
 				self.buffer.tag_add("upcase", last_separator, index)
 	
-			elif (self.special_num_regex.match(self.pattern)):
+			elif (self.special_number_regex.match(self.pattern)):
 				self.buffer.tag_add("numbers", last_separator, index)
+		
+		# elif (self.color_code_regex.match(self.last_pattern+self.pattern)):
+			# self.buffer.tag_configure(self.last_pattern+self.pattern, background=self.last_pattern+self.pattern)
+			# self.buffer.tag_add(self.last_pattern+self.pattern, last_separator, index)
 
-		else:
-			if (self.pattern in self.comment_keywords):
-				self.buffer.tag_add("upcase", last_separator, index)
+		elif (self.in_comment and self.pattern in self.comment_keywords):
+			print("comment_keyword found")
+			self.buffer.tag_configure("comment_keyword", foreground="#FFFFFF")
+			self.buffer.tag_add("comment_keyword", last_separator, index)
 
 
-	# def universal_highlight(self, *args, **kwargs):
+	def universal_highlight(self, line_no, line=None):
 		# motherfucking bullshit I need to make this work with regex so it's more extensible
 		# the current highlighting sucks major ass
-		# self.buffer.mark_set("match_end", "1.0")
-		# count = tkinter.IntVar()
+		linestart = f"{line_no}.0"
+		lineend = f"{line_no}.0 lineend +1c"
+		# self.buffer.mark_set("match_end", linestart)
+		count = tkinter.IntVar()
+		self.rm_highlight(linestart, lineend)
+		delimeter = 0
+
+		line = self.buffer.get(linestart, lineend)
+		while (True):
+			match = re.search(self.all_regex, line[delimeter:])
+			if (not match): break
+			match_start = int(match.span()[0])
+			match_end = int(match.span()[1])
+			
+			match_start_int = match_start
+			match_end_int = match_end
+
+			match_start = f"{line_no}.{delimeter+match_start_int}"
+			match_end = f"{line_no}.{delimeter+match_end_int}"
+
+			delimeter = delimeter+match.pos+match_end_int
+			# print(match, match_start, match_end, delimeter)
+
+			match = match.group()
+			if (self.keyword_regex.match(match)):
+				self.buffer.tag_add("keywords", match_start, match_end)
+
+			elif (self.logical_keyword_regex.match(match)):
+				self.buffer.tag_add("logical_keywords", match_start, match_end)
+
+			elif (self.numerical_keyword_regex.match(match)):
+				self.buffer.tag_add("numbers", match_start, match_end)
+			
+			elif (self.number_regex.match(match)):
+				self.buffer.tag_add("numbers", match_start, match_end)
+			
+			elif (self.operator_regex.match(match)):
+				self.buffer.tag_add("operators", match_start, match_end)
+			
+			elif (self.special_char_regex.match(match)):
+				self.buffer.tag_add("special_chars", match_start, match_end)
+
+			elif (self.brackets_regex.match(match)):
+				self.buffer.tag_add("special_chars", match_start, match_end)
+
+			elif (self.comment_regex.match(match)):
+				self.buffer.tag_add("comments", match_start, match_end)
+				
+			elif (self.quote_regex.match(match)):
+				self.buffer.tag_add("quotes", match_start, match_end)
+
+			elif (self.upcase_regex.match(match)):
+				self.buffer.tag_add("upcase", match_start, match_end)
+
+			elif (self.function_identifier_regex.match(match)):
+				# print(match, match_start, match_end, delimeter)
+				self.buffer.tag_add("functions", match_start, match_end)
 
 		# weird tcl regex rules: https://tcl.tk/man/tcl8.5/TclCmd/re_syntax.htm#M50
 		# \y in tcl syntax means mathcing only at the beggining or the end of the word
 		# so it's \y(word)\y or \m(word)\M instead of \b(word)\b
-		
+
 		# while (True):
-			# index = self.buffer.search(self.keyword_regex, "match_end", "end-1c", regexp=True, count=count)
-			# if (index == ""): break
-			# if (count.get()) == 0: break # degenerate pattern which matches zero-lenght strings
-			# self.buffer.mark_set("match_end", f"{index}+{count.get()}c")
-			# self.buffer.tag_add("keywords", index, f"{index}+{count.get()}c")
+			# match_start = self.buffer.search(self.all_regex, "match_end", lineend, regexp=True, count=count, exact=True)
+			# if (match_start == "" or count.get() == 0): break
+			# match_end = f"{match_start}+{count.get()}c"
+			# match = self.buffer.get(match_start, match_end)
+			
+			# if (self.keyword_regex.match(match)):
+				# self.buffer.tag_add("keywords", match_start, match_end)
+			
+			# elif (self.number_regex.match(match)):
+				# self.buffer.tag_add("numbers", match_start, match_end)
+			
+			# elif (self.operator_regex.match(match)):
+				# self.buffer.tag_add("operators", match_start, match_end)
+			
+			# elif (self.special_char_regex.match(match)):
+				# self.buffer.tag_add("special_chars", match_start, match_end)
+
+			# elif (self.brackets_regex.match(match)):
+				# self.buffer.tag_add("special_chars", match_start, match_end)
+
+			# elif (self.comment_regex.match(match)):
+				# self.buffer.tag_add("comments", match_start, match_end)
+				
+			# elif (self.quote_regex.match(match)):
+				# self.buffer.tag_add("quotes", match_start, match_end)
+
+			# elif (self.upcase_regex.match(match)):
+				# self.buffer.tag_add("upcase", match_start, match_end)
+			
+			# self.buffer.mark_set("match_end", match_end)
 
 		# self.buffer.mark_unset("match_end")
 								
@@ -519,78 +644,77 @@ class highlighter(object):
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)}"
+		quote_start_index = f""
+		self.last_pattern = ""
 		self.pattern = ""
-		self.countingQuomarks = False
+		self.in_quote = False
 		self.in_comment = False
 		
 		self.rm_highlight(last_separator, line_end_index)
 
-
 		for i, current_char in enumerate(line, 0):
-			if (self.quote_regex.match(current_char) and not self.in_comment):
-				self.buffer.tag_add("quotes", f"{line_no}.{i}")
-				self.countingQuomarks = not self.countingQuomarks
+			index = f"{line_no}.{i}"
 
-			elif (self.countingQuomarks):
-				self.buffer.tag_add("quotes", f"{line_no}.{i}")
-				continue
+			if (self.in_quote): self.buffer.tag_add("quotes", index)
 			
-			elif (self.abc_regex.match(current_char)):
+			if (self.abc_regex.match(current_char)):
 				self.pattern += current_char
-				continue
 
 			elif (self.commment_regex.match(current_char)): #comments
-				# self.in_comment = True
-				# last_separator = f"{line_no}.{i+1}"
-				index = f"{line_no}.{i}"
-				self.buffer.tag_add("comments", index, line_end_index)
-				break
-			
-			elif (self.num_regex.match(current_char)): #numbers
-				index = f"{line_no}.{i}"
-				if (not self.pattern or self.num_regex.match(self.pattern)):
-					self.buffer.tag_add("numbers", index)
-				self.pattern += current_char
-				self.highlight_keyword(last_separator, index)
-				continue
-			
-			elif (self.operator_regex.match(current_char)):
-				index = f"{line_no}.{i}"
-				self.highlight_keyword(last_separator, index)
-				self.buffer.tag_add("operators", index)
-				
-				self.pattern = ""
+				if (not self.in_quote):
+					self.buffer.tag_add("comments", index, line_end_index)
+					self.in_comment = True
+					
+				self.set_pattern("#")
+
+			elif (self.quote_regex.match(current_char) and not self.in_comment):
+				self.buffer.tag_add("quotes", index)
+
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
-				continue
+				self.highlight_keyword(quote_start_index, index)
+
+				self.pattern = ""
+				if (self.in_quote): self.in_quote = False
+				elif (not self.in_quote): self.in_quote = True; quote_start_index = last_separator
+
+			elif (self.number_regex.match(current_char)): #numbers
+				if (not self.in_comment and not self.in_quote and not self.pattern or self.number_regex.match(self.pattern)):
+					self.buffer.tag_add("numbers", index)
+					
+				self.pattern += current_char
+				self.highlight_keyword(last_separator, index)
+			
+			elif (self.operator_regex.match(current_char)):
+				self.highlight_keyword(last_separator, index)
+				if (not self.in_comment and not self.in_quote): self.buffer.tag_add("operators", index)
+				
+				self.set_pattern("")
+				last_separator_index = i+1
+				last_separator = f"{line_no}.{last_separator_index}"
 			
 			elif (self.brackets_regex.match(current_char)):
-				index = f"{line_no}.{i}"
 				self.highlight_keyword(last_separator, index)
-				self.buffer.tag_add("special_chars", index)
+				if (not self.in_comment and not self.in_quote): self.buffer.tag_add("special_chars", index)
 				if (self.function_separator_regex.match(current_char)):
 					self.buffer.tag_add("functions", last_separator, index)
 
-				self.pattern = ""
+				self.set_pattern("")
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
-				continue
 			
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
-				index = f"{line_no}.{i}"
-				self.buffer.tag_add("special_chars", index)
-				self.pattern = ""
+				if (not self.in_comment and not self.in_quote): self.buffer.tag_add("special_chars", index)
+				self.set_pattern("")
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
-				continue
-
+	
 			elif (self.separator_regex.match(current_char)):
-				index = f"{line_no}.{i}"
 				self.highlight_keyword(last_separator, index)
 			
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
-				self.pattern = ""
+				self.set_pattern("")
 
 	def c_highlight(self, line_no: int, line: str=None):
 		""" highlighting for C-like languages """
@@ -601,7 +725,7 @@ class highlighter(object):
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)+1}"
 		self.pattern = ""
-		self.countingQuomarks = False
+		self.in_quote = False
 		special_highlighting_mode = 0
 
 		self.rm_highlight(last_separator, line_end_index)
@@ -632,13 +756,13 @@ class highlighter(object):
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("quotes", index)
-				if (self.countingQuomarks):
-					self.countingQuomarks = False
+				if (self.in_quote):
+					self.in_quote = False
 				else:
-					self.countingQuomarks = True
-				# self.countingQuomarks = not self.countingQuomarks
+					self.in_quote = True
+				# self.in_quote = not self.in_quote
 
-			elif (self.countingQuomarks):
+			elif (self.in_quote):
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("quotes", index)
 				continue
@@ -648,9 +772,9 @@ class highlighter(object):
 				# print(self.pattern)
 				continue	
 
-			elif (self.num_regex.match(current_char)): #numbers
+			elif (self.number_regex.match(current_char)): #numbers
 				index = f"{line_no}.{i}"
-				if (not self.pattern or self.num_regex.match(self.pattern)):
+				if (not self.pattern or self.number_regex.match(self.pattern)):
 					self.buffer.tag_add("numbers", index)
 				self.pattern += current_char
 				self.highlight_keyword(last_separator, index)
@@ -660,7 +784,7 @@ class highlighter(object):
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("operators", index)
 				self.highlight_keyword(last_separator, index)
-				self.pattern = ""
+				self.set_pattern("")
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
@@ -672,7 +796,7 @@ class highlighter(object):
 				if (self.function_separator_regex.match(current_char)):
 					self.buffer.tag_add("functions", last_separator, index)
 
-				self.pattern = ""
+				self.set_pattern("")
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
@@ -680,7 +804,7 @@ class highlighter(object):
 			elif (self.special_char_regex.match(current_char)): #special chars[\[\]\{\}\-\+\*\/\%\^\&\(\)\|\=]
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("special_chars", index)
-				self.pattern = ""
+				self.set_pattern("")
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
 				continue
@@ -691,7 +815,7 @@ class highlighter(object):
 			
 				last_separator_index = i+1
 				last_separator = f"{line_no}.{last_separator_index}"
-				self.pattern = ""
+				self.set_pattern("")
 
 
 	def script_highlight(self, line_no: int=None, line: str=None):
@@ -702,7 +826,9 @@ class highlighter(object):
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)+1}"
 		self.pattern = ""
-		self.countingQuomarks = False
+		
+		self.in_quote = False
+		self.in_comment = False
 
 		self.rm_highlight(last_separator, line_end_index)
 
@@ -715,13 +841,13 @@ class highlighter(object):
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("quotes", index)
-				if (self.countingQuomarks):
-					self.countingQuomarks = False
+				if (self.in_quote):
+					self.in_quote = False
 				else:
-					self.countingQuomarks = True
-				# self.countingQuomarks = not self.countingQuomarks
+					self.in_quote = True
+				# self.in_quote = not self.in_quote
 
-			elif (self.countingQuomarks):
+			elif (self.in_quote):
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("quotes", index)
 				continue
@@ -774,7 +900,7 @@ class highlighter(object):
 		in_special_tag = False
 		last_pattern = ""
 		self.pattern = ""
-		self.countingQuomarks = False
+		self.in_quote = False
 		tag_argument_index = 0
 
 		self.rm_highlight(last_separator, line_end_index)
@@ -795,15 +921,15 @@ class highlighter(object):
 			if (self.quote_regex.match(current_char)):
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("special_chars", index)
-				self.countingQuomarks = not self.countingQuomarks
-				# self.countingQuomarks = not self.countingQuomarks
+				self.in_quote = not self.in_quote
+				# self.in_quote = not self.in_quote
 
-			if (self.countingQuomarks):
+			if (self.in_quote):
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("special_chars", index)
 				continue
 
-			if (self.html_color_num_regex.match(self.pattern)):
+			if (self.html_color_number_regex.match(self.pattern)):
 				index = f"{line_no}.{i-len(self.pattern)}"
 				index1 = f"{line_no}.{i+1}"
 				try:  
@@ -858,23 +984,22 @@ class highlighter(object):
 		last_separator = f"{line_no}.{last_separator_index}"
 		line_end_index = f"{line_no}.{len(line)+1}"
 		self.pattern = ""
-		self.countingQuomarks = False
+		self.in_quote = False
 		
 		self.rm_highlight(last_separator, line_end_index)
 
 		for i, current_char in enumerate(line, 0):
 			if (self.abc_regex.match(current_char)):
 				self.pattern += current_char
-				continue
 
 			elif (self.commment_regex.match(current_char)): #comments
 				index = f"{line_no}.{i}"
 				self.buffer.tag_add("comments", index, line_end_index)
 				break
 			
-			elif (self.num_regex.match(current_char)): #numbers
+			elif (self.number_regex.match(current_char)): #numbers
 				index = f"{line_no}.{i}"
-				if (not self.pattern or self.num_regex.match(self.pattern)):
+				if (not self.pattern or self.number_regex.match(self.pattern)):
 					self.buffer.tag_add("numbers", index)
 				self.pattern += current_char
 				self.highlight_keyword(last_separator, index)

@@ -1,0 +1,50 @@
+theme="tai"
+tab_size=4
+# CRLF or LF
+line_end=LF
+backup_files=0
+
+orientate = "down"
+show_buffer_tab = 1
+start_width = 80
+start_height = 32
+
+font="Consolas"
+font_size=14
+smaller_font_size=12
+
+command_entry_font_size = 11
+find_entry_font_size = 12
+command_out_font_size = 11
+
+line_end = LF
+suggest = 0
+
+default_find_mode = "?"
+username = ""
+
+# timezone format is GMT+n or GMT-n
+timezone="GMT"
+
+
+default_split_mode = "vertical"
+keybinds_file = "keybinds_conf.json"
+themes_file = "theme_conf.json"
+
+show_keypress = 1
+show_buffer_name = 1
+
+allow_external_modules = 1
+
+# get_line_relative_percentage_pos
+percentage_pos_func = get_abs_percentage_pos
+
+alpha=100
+
+supress_keybind_warning=1
+find_on_key = 1
+
+buffer_border_style="ridge"
+command_entry_border_style="ridge"
+command_out_border_style="ridge"
+find_border_style="flat"

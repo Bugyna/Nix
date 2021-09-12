@@ -2,16 +2,27 @@ import string
 import re
 import os
 
-az = [*string.ascii_letters, "_"]
-num = string.digits
-alphanum = [*az, *num]
+# how is this any more readable
+az         = [*string.ascii_letters, "_"]
+num        = string.digits
+alphanum   = [*az, *num]
 whitespace = [" ", "\t"]
 
 
 class LEXER:
 	def __init__(self, parent, txt):
 		self.parent = parent
-		self.txt = txt
+		self.buffer = txt
+
+		# unsigned int eq(int a, int b) 
+		# {
+		#	return (unsigned int)(a == b);
+		# }	
+
+		# = type: unsigned int
+		# name: eq
+		# parameters: int a int b
+		# local: None
 
 		self.index = 0
 
@@ -20,12 +31,14 @@ class LEXER:
 		self.keywords = ["if", "else", "while", "switch", "case"]
 		self.vars = []
 		self.functions = []
-		self.objects = []
-		self.scopes = {}
+		self.objects  = []
+		self.scopes  = {}
 
 	def lex(self, text=None):
+		# should iterate through characters make a token and then parse the token
+		# I should probably just use tree sitter or something though
 		if (text): self.text = text
-		else: self.text = self.txt.get("1.0", "end")
+		else: self.text = self.buffer.get("1.0", "end")
 		self.row_index = 1
 		self.column_index = 0
 
@@ -80,13 +93,15 @@ class LEXER:
 
 	def make_var(self):
 		# if (re.match(r"[a-zA-Z_][0-9_]+", self.prev_word) and re.match(r"[a-zA-Z_][0-9_]+", self.prev_word)):
-		w = f"{self.word} ({self.prev_word})"
+		# w = f"{self.word} ({self.prev_word})"
+		w = self.word
 		# print("making var: ", w)
 		if ((w not in self.vars) and (self.word not in self.keywords)):
 			self.vars.append(w)
 
 	def make_function(self):
-		w = f"{self.word} ({self.prev_word})"
+		# w = f"{self.word} ({self.prev_word})"
+		w = self.word
 		# print("making func: ", w)
 		if ((w not in self.functions) and (self.word not in self.keywords)):
 			self.functions.append(w)
@@ -108,7 +123,7 @@ class LEXER:
 		for word in self.vars:
 			s += "\t"+word+"\n"
 
-		self.parent.command_out_set(s)
+		# self.parent.command_out_set(s)
 
 class PY_LEXER(LEXER):
 	""" basic lexing """
@@ -117,7 +132,7 @@ class PY_LEXER(LEXER):
 
 	def lex(self, text=None):
 		if (text): self.text = text
-		else: self.text = self.txt.get("1.0", "end-1c")
+		else: self.text = self.buffer.get("1.0", "end-1c")
 		row_index = 1
 		char_index = 0
 
@@ -209,7 +224,7 @@ class C_LEXER(LEXER):
 
 	def lex(self, text=None):
 		if (text): self.text = text
-		else: self.text = self.txt.get("1.0", "end-1c")
+		else: self.text = self.buffer.get("1.0", "end-1c")
 		self.file_queue = []
 		
 		row_index = 1
@@ -307,15 +322,15 @@ class C_LEXER(LEXER):
 			char_index += 1
 
 		for object in self.objects:
-			self.txt.highlighter.keywords.append(object)
+			self.buffer.highlighter.keywords.append(object)
 
-		self.parent.command_out_set("lex finished")
+		# self.parent.command_out_set("lex finished")
 
 		file_queue = self.file_queue
 		for file in file_queue:
-			file = f"{os.path.dirname(self.txt.full_name)}/{file}"
+			file = f"{os.path.dirname(self.buffer.full_name)}/{file}"
 			if (os.path.isfile(file)):
-				self.parent.command_out_set(f"file {file} is a file")
+				# self.parent.command_out_set(f"file {file} is a file")
 				self.lex(text=open(file, "r").read())
 
 		# self.print_res()
@@ -412,7 +427,7 @@ class C_LEXER(LEXER):
 						elif (char == ";" and word != ""):
 							return word
 						elif (char == "\n"):
-							self.txt.tag_add("error_bg", f"1.0+{index}c")
+							self.buffer.tag_add("error_bg", f"1.0+{index}c")
 							return None
 
-			self.txt.tag_remove("error_bg", f"1.0+{index}c")
+			self.buffer.tag_remove("error_bg", f"1.0+{index}c")
