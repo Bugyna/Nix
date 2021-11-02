@@ -161,6 +161,7 @@ class FILE_HANDLER(object):
 		self.parent.reposition_widgets()
 		self.parent.notify(arg=f"buffer [{self.parent.buffer.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.buffer.name)}"], [f"1.{8+len(self.parent.buffer.name)}", f"1.{9+len(self.parent.buffer.name)}", "logical_keywords"]])
 		if (self.parent.focus_get() == p or self.parent.focus_get() == self.parent.command_out): self.parent.buffer.focus_set()
+		elif (self.parent.focus_get() == self.parent.find_entry): self.parent.find_entry.focus_set()
 		p.unplace() # weird (seemingly) optimalization trick
 		
 		if (arg): return "break"
@@ -268,8 +269,8 @@ class FILE_HANDLER(object):
 
 		buffer_type = "normal"
 
-		if (filename):
-			if (not os.path.isfile(filename)): filename = os.path.abspath(f"{self.current_dir}/{filename}")
+		# if (filename):
+			# if (not os.path.isfile(filename)): filename = os.path.abspath(f"{self.current_dir}/{filename}")
 			# if (self.buffer_exists(filename)): self.load_buffer(buffer_name=filename)
 
 		if (not os.path.isfile(filename)):

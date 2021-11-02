@@ -45,6 +45,19 @@ class highlighter(object):
 			 'throws', 'transient', 'try', 'void', 'volatile', 'while', 'true', 'false', 'null'
 		]
 
+		self.javascript_keywords = [
+			'async', 'await', 'break', 'case', 'catch', 'const', 'continue', 'debugger', 'default',
+			'delete', 'do', 'else', 'export', 'finally', 'for', 'get', 'if', 'import', 'from', 'in', 'of',
+			'instanceof', 'let', 'new', 'reject', 'resolve', 'return', 'set', 'static', 'super', 'switch',
+			'this', 'throw', 'try', 'typeof', 'var', 'void', 'while', 'with', 'yield', 'enum', 'implements',
+			'interface', 'package', 'private', 'protected', 'public', 'globalThis', 'Infinity', 'null', 'undefined',
+			'NaN', 'true', 'false', 'Array', 'Boolean', 'Date', 'Enumerator', 'Error', 'Function', 'Generator', 'Map',
+			'Math', 'Number', 'Object', 'Promise', 'Proxy', 'Reflect', 'RegExp', 'Set', 'String', 'Symbol', 'WeakMap',
+			'WeakSet', 'alert', 'decodeURI', 'decodeURIComponent', 'document', 'encodeURI', 'encodeURIComponent', 'escape',
+			'eval', 'isFinite', 'isNaN', 'parseFloat', 'parseInt', 'unescape', 'uneval', 'window'	
+		]
+
+
 		self.c_keywords = [
 			'auto', 'break', 'char', 'const', 'continue', 'default', 'do', 'double',
 		 	'extern', 'float', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof',
@@ -163,11 +176,12 @@ class highlighter(object):
 		self.language_init = {
 			"(c|h)$": "#include <stdlib.h>\n#include <stdio.h>\n\nint main (int argc, char* argv[]) {\n\n\treturn 0;\n}",
 			#I have no idea how c++ strings work :D
-			"(cpp|hpp|cc|hh)$": "#include <iostream>\n\nusing namespace std;\n\nint main(int argc, char* argv[]) {\t\n\t\n\treturn 0;\n}",
+			"(cpp|hpp|cc|hh)$": "#include <iostream>\n\nint main(int argc, char* argv[]) {\t\n\t\n\treturn 0;\n}",
 			"(py|pyw)$": "\n\ndef main():\n\tpass\n\nif __name__ == \"__main__\":\n\tmain()",
 			"html|htm|css": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n</body>\n</html>",
 			"java|jsp|class": "",
 			"php": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n\t<?php\n\t\t\n\t?>\n</body>\n</html>",
+			"js": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n\t<script>\n\t\t\n\t</script>\n</body>\n</html>",
 			"go": "",
 			"sh": "\n",
 			"bat|cmd": "",
@@ -249,6 +263,7 @@ class highlighter(object):
 			"html|htm|css": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.html_highlight, "comment_sign": "<!-- ", "make_argv": ["firefox -new-window", self.buffer.full_name]},
 			"java|jsp|class": {"keywords": self.java_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["firefox", "-new-window", self.buffer.full_name]},
 			"php": {"keywords": self.php_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
+			"js": {"keywords": self.javascript_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
 			"go": {"keywords": self.go_keywords, "numerical_keywords": self.go_numerical_keywords, "logical_keywords": self.go_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["go", "run", f"{self.buffer.full_name}"]},
 			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["rustc", f"{self.buffer.full_name}"]},
 			"sh": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#", "make_argv": [f"./{self.buffer.full_name}"]},
@@ -407,23 +422,23 @@ class highlighter(object):
 				
 
 	def bracket_pair_highlight(self) -> None:
-		self.buffer.tag_remove("pair_bg", "1.0", "end")
+		# self.buffer.tag_remove("pair", "1.0", "end")
 	
 		index = self.buffer.index("insert")
 		# try: print("curr index: ", index, "potent: ", self.bracket_pairs[index]) 
 		# except KeyError as e: print("Keyerror: ", e)
 		if (self.brackets_regex.match(self.buffer.get(index))):
 			try:
-				self.buffer.tag_add("pair_bg", self.bracket_pairs[index])
+				self.buffer.tag_add("pair", self.bracket_pairs[index])
 				# if (self.parent.sameline_check(index, self.bracket_pairs[index])):
 					# i1, i2 = self.parent.inline_index_sort(index, self.bracket_pairs[index])
 					# if (self.parent.underline_pairs): self.buffer.tag_add("underline", f"{i1}+1c", i2)
 			except Exception: pass
 				# self.bracket_pairs.pop(self.bracket_pairs[index])
 				# self.bracket_pairs.pop(index)
-		# try: self.buffer.tag_add("pair_bg", self.bracket_pairs[self.buffer.index("insert")])
+		# try: self.buffer.tag_add("pair", self.bracket_pairs[self.buffer.index("insert")])
 		# except Exception:
-			# try: self.buffer.tag_add("pair_bg", self.bracket_pairs[self.buffer.index("insert-1c")])
+			# try: self.buffer.tag_add("pair", self.bracket_pairs[self.buffer.index("insert-1c")])
 			# except Exception: pass
 
 
@@ -431,7 +446,7 @@ class highlighter(object):
 		self.brackets = [] #clearing useless things
 		self.human_error = []
 		# self.bracket_pairs = {}
-		self.buffer.tag_remove("pair_bg", "1.0", "end")
+		self.buffer.tag_remove("pair", "1.0", "end")
 
 		if (self.left_brackets_regex.match(char)):
 			self.seek_bracket_after()
@@ -441,7 +456,7 @@ class highlighter(object):
 		
 		else:
 			index = self.buffer.index("insert")
-			try: self.braclet_pairs.pop(self.braclet_pairs[index]); self.braclet_pairs.pop(index)
+			try: self.bracket_pairs.pop(self.bracket_pairs[index]); self.bracket_pairs.pop(index)
 			except Exception: pass
 			return
 

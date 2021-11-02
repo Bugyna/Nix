@@ -221,6 +221,7 @@ class PY_LEXER(LEXER):
 class C_LEXER(LEXER):
 	def __init__(self, parent, txt):
 		super().__init__(parent, txt)
+		self.indexed_files = []
 
 	def lex(self, text=None):
 		if (text): self.text = text
@@ -322,16 +323,19 @@ class C_LEXER(LEXER):
 			char_index += 1
 
 		for object in self.objects:
-			self.buffer.highlighter.keywords.append(object)
+			if (object not in self.buffer.highlighter.keywords): self.buffer.highlighter.keywords.append(object)
 
 		# self.parent.command_out_set("lex finished")
 
 		file_queue = self.file_queue
 		for file in file_queue:
-			file = f"{os.path.dirname(self.buffer.full_name)}/{file}"
-			if (os.path.isfile(file)):
+			if (file not in self.indexed_files):
+				self.indexed_files.append(file)
 				# self.parent.command_out_set(f"file {file} is a file")
-				self.lex(text=open(file, "r").read())
+				file = f"{os.path.dirname(self.buffer.full_name)}/{file}"
+				if (os.path.isfile(file)):
+					self.lex(text=open(file, "r").read())
+			
 
 		# self.print_res()
 
@@ -362,7 +366,7 @@ class C_LEXER(LEXER):
 				break
 
 		# self.parent.command_out_set(f"file {word} was added to queue")
-		self.file_queue.append(word)
+		if (word not in self.indexed_files): self.file_queue.append(word)
 
 
 	def search_whitespace(self, index) -> bool:

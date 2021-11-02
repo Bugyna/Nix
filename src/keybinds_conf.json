@@ -5,6 +5,25 @@
 		"<Configure>" : "reposition_widgets"
 	},
 
+	"BOX" :
+	{
+		"<Escape>" : "unplace",
+		"<Right>" : "focus_option_next",
+		"<Left>" : "focus_option_prev"
+	},
+
+	"PROMPT_OPTION" : 
+	{
+		"<Escape>" : "unplace",
+		"<Button-1>" : "focus_self",
+		"<FocusIn>" : "highlight",
+		"<FocusOut>" : "configure_self",
+		"<Return>" : "execute",
+		"<KP_Enter>" : "execute",
+		"<Right>" : "render_parent.focus_option_next",
+		"<Left>" : "render_parent.focus_option_prev"
+	},
+
 	"DEFAULT_TEXT_BUFFER":
 	{
 		"<F12>" : "parent.win_minimize",
@@ -80,7 +99,7 @@
 		{
 			"<KeyRelease>" : "find",
 			"<Return>" : "move_to_find_index",
-			"<KP_Enter>" : "find",
+			"<KP_Enter>" : "move_to_find_index",
 			"<Control-R>" : "mode_change",
 			"<Control-r>" : "mode_change"
 			
@@ -135,6 +154,7 @@
 	
 	"TEXT" :
 	{
+		
 		"<KeyRelease>" : "parent.update_buffer",
 		"<Control-S>" : "parent.file_handler.save_file",
 		"<Control-s>" : "parent.file_handler.save_file",
@@ -264,8 +284,13 @@
 		"<Alt-b>" : "jump_to_scope_start",
 		"<Alt-Shift-B>" : "jump_to_scope_end",
 		"<Alt-Shift-b>" : "jump_to_scope_end",
-		"<Alt-i>" : "parent.VIM_MOVE_MODULE.mode_set_move",
-		"<Alt-I>" : "parent.VIM_MOVE_MODULE.mode_set_move",
+		"<Alt-O>" : "set_vim_mode",
+		"<Alt-o>" : "set_vim_mode",
+
+		"<Alt-J>" : "move_line_down",
+		"<Alt-j>" : "move_line_down",
+		"<Alt-K>" : "move_line_up",
+		"<Alt-k>" : "move_line_up",
 		
 		"<Alt-comma>" : "split_args",
 		"<Alt-bracketleft>" : "move_to_scope_start",
@@ -276,7 +301,8 @@
 			"h" : "move_left",
 			"l" : "move_right",
 			"j" : "move_down",
-			"k" : "move_up"
+			"k" : "move_up",
+			"<colon>" : "parent.command_entry_place"
 		},
 
 		"suggest" :

@@ -1,7 +1,15 @@
-[ ] commit to git
 
+[/] > fix fucking find bs
+[ ] create undo redo stack bullshit handler
+[ ] add error stuff label bs # self.buffer.window_create("insert", window=tkinter.Label(text="aaaaaaaaaaaaaa"))
+	
 [/] autocompletion -> clean up
+[X] > fix lexer not deleting shit when it's deleted :D
 
+
+# PROJECT shit
+[ ] project configurations and stuff
+[ ] add running executables
 
 # reworks
 [/] regex highlighting -> modular through conf files
@@ -11,21 +19,24 @@
 [ ] render buffer_tabs properly (move it when current buffer tab is out of bounds)
 [/] better theme config options # like setting bg fg underline etc. -> rewrite theme_conf to work with the new system
 [ ] add optional arguments to bindings
-# maybe
 [ ] rework buffer saving system
+# maybe
 [/] commands parsing options (like -h) #?
 
 # features
-[ ] finding in multiple buffers at once
+[/] finding in multiple buffers at once
 [ ] switching buffers in cout and find
 [ ] filebar scrolling
 [/] command repeat keybind
 [ ] font size increase/decrease for all
 [ ] proper fuzzy filter
+[/] question prompt?
+
+[X] moving lines -> keep selection after move
 
 # fixes
 [X] fix splitting........... # that was quick
 [ ] fix file paths (* problems) + fix command input saving
-[/] fix file handling
+[X] fix file handling
 [X] fix cout repeat when filtering
 [X] fix cursor

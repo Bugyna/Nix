@@ -106,10 +106,21 @@ class PARSER:
 			'todo_set' : [self.todo_set, 'todo'],
 			'(list_)*(sub)*proc' : [self.list_subprocess, 'subproc'],
 			'create_temp(_buffer)*' : [self.create_temp_buffer, 'creates temporary buffer | usage: create_temp | create_temp [buffer name]'],
+			'(add_|create_)*mark' : [self.create_mark, 'creates a mark you can jump to with the \'jump\' command'],
+			'list_mark': [self.list_mark, 'lists all marks in current buffer'],
+			'jump(_to)*' : [self.jump_to, 'jump to a created mark or an index'],
 		}
 
 		# for i in range(len(self.commands.values())): # autogenerate power go brr
 			# print(f"'{list(self.commands.keys())[i]}' : [self.{list(self.commands.values())[i].__name__}, '{list(self.docs.values())[i]}'],")
+
+
+	def has_argument(func, arg=None):
+		def new_func(self, arg=None):
+			if (not arg[1:]): self.parent.error(f"{self.get_docs(arg[0:])}"); return
+			func(self, arg)
+
+		return new_func
 
 	def parse_argument(self, arg=None):
 		# O(n) somethign because fuck speed all I want is trash features
@@ -498,6 +509,22 @@ class PARSER:
 		if (not arg[1:]): arg = f"{time.time()}"
 		else: arg = " ".join(arg[1:])
 		self.parent.file_handler.new_buffer(buffer_name=arg, buffer_type="temp")
+
+	@has_argument
+	def create_mark(self, arg=None):
+		# if (not arg[1:]): self.parent.error(f"{self.get_docs(arg[0:])}"); return
+		self.parent.buffer.mark_set(arg[1], self.parent.buffer.index("insert"))
+
+	def list_mark(self, arg=None):
+		s = ""
+
+		for name in self.parent.buffer.mark_names():
+			s += f"{name}: {self.parent.buffer.index(name)}\n"
+		self.parent.notify(s)
+
+	@has_argument
+	def jump_to(self, arg=None):
+		self.parent.buffer.mark_set("insert", arg[1])
 
 	def command_not_found(self, arg=None):
 		res = ""
