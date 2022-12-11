@@ -8,4 +8,5 @@ PyInstaller.__main__.run([
 	'--add-data=src/modules/*:.',
 	'--hidden-import=PILLOW',
 	'--hidden-import=PIL',
+	'--hidden-import=cv2',
 ])

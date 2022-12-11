@@ -109,6 +109,7 @@ class PARSER:
 			'(add_|create_)*mark' : [self.create_mark, 'creates a mark you can jump to with the \'jump\' command'],
 			'list_mark': [self.list_mark, 'lists all marks in current buffer'],
 			'jump(_to)*' : [self.jump_to, 'jump to a created mark or an index'],
+			'sel_count' : [self.selection_count_get, 'get the length of selected text'],
 		}
 
 		# for i in range(len(self.commands.values())): # autogenerate power go brr
@@ -127,12 +128,6 @@ class PARSER:
 		for key in self.commands.keys():
 			if (re.match(f"\\b({key})\\b", arg[0])):
 				arg_f = arg
-				
-				for i in range(len(arg)):
-					if (re.search(r"\*", arg[i])):
-						a = arg.pop(i)
-						for file in self.parent.file_handler.directory_list_get(expr=a)[::-1]:
-							arg.insert(i, file)
 
 				self.command_execute = self.commands[key]
 				
@@ -174,6 +169,10 @@ class PARSER:
 		self.parent.buffer.mark_set("insert", index)
 		self.parent.buffer.see(index)
 		self.parent.notify(f"moved to: {index}")
+
+
+	def selection_count_get(self, arg=None):
+		self.parent.buffer.get_selection_count()
 
 	def l_get(self, arg=None):
 		self.parent.notify(f"{self.parent.buffer.get_line_count()}")
@@ -331,6 +330,12 @@ class PARSER:
 
 	def system_execute(self, arg=None):
 		if (not arg[1:]): self.parent.error(f"{self.get_docs(arg[0])}"); return
+		for i in range(len(arg)):
+			if (re.search(r"\*", arg[i])):
+				a = arg.pop(i)
+				for file in self.parent.file_handler.directory_list_get(expr=a)[::-1]:
+					arg.insert(i, file)
+
 		self.parent.buffer.run_subprocess(argv=arg[1:])
 
 	def python_execute(self, arg=None):
@@ -384,7 +389,11 @@ class PARSER:
 			self.parent.notify(f"please, specify new size. Current size: {self.parent.conf['tab_size']}")
 
 	def replace_spaces(self, arg=None):
-		self.parent.buffer.replace_x_with_y(" "*self.parent.conf["tab_size"], "\t")
+		if (arg[1:] and arg[1].isdigit()): arg = int(arg[1])
+		else: arg = self.parent.conf["tab_size"]
+
+		print("arg: ", arg)
+		self.parent.buffer.replace_x_with_y(" "*arg, "\t")
 
 	def replace_tabs(self, arg=None):
 		self.parent.buffer.replace_x_with_y("\t", " "*self.parent.conf["tab_size"])
@@ -413,13 +422,20 @@ class PARSER:
 			self.parent.buffer.lexer = C_LEXER(self.parent, self.parent.buffer)
 
 	def add_tag(self, arg=None):
-		index = self.parent.buffer.index_sort(self.parent.buffer.index("insert"), self.parent.buffer.mark_names()[-1])
-		self.parent.buffer.tag_raise(arg[1])
-		self.parent.buffer.tag_add(arg[1], index[0], index[1])
+		try:
+			self.parent.buffer.tag_raise(arg[1])
+			self.parent.buffer.tag_add(arg[1], "sel.first", "sel.last")
+			
+		except Exception: 
+			self.parent.buffer.tag_raise(arg[1])
+			self.parent.buffer.tag_add(arg[1], "insert")
 
 	def remove_tag(self, arg=None):
-		index = self.parent.buffer.index_sort(self.parent.buffer.index("insert"), self.parent.buffer.mark_names()[-1])
-		self.parent.buffer.tag_remove(arg[1], index[0], index[1])
+		try:
+			self.parent.buffer.tag_remove(arg[1], "sel.first", "sel.last")
+			
+		except Exception: 
+			self.parent.buffer.tag_remove(arg[1], "insert")
 
 	def lf(self, arg=None):
 		self.parent.convert_to_lf()

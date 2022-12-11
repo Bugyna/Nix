@@ -73,12 +73,12 @@ class BUFFER_TAB(tkinter.Label):
 		self.parent.file_handler.load_buffer(buffer_name=self.full_name)
 
 	def focus_highlight(self):
-		self.configure(bg=self.parent.theme["window"]["widget_fg"], fg=self.parent.theme["window"]["bg"])
+		self.configure(bg=self.parent.theme["window"]["fg"], fg=self.parent.theme["window"]["bg"])
 
 
 class BUFFER(tkinter.Frame):
 	def __init__(self, parent, name):
-		super().__init__(parent)
+		super().__init__(parent.buffer_frame)
 		self.parent = parent
 		self.full_name = name
 		self.name = os.path.basename(name)
@@ -90,46 +90,11 @@ class BUFFER(tkinter.Frame):
 		self.font = self.parent.font
 		self.font_bold = self.parent.font_bold
 
-		self.bind("<Control-N>", self.parent.file_handler.new_file)
-		self.bind("<Control-n>", self.parent.file_handler.new_file)
-		self.bind("<Control-B>L", self.parent.file_handler.load_file)
-		self.bind("<Control-b>l", self.parent.file_handler.load_file)
-		self.bind("<Control-B>W", lambda arg: self.parent.file_handler.close_buffer(arg, self.full_name))
-		self.bind("<Control-b>w", lambda arg: self.parent.file_handler.close_buffer(arg, self.full_name))
-		self.bind("<Control-w>", self.parent.win_destroy)
-		self.bind("<Control-W>", self.parent.win_destroy)
-		self.bind("<Control-B><Delete>", lambda arg: self.parent.file_handler.del_file(arg, self.full_name))
-		self.bind("<Control-b><Delete>", lambda arg: self.parent.file_handler.del_file(arg, self.full_name))
-		self.bind("<Control-E>", lambda arg: self.parent.command_out_set("\n".join(self.parent.command_out.out[-1:])))
-		self.bind("<Control-e>", lambda arg: self.parent.command_out_set("\n".join(self.parent.command_out.out[-1:])))
+	def configure_self(self, arg=None) -> None:
+		self.configure(bg = self.parent.theme["window"]["bg"], borderwidth=2, relief=self.parent.conf["buffer_border_style"], highlightthickness=0, cursor="xterm")
 
-		self.bind("<Control-Tab>", self.switch_buffer_next)
-		try: #linux bindings that throw errors on windows
-			self.bind("<Control-Shift-ISO_Left_Tab>", self.switch_buffer_prev)
-			self.parent.command_entry.bind("<KP_Enter>", self.parent.cmmand)
-		except Exception:
-			self.bind("<Control-Shift-Tab>", self.switch_buffer_prev)
-
-		self.bind("<Control-space>", self.parent.command_entry_place)
-		self.bind("<Control-Alt-space>", lambda arg: self.parent.command_out_set(resize=True))
-		self.bind("<Alt-Right>", self.parent.win_expand)
-		self.bind("<Alt-Left>", self.parent.win_expand)
-		self.bind("<Alt-Up>", self.parent.win_expand)
-		self.bind("<Alt-Down>", self.parent.win_expand)
-		self.bind("<Alt-Shift-Right>", self.parent.win_shrink)
-		self.bind("<Alt-Shift-Left>", self.parent.win_shrink)
-		self.bind("<Alt-Shift-Up>", self.parent.win_shrink)
-		self.bind("<Alt-Shift-Down>", self.parent.win_shrink)
-
-		self.bind("<F1>", lambda arg: self.bell())
-		self.bind("<F2>", lambda arg: self.insert("insert", self.get_time()))
-		self.bind("<F3>", lambda arg: self.parent.video_handler.screenshot())
-		self.bind("<F11>", self.parent.set_fullscreen)
-
-	def configure_self(self):
-		self.configure(bg=self.parent.theme["window"]["bg"], relief=self.parent.conf["buffer_border_style"],
-		 highlightthickness=0, cursor="pirate"
-		)
+		if (self["relief"] == "flat"): self["bd"] = 0
+		else: self["bd"] = 2
 
 	def change_name(self, name):
 		self.full_name = name
@@ -161,19 +126,52 @@ class BUFFER(tkinter.Frame):
 		self.switch_buffer()
 		return "break"
 
-class GRAPHICAL_BUFFER(BUFFER):
-	def __init__(self, parent, name):
-		super().__init__(parent, name)
+
+class IMAGE_LABEL(tkinter.Label):
+	def __init__(self, parent, name=""):
+		super().__init__(parent)
+		self.parent = parent
+
+		self.play = False
+		self.frames = []
+		self.full_name = None
+		self.name = None
+		self.viewable = False
 		self.orig_img = None
 		self.img = None
-		self.picture_place()
+		self.current_frame = 0
+		self.viewable = False
+		self.frame_duration = None
 
-		self.bind("<Control-period>", lambda arg: self.picture_resize(zoom=True))
-		self.bind("<Control-comma>", lambda arg: self.picture_resize(zoom=False))
+	def configure_self(self, arg=None):
+		self.configure(background=self.parent.theme["window"]["bg"])
 
-	def picture_place(self, arg=None):
+	def place_self(self, arg=None):
+		if (self.viewable): self.place(relx=.95, y=0, anchor="ne")
+
+	def set_filename(self, filename):
+		self.full_name = filename
+		self.name = os.path.basename(filename)
+		self.viewable = True
+		self.orig_img = None
+		self.img = None
+		self.current_frame = 0
+		del self.frames[:]
+		self.play = False
+
+	def show(self, arg=None):
+		self.viewable = True
+		if (self.name):
+			if (self.name.split(".")[-1] == "gif"):
+				self.gif_play()
+			else:
+				self.picture_place()
+
+	def picture_place(self, arg=None, timeout=2000):
+		self.place_self()
 		if (not self.orig_img):
 			self.orig_img = Image.open(self.full_name)
+			
 			self.orig_img_size = [self.orig_img.size[0], self.orig_img.size[1]]
 			self.orig_img = self.orig_img.resize(self.orig_img_size, Image.ANTIALIAS)
 			
@@ -182,13 +180,68 @@ class GRAPHICAL_BUFFER(BUFFER):
 		self.img = self.orig_img.resize(self.img_size, Image.ANTIALIAS)
 			
 		self.img_resized = ImageTk.PhotoImage(self.img)
-		self.img_label = tkinter.Label(self, image=self.img_resized)
-		self.img_label.image = self.img_resized
-		
-		self.img_label.place(x=0, y=0, width=self.parent.winfo_width(), height=self.parent.winfo_height())
-		self.img_label.configure(bg = self.parent.theme["window"]["bg"], relief=self.parent.conf["buffer_border_style"], highlightthickness=0, cursor="pirate")
+		self.configure(image=self.img_resized)
+		# self.create_image(0, 0, image=self.img_resized)
+		self.image = self.img_resized
+
+		if (timeout): self.after(timeout, self.unplace)
 		
 		self.bind("<Configure>", self.picture_place)
+
+	def gif_play(self, arg=None):
+		self.place_self()
+		self.img = Image.open(self.full_name)
+
+		self.frames = []
+		for frame in range(self.img.n_frames):
+			self.img.seek(frame)
+			self.frames.append(ImageTk.PhotoImage(self.img))
+
+		self.frame_duration = self.img.info["duration"]
+		if (self.frame_duration < 130 and len(self.frames) < 20):
+			self.frame_duration = 130
+
+		while (len(self.frames) * self.frame_duration < 1800):
+			self.frames = self.frames + self.frames
+
+		print(self.full_name, ": ", self.frame_duration, " | ", self.frame_duration*len(self.frames))
+		self.img.close()
+		del self.img
+		
+		# self.play = True
+		
+		# for img in self.frames:
+			# self.image = img
+			# self.configure(image=self.image)
+	
+		self.gif_update()
+
+
+	def gif_update(self, arg=None):
+		self.image = self.frames[self.current_frame]
+		self.configure(image=self.image)
+		self.current_frame += 1
+
+		if (self.current_frame >= len(self.frames)-1):
+			self.unplace()
+			return "break"
+		self.after(self.frame_duration, self.gif_update)
+
+	# def gif_update(self, arg=None):
+		# if (self.current_frame < len(self.frames)-1):
+			# self.image = self.frames[self.current_frame]
+			# self.configure(image=self.image)
+			# self.create_image(0, 0, image=self.img_resized)
+			# self.current_frame += 1
+
+		# else:
+			# self.current_frame = 0
+			# self.play = False
+			# self.unplace()
+			# return
+
+		# if (self.play):
+			# self.after(self.img.info["duration"], self.gif_update)
 
 
 	def picture_resize(self, arg=None, zoom=True):
@@ -197,6 +250,115 @@ class GRAPHICAL_BUFFER(BUFFER):
 
 		self.picture_place()
 
+	def unplace(self, arg=None):
+		# self.pack_forget()
+		self.configure(image=None)
+		del self.frames[:]
+		del self.image
+		self.image = None
+		self.current_frame = 0
+		self.play = False
+		self.viewable = False
+		self.place_forget()
+
+
+
+class GRAPHICAL_BUFFER(BUFFER):
+	def __init__(self, parent, name):
+		super().__init__(parent, name)
+		self.full_name = name
+		self.name = os.path.basename(name)
+		self.buffer_index = len(self.parent.file_handler.buffer_list)
+
+		self.orig_img = None
+		self.img = None
+		self.img_label = IMAGE_LABEL(self, self.name)
+
+		if (not self.orig_img):
+			self.orig_img = Image.open(self.full_name)
+			self.orig_img_size = [self.orig_img.size[0], self.orig_img.size[1]]
+			self.orig_img = self.orig_img.resize(self.orig_img_size, Image.ANTIALIAS)
+			
+			self.img_size = [self.orig_img.size[0], self.orig_img.size[1]]
+
+		self.picture_place()
+
+		self.bind("<Control-period>", lambda arg: self.picture_resize(zoom=True))
+		self.bind("<Control-comma>", lambda arg: self.picture_resize(zoom=False))
+
+		self.focus_set()
+		bind_keys_from_conf(self)
+
+	def picture_place(self, arg=None):
+		self.img = self.orig_img.resize(self.img_size, Image.ANTIALIAS)
+
+		# del self.img_resized
+		self.img_resized = ImageTk.PhotoImage(self.img)
+		self.img_label.configure(image=self.img_resized)
+		self.img_label.image = self.img_resized
+		
+		self.img_label.place(x=0, y=0, relwidth=1, relheight=1)
+		self.img_label.configure(bg = self.parent.theme["window"]["bg"], cursor="pirate")
+		
+		self.bind("<Configure>", self.picture_place)
+		self.focus_set()
+
+
+	def picture_resize(self, arg=None, zoom=True):
+		if (zoom): self.img_size[0] += int(self.orig_img_size[0] * 0.1); self.img_size[1] += int(self.orig_img_size[1] * 0.1)
+		elif (self.img_size[0] - 10 > 0 and self.img_size[1] - 10 > 0): self.img_size[0] -= int(self.orig_img_size[0] * 0.1); self.img_size[1] -= int(self.orig_img_size[1] * 0.1)
+
+		self.picture_place()
+
+	def unplace(self):
+		# self.pack_forget()
+		self.place_forget()
+
+	def switch_buffer(self, arg=None, next = True) -> str:
+		# if (self.parent.split_mode != 0):
+			# return "break"
+		if (self.parent.split_mode == "nosplit" and len(self.parent.file_handler.buffer_list) > 1):
+			if (next):
+				buffer_tab_index = self.parent.file_handler.buffer_tab_index+1
+	
+			elif (not next):
+				buffer_tab_index = self.parent.file_handler.buffer_tab_index-1
+	
+			if (buffer_tab_index >= len(self.parent.file_handler.buffer_list)):
+				buffer_tab_index = 0
+	
+			elif (buffer_tab_index < 0):
+				buffer_tab_index = len(self.parent.file_handler.buffer_list)-1
+			
+			self.parent.file_handler.load_buffer(buffer_index=buffer_tab_index)
+		else:
+			if (next):
+				self.parent.buffer_render_index = self.parent.buffer_render_index+1
+	
+			elif (not next):
+				self.parent.buffer_render_index = self.parent.buffer_render_index-1
+	
+			if (self.parent.buffer_render_index >= len(self.parent.buffer_render_list)):
+				self.parent.buffer_render_index = 0
+	
+			elif (self.parent.buffer_render_index < 0):
+				self.parent.buffer_render_index = len(self.parent.buffer_render_list)-1
+
+			self.parent.buffer = self.parent.buffer_render_list[self.parent.buffer_render_index]
+			if (self.parent.focus_get() == self): self.parent.buffer.focus_set()
+			self.parent.file_handler.set_current_file(buffer_name=self.parent.buffer.full_name)
+			self.parent.reposition_widgets()
+
+		return "break"
+
+	def switch_buffer_prev(self, arg=None):
+		self.switch_buffer(next=False)
+		return "break"
+
+	def switch_buffer_next(self, arg=None):
+		self.switch_buffer()
+		return "break"
+
 
 
 class BOX(tkinter.Frame):
@@ -204,14 +366,53 @@ class BOX(tkinter.Frame):
 		super().__init__(parent.buffer_frame)
 		self.parent = parent
 		self.name = name
+	
+		self.font = self.parent.widget_font
+		
+		self.update()
+		self.configure_self()
+		bind_keys_from_conf(self)
+
+	def configure_self(self):
+		self.font = self.parent.widget_font
+		self.configure(bg=self.parent.theme["window"]["bg"],
+			 highlightcolor=self.parent.theme["window"]["widget_fg"], relief="groove", bd=2)
+			
+		for p in self.winfo_children():
+			if (hasattr(p, "configure_self")):
+				p.configure_self()
+			else:
+				p.configure(bg=self.parent.theme["window"]["bg"],
+				 highlightcolor=self.parent.theme["window"]["widget_fg"])
+	
+				try: p["fg"] = self.parent.theme["window"]["fg"]
+				except tkinter._tkinter.TclError: pass
+
+	
+	def place_self(self):
+		self.tkraise()
+		self.place(x=x, y=y, width=200)
+		x = self.parent.winfo_width()//2-self.winfo_width()
+		y = self.parent.winfo_height()//2-self.winfo_height()
+		self.place(x=x, y=y)
+
+	
+	def unplace(self, arg=None):
+		self.place_forget()
+		self.parent.buffer.focus_self()
+
+
+class PROMPT(BOX):
+	def __init__(self, parent, name=None):
+		super().__init__(parent)
 		self.options = []
 		self.current_option = 0
 		
 		self.title = tkinter.Label(self)
 		self.title.pack()
 		self.set_title("TITLE")
-		self.add_option("yes", lambda arg: print("yes"))
-		self.add_option("no", lambda arg: print("no"))
+		# self.option_add("yes", lambda arg: print("yes"))
+		# self.option_add("no", lambda arg: print("no"))
 	
 		self.font = self.parent.widget_font
 		
@@ -222,42 +423,74 @@ class BOX(tkinter.Frame):
 	
 	def configure_self(self):
 		self.font = self.parent.widget_font
-		self.configure(bg=self.parent.theme["window"]["bg"],
-			 highlightcolor=self.parent.theme["window"]["widget_fg"], relief="groove", bd=2)
+		self.configure(
+			bg=self.parent.theme["window"]["bg"],
+			highlightcolor=self.parent.theme["window"]["widget_fg"],
+			relief="groove", bd=2,
+		)
 			
-		for p in self.winfo_children():
-			p.configure(bg=self.parent.theme["window"]["bg"],
-			 highlightcolor=self.parent.theme["window"]["widget_fg"])
+		for w in self.winfo_children():
+			w.configure(
+				bg=self.parent.theme["window"]["bg"],
+				highlightcolor=self.parent.theme["window"]["widget_fg"],
+				font=self.font
+			)
+			w.font = self.font
 
-			try: p["fg"] = self.parent.theme["window"]["fg"]
+			try: w["fg"] = self.parent.theme["window"]["fg"]
 			except tkinter._tkinter.TclError: pass
 
 	
 	def place_self(self):
+		self.tkraise()
 		x = self.parent.winfo_width()//2-100
 		y = self.parent.winfo_height()//2-100
+		self.focus_option()
 		self.place(x=x, y=y, width=200)
+		# if (self.options):
+			# self.current_option = 0
+			# self.options[self.current_option].focus_set()
+			# self.options[self.current_option].focus_self()
 
 	
 	def unplace(self, arg=None):
 		self.place_forget()
 		self.parent.buffer.focus_self()
-		del self.options[:]
+
+
+	def unplace_option_remove_all(self, arg=None):
+		self.option_remove_all()
+		self.unplace()
+		self.parent.buffer.focus_self()
+		self.current_option = 0
+		return "break"
 
 	
 	def set_title(self, text=None):
 		self.title["text"] = text
 
 	
-	def add_option(self, text, func_ptr, type="button"):
+	def option_add(self, text, func_ptr, type="button"):
 		if (type == "button"):
 			ptr = PROMPT_OPTION(self.parent, self, len(self.options))
 			ptr.set_text(text)
 			ptr.set_execute(func_ptr)
-			ptr.pack(expand=True, fill="x", side="left")
-			ptr.focus_set()
+			ptr.place_self()
+			# ptr.focus_set()
 			self.options.append(ptr)
 
+
+	def option_remove(self, index):
+		self.options[index].destroy()
+		self.options.pop(index)
+
+	def option_remove_all(self, arg=None):
+		self.focus_set()
+		for i in range(len(self.options)):
+			# self.options[i].unplace()
+			self.options[i].destroy()
+
+		self.options = []
 	
 	def focus_option(self, arg=None, next=True):
 		if (len(self.options) <= 1): return
@@ -288,6 +521,7 @@ class PROMPT_OPTION(tkinter.Label):
 		self.parent = parent
 		self.render_parent = render_parent
 		self.position = position
+		self.font = self.parent.widget_font
 		self.configure_self()
 		self.focus_set()
 
@@ -296,14 +530,24 @@ class PROMPT_OPTION(tkinter.Label):
 	def focus_self(self, arg=None):
 		self.focus_set()
 		self.render_parent.current_option = self.position
+		self.highlight()
+
 
 	def configure_self(self, arg=None):
-		self.configure(bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
-			 highlightcolor=self.parent.theme["window"]["widget_fg"])
+		self.configure(
+			bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
+			highlightcolor=self.parent.theme["window"]["widget_fg"],
+			font=self.font
+		)
+
+
+	def place_self(self, arg=None):
+		self.pack(expand=True, fill="x", side="left")
 
 
 	def unplace(self, arg=None):
-		self.render_parent.unplace()
+		self.pack_forget()
+		# self.render_parent.unplace()
 
 
 	def execute(self, arg=None):
@@ -313,8 +557,9 @@ class PROMPT_OPTION(tkinter.Label):
 	def set_execute(self, func_ptr, arg=None):
 		# self.execute = func_ptr
 		def func(*args, **kwargs):
+			self.focus_self()
 			func_ptr(args)
-			self.unplace()
+			# self.destroy()
 
 		self.execute = func
 		bind_keys_from_conf(self)
@@ -333,7 +578,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 	def __init__(self, parent, name, type="normal"):
 		# types: normal, readonly, temp
 		super().__init__(parent.buffer_frame)
-		if (type == "readonly"): self["state"] = "disabled"
+		# if (type == "readonly"): self["state"] = "disabled"
 
 		self.parent = parent
 		self.type = type
@@ -357,6 +602,9 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 
 		self.command_history = []
 
+		self.tag_configure("hidden", elide=True)
+		self.tag_bind("hidden", "<Enter>", lambda arg: self.tag_configure("hidden", elide=False))
+		self.tag_bind("hidden", "<Leave>", lambda arg: self.tag_configure("hidden", elide=True))
 		self.tag_configure("overstrike", overstrike=True)
 		self.tag_configure("underline", underline=True)
 		self.tag_configure("left", justify="left")
@@ -506,9 +754,13 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.tag_remove("sel", "1.0", "end")
 
 	def queue_get(self, arg=None):
-		self.queue = [self.convert_line_index("int", self.index("sel.first")), self.convert_line_index("int", self.index("sel.last"))]
-		self.queue.sort()
-		return self.queue[0], self.queue[1] + 1
+		if (self.tag_ranges("sel")):
+			self.queue = [self.convert_line_index("int", self.index("sel.first")), self.convert_line_index("int", self.index("sel.last"))]
+			self.queue.sort()
+			return self.queue[0], self.queue[1] + 1
+
+		line = self.convert_line_index("int", self.index("insert"))
+		return line, line + 1
 
 	def change_case(self, arg=None, case=None):
 		index_range = [self.index("sel.first"), self.index("sel.last")]
@@ -540,16 +792,22 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.change_case(case="uppercase")
 
 	def char_enclose(self, arg=None) -> str:
-		self.sel_start = self.index(self.mark_names()[-1])
-		index = self.index_sort(self.index("insert"), self.sel_start)
+		self.sel_start = self.index("sel.first")
+		index = self.index("sel.last")
+		i = self.index("insert")
+		# index = self.index_sort(self.index("insert"), self.sel_start)
 
 		if (arg.keysym == "parenleft"): c1 = "("; c2 = ")"
 		elif (arg.keysym == "bracketleft"): c1 = "["; c2 = "]"
 		elif (arg.keysym == "braceleft"): c1 = "{"; c2 = "}"
 		elif (arg.keysym == "apostrophe" or arg.keysym == "quotedbl"): c1 = "\""; c2 = "\""
-		self.insert(index[1], c2)
-		self.insert(index[0], c1)
-		self.mark_set("insert", f"insert -1{len(c2)}") # sets the insert cursor back the length of the string we're enclosing with
+		self.insert(index, c2)
+		self.insert(self.sel_start, c1)
+		if (i != self.sel_start):
+			self.mark_set("insert", f"insert -{len(c2)}c") # sets the insert cursor back the length of the string we're enclosing with
+		# else:
+			# self.mark_set("insert", f"insert +{len(c1)+1}c") # sets the insert cursor back the length of the string we're enclosing with
+
 
 		return "break"
 
@@ -558,7 +816,11 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		if (arg): return "break"
 
 	def delete_next_word(self, arg=None):
-		self.delete("insert wordstart", "insert wordend")
+		if (match := re.match(r"\t", self.get("insert wordstart"))):
+			self.delete(f"insert wordstart +1c", f"insert wordend")
+
+		else:
+			self.delete("insert wordstart", "insert wordend")
 		if (arg): return "break"
 
 	def delete_line(self, arg=None):
@@ -644,7 +906,7 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 			self.input_history_index = 0
 			self.delete("1.0", "end")
 
-		return "break"	
+		return "break"
 
 class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 	def __init__(self, parent, name="FIND_ENTRY"):
@@ -709,7 +971,11 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		if (not buffer):
 			buffer = self.parent.buffer
 			
-		index = buffer.search(keyword, start, end, regexp=regexp, count=count)
+		try: index = buffer.search(keyword, start, end, regexp=regexp, count=count)
+		except tkinter.TclError as e:
+			self.parent.notify(f"{e}")
+			return None
+
 		if (index == ""): return None
 		if (count.get()) == 0: return None # degenerate pattern which matches zero-lenght strings
 		return [ index, buffer.index(f"{index}+{count.get()}c") ]
@@ -720,9 +986,10 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		if (arg.keysym in ("Up", "Down", "Left", "Right")): return # ends function if it was triggered by arrow keys (as they have different functions to handle them)
 		
 		if (not regexp):
-			if (regexp := self.get("1.0", "1.1") == "?"):
+			regexp = self.get("1.0", "1.1")
+			if (regexp == "?"):
 				self.regexp = False
-			elif (regexp := self.get("1.0", "1.1") == "/"):
+			elif (regexp == "/"):
 				self.regexp = True
 			else:
 				if (self.parent.conf["default_find_mode"] == "?"): self.regexp = False
@@ -735,7 +1002,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		self.deselect_match()
 
 		if (not self.parent.conf["find_on_key"]):
-			self.append_history()
+			self.history_append()
 			self.found_index = 0
 
 		self.found = {}
@@ -748,7 +1015,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		for buffer in self.parent.buffer_render_list:
 			buffer.mark_set("match_end", "1.0")
 			while True:
-				if (index := self.find_match(keyword, buffer=buffer, start="match_end", end="end", regexp=self.regexp, count=count)):
+				index = self.find_match(keyword, buffer=buffer, start="match_end", end="end", regexp=self.regexp, count=count)
+				if (index):
 					buffer.mark_set("match_end", index[1])
 					buffer.tag_add("found", index[0], index[1])
 					self.found[buffer.full_name].append(index)
@@ -756,6 +1024,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 
 			buffer.mark_unset("match_end")
 
+		if (len(self.found[self.parent.buffer.full_name]) == 0):
+			return "break"
 		self.scroll_through_found()
 		return "break"
 
@@ -772,7 +1042,8 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 
 		# fixes offset in line caused by replacing previous matches in line
 		# I just hope it doesn't create any additional bugs, cuz I am too lazy to test ;) too bad
-		if (match := self.find_match(keyword=self.find_query, start=f"{f[0]} wordstart", end=f"{f[0]} lineend-1c", regexp=self.regexp)):
+		match = self.find_match(keyword=self.find_query, start=f"{f[0]} wordstart", end=f"{f[0]} lineend-1c", regexp=self.regexp)
+		if (match):
 			self.found[self.parent.buffer.full_name][self.found_index] = match
 
 		self.parent.buffer.highlighter.highlight(line_no=self.parent.buffer.convert_line_index("int", start))
@@ -839,7 +1110,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		
 		return "break"
 
-	def append_history(self, arg=None, keyword=None):
+	def history_append(self, arg=None, keyword=None):
 		if (not keyword): keyword = self.get("1.0", "end-1c")
 		if (not self.find_history or self.find_history[-1] != keyword): self.find_history.append(keyword);
 		self.find_history_index = len(self.find_history)
@@ -940,7 +1211,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 			)
 		
 			self.remove_tags()
-			self.append_history()
+			self.history_append()
 
 		
 		self.delete("1.0", "end")
@@ -961,12 +1232,14 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.font_size = self.parent.conf["command_out_font_size"]
 		self.font_weight = "bold"
 
-		self.arg = ""
+		self.out = ""
 		self.modified_arg = ""
 
 		self.tags = []
 		self.selected_lines = []
-		self.out = []
+		self.history = [""]
+		self.history_index = 0
+		self.history_index_offset = 0
 
 		self.input = ""
 		self.input_label = tkinter.Label(self)
@@ -974,12 +1247,13 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		bind_keys_from_conf(self)
 
+
 	def configure_self(self, arg=None):
 		self.font_size_set()
 		self.configure(font=self.font, bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
 		 insertborderwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
-		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
+		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"),
 		 selectborderwidth=0, exportselection=True, blockcursor=self.block_cursor,
 		 spacing3=5, cursor="left_ptr", relief=self.parent.conf["command_out_border_style"], borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
 
@@ -989,6 +1263,81 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.input_label.configure(font=font.Font(family=self.parent.font_family[0], size=self.font_size,
 		 weight=self.font_weight), bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
 		 cursor="left_ptr", relief="flat", borderwidth=0, highlightthickness=0)
+
+
+	def place_self(self, arg=None, lines=None, x=0, y=None, w=None, max_w=None, justify=None):
+		if (not lines): lines = len(self.out.split("\n"))
+		if (not max_w): max_w = self.parent.buffer_frame.winfo_width()
+
+		font_size = (self.font.metrics("linespace")+self["spacing3"])
+
+		if (lines < 10):
+			h = font_size*lines
+			# if (lines <= 1):
+				# tmp = self.font.measure(self.out)
+				# w = 100 if (tmp < 100) else tmp
+		else:
+			h = font_size*((self.parent.winfo_height()//2)/font_size)
+
+		# y = self.buffer_frame.winfo_height()
+		# if (self.command_out["relief"] == "flat"): x = self.buffer["bd"]; w = self.buffer["bd"]; y -= self.buffer["bd"]
+		# else: x = 0; w = 0; h += (self.command_out["bd"])
+		if (self["relief"] != "flat"): h += (self["bd"])
+		
+		if (not w):
+			w = self.parent.buffer_frame.winfo_width()
+		
+		elif (w > max_w):
+			w = max_w
+		
+		self.tkraise()
+		if (self.parent.conf["orientate"] == "down"):
+			if (not y): y = self.parent.buffer_frame.winfo_height()
+			self.place(x=x, y=y, width=w, height=h, anchor="sw")
+		
+		elif (self.parent.conf["orientate"] == "up"):
+			if (not y): y = 0
+			self.place(x=x, y=0, width=w, height=h, anchor="nw")
+
+
+
+	def unplace(self, arg=None):
+		self.out = ""
+		self.parent.buffer.focus_set()
+		self.place_forget()
+
+
+	def scroll_to_start(self, arg=None):
+		self.mark_set("insert", "1.0")
+		self.see("1.0")
+		return "break"
+
+	def scroll_to_end(self, arg=None):
+		self.mark_set("insert", "end")
+		self.see("end")
+		return "break"
+
+
+	def history_append(self, arg=None):
+		arg = self.out if arg is None else arg
+		if (self.history and arg != self.history[-1]):
+			self.history.append(arg)
+			self.history_index += 1
+
+
+	def history_revert(self):
+		if (len(self.history) > 0):
+			self.history.pop()
+			self.history_index -= 1
+
+
+	def flush(self, arg=None):
+		self.history_append(self.out)
+		self.out = ""
+
+	def flush_revert(self):
+		self.out = self.history.pop()
+		self.history_index -= 1
 
 
 	def copy(self, arg=None):
@@ -1013,10 +1362,17 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			self.input += arg.char
 			if (not self.input): return "break"
 
-		self.modified_stdout(self.arg, self.tags) # fallback
+		self.modify_stdout(self.out, self.tags) # fallback
 		self.show_input()
 
 		return "break"
+
+	def highlight_tags(self):
+		for tag in self.tags:
+			if (tag[2:]): self.tag_add(tag[2], tag[0], tag[1])
+			else: self.tag_add("keywords", tag[0], tag[1])
+
+		else: [self.tag_add("keywords", tag[0], tag[1]) for tag in self.tags]
 
 	def show_input(self):
 		# what is going on?????????????? ~	[ Sunday ] [ around 1am ] [ 2021-07-18 ] 
@@ -1039,62 +1395,58 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.mark_unset("match_end")
 		
 		# result, tags = self.parent.file_handler.highlight_ls(self.modified_arg)
-		# self.modified_stdout(result, tags)
-		self.modified_stdout("\n".join(self.modified_arg))
+		# self.modify_stdout(result, tags)
+		self.modify_stdout("\n".join(self.modified_arg))
 
-	def unplace(self, arg=None):
-		self.parent.buffer.focus_set()
-		self.place_forget()
 
-	def scroll(self, arg):
-		key = arg.keysym
-
-		if (key == "Prior"):
-			self.mark_set("insert", "1.0")
-			self.see("insert")
-
-		elif (key == "Next"):
-			self.mark_set("insert", "end linestart")
-			self.see("insert")
-
-		# self.tag_remove("command_out_insert_bg", "1.0", "end")
-		# self.tag_add("command_out_insert_bg", "insert linestart", "insert lineend")
-
-		return "break"
-
-	def append_history(self, arg):
-		if (self.out and arg != self.out[-1]): self.out.append(arg)
-		
 	def stdout(self, arg=None, tags=None, justify="left"):
 		self["state"] = "normal"
-		if (not arg):
-			if (self.out): arg = self.out[-1]
-			else: arg = self.arg
+		if (arg is None):
+			arg = self.history[-1] # for the love of god do not rewrite the declaration of self.history
+			# if (self.history): arg = self.history[-1]
+			# else: arg = self.out
 			tags = self.tags
-		# else:
-			# self.append_history(arg)
+		elif (arg):
+			self.history_append(arg)
 		
 		self.input = ""
 		self.show_input()
 		
 		del self.tags[:]
 		
-		self.arg = arg
+		self.out = arg
 		self.delete("1.0", "end")
-		self.insert("1.0", self.arg)
-		self.mark_set("insert", "1.0")
+		self.insert("1.0", self.out)
+		self.mark_set("insert", "1.0 lineend")
 		self.tag_add(justify, "1.0", "end")
 
 		if (tags):
 			self.tags = tags
+			self.highlight_tags()
+
+
+
+	def add_stdout(self, arg=None, tags=None, justify="left"):
+		self.out += arg
+
+		index = self.index("end")
+		self.insert("end", arg)
+		self.mark_set("insert", "end")
+		self.see("end")
+		self.tag_add(justify, index, "end")
+
+		if (tags):
+			self.tags += tags
 			
-			for tag in self.tags:
-				if (tag[2:]): self.tag_add(tag[2], tag[0], tag[1])
-				else: self.tag_add("keywords", tag[0], tag[1])
+			self.highlight_tags()
 
-			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
 
-	def modified_stdout(self, arg=None, tags=None, justify="left"):
+		self.history_revert()
+		self.history_append()
+		self.place_self()
+
+
+	def modify_stdout(self, arg=None, tags=None, justify="left"):
 		self["state"] = "normal"
 		self.delete("1.0", "end")
 		self.insert("1.0", arg)
@@ -1107,6 +1459,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 				else: self.tag_add("keywords", tag[0], tag[1])
 
 			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
+
 
 	def change_ex(self, new_ex):
 		self.ex = new_ex
@@ -1135,11 +1488,14 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 	def open_line(self, arg=None):
 		num_results = []
 		line = arg[-1]
+		match = None
 		
 		if (re.search(r"line [0-9]+", line)):
 			match = re.search(r"line [0-9]+", line).group()[5:]
+
 		elif (re.search(r"[0-9]+", line)):
-			match = re.search(r"[0-9]+", line)
+			match = re.search(r"[0-9]+", line).group()
+			print(match)
 
 		if (match):
 			index = self.parent.buffer.convert_line_index("float", match)
@@ -1150,7 +1506,10 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		
 	def file_explorer(self, arg=None):
 		for line in arg:
-			line = f"{self.parent.file_handler.current_dir}/{line}"
+			if (not os.path.dirname(line)):
+			# print(line, os.path.dirname(line), "not legit")
+				line = f"{self.parent.file_handler.current_dir}/{line}"
+			# line = os.path.abspath(line)
 			line.replace(" ", r"\ ")
 			if (os.path.isfile(line)):
 				self.parent.file_handler.load_file(filename=line)
@@ -1165,6 +1524,9 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		print(arg)
 		self.parent.file_handler.load_buffer(buffer_name=arg)
 		self.unplace()
+
+
+
 
 class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 	def __init__(self, parent, name="SUGGEST_WIDGET"):
@@ -1217,19 +1579,6 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 		self.parent.buffer.mode_set("suggest")
 
 		# return "break"
-
-class PROMPT(BOX):
-	def __init__(self, parent, name=None):
-		super().__init__(parent, name)
-
-	def configure_self(self):
-		pass
-
-	def place_self(self):
-		self.place(relx=0.5, rely=0.5, width=200, height=200)
-
-	def unplace(self):
-		self.place_forget()
 
 
 class TEXT(DEFAULT_TEXT_BUFFER):
@@ -1324,6 +1673,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			ret = func(self, *args, **kwargs)
 			self.tag_add("cursor", "insert")
 			self.cursor_highlight()
+			self.parent.update_index()
 			return ret
 
 		return wrapped_func
@@ -1405,21 +1755,25 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 		return "break"
 
+	@moving
 	def move_up(self, arg=None, prefix="", suffix="Line"):
 		self.event_generate(f"<<{prefix}Prev{suffix}>>")
 		self.see("insert -5l")
 		return "break"
-			
+
+	@moving
 	def move_down(self, arg=None, prefix="", suffix="Line"):
 		self.event_generate(f"<<{prefix}Next{suffix}>>")
 		self.see("insert +5l")
 		return "break"
-		
+
+	@moving
 	def move_left(self, arg=None, prefix="", suffix="Char"):
 		self.event_generate(f"<<{prefix}Prev{suffix}>>")
 		self.see("insert -5l")
 		return "break"
-		
+
+	@moving
 	def move_right(self, arg=None, prefix="", suffix="Char"):
 		self.event_generate(f"<<{prefix}Next{suffix}>>")
 		self.see("insert +5l")
@@ -1440,6 +1794,9 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def move_jump_select(self, arg=None, key=None):
 		self.move(arg, ["control", "shift"], key=key)
 		return "break"
+
+	# def move_page_up(self, arg=None):
+		# self.
 
 	#text manipulation bindings
 	@moving
@@ -1482,9 +1839,11 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	@add_command_to_history
 	def paste(self, arg=None):
 		""" Control-V """
-		to_paste = self.clipboard_get()
+		# to_paste = self.clipboard_get()
 		start_index = self.convert_line_index("int", self.index("insert"))
-		self.insert("insert", to_paste)
+		# self.insert("insert", to_paste)
+
+		self.event_generate("<<Paste>>")
 		self.parent.highlight_chunk(start_index=start_index, stop_index=self.convert_line_index("int", self.index("insert")))
 
 		self.event_generate("<<SelectNone>>")
@@ -1493,6 +1852,8 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def select_all(self, arg=None):
 		""" Control-A """
 		self.event_generate("<<SelectAll>>")
+		self.tag_add("sel", "1.0", "end")
+		self.sel_start = self.index(self.mark_names()[-1])
 		return "break"
 
 	@moving
@@ -1573,26 +1934,49 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		# l = self.dump("insert linestart", "insert lineend+1c", tag="tag")
 		# print(l)
 
-		sel_mark_name = self.mark_names()[-1]
-		start, stop = self.queue_get()
-		stop -= 1
+		# sel_mark_name = self.mark_names()[-1]
+		# start, stop = self.queue_get()
+		# stop -= 1
 
-		f_index = self.index("insert")
-		fs_index = self.index(sel_mark_name)
+		# fs_index = self.index(sel_mark_name)
 
 		if (up): offset = f"-{line_offset}l"
 		else: offset = f"+{line_offset}l"
 
-		text = self.get(f"{start}.0 linestart", f"{stop}.0 lineend+1c")
-		self.delete(f"{start}.0 linestart", f"{stop}.0 lineend+1c")
-		self.insert(f"{start}.0 linestart"+offset, text)
-		self.parent.highlight_chunk(start_index=start-line_offset, stop_index=stop+line_offset)
+
+		if (self.tag_ranges("sel")):
+			f_index = self.index("sel.first")
+			fs_index = self.index("sel.last")
+			insert = self.index("insert")
+			text = self.get(f"sel.first linestart", f"sel.last lineend+1c")
+			self.delete(f"{f_index} linestart", f"{fs_index} lineend+1c")
+			self.insert(f"{f_index} linestart"+offset, text)
+			
+			if (insert == f_index):
+				self.mark_set("insert", f_index+offset)
+				self.tag_add("sel", "insert", fs_index+offset)
+			
+			else:
+				self.mark_set("insert", fs_index+offset)
+				self.tag_add("sel", f_index+offset, "insert")
+
+			
+			self.parent.highlight_chunk_main_thread(start_index=self.convert_line_index("int", self.index("sel.first")), stop_index=self.convert_line_index("int", self.index("sel.last")))
 		
-		self.mark_set("insert", f_index+offset)
-		self.mark_set(sel_mark_name, fs_index+offset)
-		self.tag_add("sel", *self.index_sort("insert", sel_mark_name))
+		else:
+			f_index = self.index("insert")
+			self.highlighter.highlight(self.cursor_index[0])
+			text = self.get(f"insert linestart", f"insert lineend+1c")
+			self.delete(f"insert linestart", f"insert lineend+1c")
+			self.insert(f"insert linestart"+offset, text)
+			self.mark_set("insert", f_index+offset)
+		# self.mark_set(sel_mark_name, fs_index+offset)
+		# self.tag_add("sel", *self.index_sort("insert", sel_mark_name))
 		
 		self.parent.update_index()
+
+		# self.edit_undo()
+		# self.edit_reset()
 
 		return "break"
 
@@ -1682,7 +2066,8 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		tab_offset = self.parent.conf["line_end"]
 		column_index = self.get_column_index()
 		
-		if (match := re.search(r"^\t+", self.current_line)):
+		match = re.search(r"^\t+", self.current_line)
+		if (match):
 			tab_offset += match.group()
 			if (len(tab_offset) > column_index):
 				tab_offset = tab_offset[:column_index+1]
@@ -1778,6 +2163,18 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def buffer_clipboard_paste(self, arg=None):
 		self.insert("insert", self.buffer_clipboard)
 		if (arg): return "break"
+
+
+	def get_current_token(self, arg=None):
+		self.current_line = self.get(f"insert linestart", f"insert lineend+1c") #+1c so the line includes the newline character
+		self.current_token = self.get("insert wordstart", "insert wordend")
+		
+		if (re.match(r"^\s+", self.current_token) and len(self.current_token) <= 1):
+			self.current_token = self.get("insert wordstart -1c wordstart", "insert wordstart -1c wordend")
+			
+		elif (self.current_token[0] == "\n"):
+			self.current_token = self.get("insert wordstart +1c", "insert wordend")
+		return "break"
 
 	def copy_token(self, arg=None):
 		self.parent.clipboard_clear()
@@ -1907,29 +2304,52 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.parent.file_handler.list_buffer()
 		return "break"
 
+
+	def run_subprocess_wrap(self, arg, argv):
+		# print(arg, args, kwargs)
+		# print(f"rsw: arg: {arg} argv: {argv} args: {args} kwargs: {kwargs}")
+		# print(f"rsw: arg: {arg} argv: {argv}")
+		self.run_subprocess(argv)
+		return "break"
+
 	def run_subprocess(self, argv=None, make=False) -> str:
 		if (make):
 			argv = self.make_argv
 			self.parent.command_out.change_ex(self.parent.command_out.open_line)
-			
+
+
 		def run():
-			process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			start_time = time.time()
+			process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 			self.parent.subprocesses.append(process)
 			index = len(self.parent.subprocesses)-1
 
-			while (True):
-				if (process.poll() is not None): break
-				out = process.stdout.read().decode("UTF-8")
-				out += process.stderr.read().decode("UTF-8")
 
-				self.parent.command_out_set(out)
-				print(out)
-				self.parent.subprocesses.pop(index)
-			
+			out = ""
+			self.parent.command_out_set("")
+			# self.parent.command_out.place_self()
+
+			while (True):
+				line = process.stdout.readline().decode("UTF-8")
+				if (not line): break
+				if ("error" in line):
+					self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "error"]])
+				elif ("warning" in line):
+					self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "upcase"]])
+				else:
+					self.parent.command_out.add_stdout(line)
+				print(line, end="")
+
+			# self.parent.subprocesses.pop(index)
+			self.parent.kill_last_subproc()
+			self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])
+
+
 		threading.Thread(target=run, daemon=True).start()
+
+
 		return "break"
 
 	def run_make(self, arg=None):
 		return self.run_subprocess(make=True)
-
-		
+	

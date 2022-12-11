@@ -3,11 +3,304 @@ import re
 import os
 
 # how is this any more readable
-az         = [*string.ascii_letters, "_"]
+az         = string.ascii_letters + "_"
 num        = string.digits
-alphanum   = [*az, *num]
-whitespace = [" ", "\t"]
+alphanum   = az + num
+whitespace = " \t"
+operators = "+-*/"
+logic_operators = "!=<>"
+brackets = "()[]{}"
+left_brackets = "([{"
+right_brackets = ")]}"
+colon = ":"
+semicolon = ";"
+dot = "."
+comma = ","
+single_quote = "'"
+double_quote = "\""
+hashtag = "#"
 
+
+class EMPTY_LEXER():
+	def __init__(self, parent, txt):
+		self.parent = parent
+		self.buffer = txt
+
+	def lex(self, text=None):
+		pass
+
+class RLEXER:
+	def __init__(self, parent, txt):
+		self.parent = parent
+		self.buffer = txt
+
+		self.word: str = ""
+		self.last_word: str = ""
+		self.index: int = 0
+		self.char: str = ""
+		self.offset = 0
+		self.max_length: int = 0
+		self.tokens = []
+
+	def lex(self, text=None):
+		if (text): self.text = text+" "
+		else: self.text = self.buffer.get("1.0", "end")
+		self.max_length = len(text)
+		left_bracket_count = 0
+
+		# for char in self.text:
+		while (self.index < self.max_length):
+			self.char = self.text[self.index]
+			self.next_char = self.text[self.index+1]
+
+			if (self.char in az):
+				if (self.check_word_for_type(az+num)):
+					self.destroy_word()
+
+				self.word += self.char
+
+			elif (self.char in operators):
+				self.destroy_word()
+				self.word = self.char
+				if (self.char == "/" and self.next_char == "/"):
+					self.word = self.char + self.next_char
+					self.destroy_word()
+					self.index += 1
+
+			elif (self.char in logic_operators):
+				if (self.next_char in logic_operators):
+					self.destroy_word()
+					self.word = self.char + self.next_char
+					self.destroy_word()
+					self.index += 1
+				else:
+					self.destroy_word()
+					self.word = self.char
+					self.destroy_word()
+					
+
+			elif (self.char in num):
+				if (self.last_char == dot):
+					pass
+
+
+				elif (self.check_word_for_type(az+num)):
+					self.destroy_word()
+
+				self.word += self.char
+
+			elif (self.char in brackets):
+				if (self.char in right_brackets):
+					left_bracket_count -= 1
+
+				else:
+					left_bracket_count += 1
+
+				self.destroy_word()
+				self.word = self.char
+				self.destroy_word()
+
+			elif (self.char in whitespace):
+				self.destroy_word()
+
+			elif (self.char == semicolon):
+				self.destroy_word()
+				self.word = self.char
+				self.destroy_word()
+
+			elif (self.char == colon):
+				self.destroy_word()
+				self.word = self.char
+				self.destroy_word()
+
+			elif (self.char == single_quote):
+				self.destroy_word()
+				self.word = self.char
+				self.destroy_word()
+
+			elif (self.char == double_quote):
+				self.destroy_word()
+				self.word = self.char
+				self.destroy_word()
+
+			elif (self.char == hashtag):
+				self.destroy_word()
+				self.word = self.char
+				self.destroy_word()
+
+			elif (self.char == dot):
+				if (self.last_char in num):
+					self.word += self.char
+
+				else:
+					self.destroy_word()
+					self.word += self.char
+					self.destroy_word()
+
+			elif (self.char == comma):
+				self.destroy_word()
+				self.word = self.char
+				self.destroy_word()
+				
+			elif (self.char in "\r\n"):
+					if (self.char == "\n" and self.next_char == "\r"):
+						self.destroy_word()
+						self.word = self.char + self.next_char
+						self.destroy_word()
+
+					else:
+						self.destroy_word()
+						self.word = self.char
+						self.destroy_word()
+
+			self.index += 1
+			self.last_char = self.char
+
+
+	def check_word_for_type(self, type):
+		for char in self.word:
+			if (char not in type):
+				return True
+
+		return False
+
+	def destroy_word(self):
+		if (self.word):
+			if (self.word != "\n"): print(self.word)
+			self.tokens.append(self.word)
+			self.last_word = self.word
+			self.word = ""
+
+
+class PARSER:
+	def __init__(self, tokens):
+		self.tokens = []
+
+	def parse(self):
+		pass
+
+def run_test():
+	text = r"""
+
+#pragma once
+#include "engine.h"
+
+// typedef enum move_state move_state;
+
+
+typedef struct Entity Entity;
+typedef struct Animator Animator;
+typedef struct Vec2 Vec2;
+typedef struct Vec3 Vec3;
+typedef struct Body Body;
+
+enum move_state
+{
+	not_moving = 0,
+	moving,
+	accelerating,
+	deccelerating,
+	jumping,
+	falling,
+	
+};
+
+struct Vec2
+{
+	float x, y;
+};
+
+struct Vec3
+{
+	float x, y, z;
+};
+
+struct Body
+{
+	float x, y, w, h, z, d;
+};
+
+struct Animator
+{
+	Entity* parent;
+	void (*animate)(Animator*);
+	Body render_rect;
+	uint32_t frame, offset_x, offset_y, fraction, max;
+};
+
+struct Entity
+{
+	Body rect;
+	SDL_Texture* sprite;
+	uint32_t state;
+	int32_t dx, dy, vel;
+	uint8_t direction; // 1 = left, 0 = right
+	Animator animator;
+	uint32_t delta_time; 
+	
+};
+
+// void entity_init(
+
+void animator_init(
+	Entity* entity, Animator* animator, void (*func)(Animator*),
+	uint32_t offset_x, uint32_t offset_y, uint32_t fraction, uint32_t max
+	)
+{
+	animator->parent = entity;
+	animator->animate = *func;
+	animator->render_rect = (Body){9, 20, 15, 15, 0, 0};
+	animator->frame = 0;
+	animator->offset_x = offset_x;
+	animator->offset_y = offset_y;
+	animator->fraction = fraction;
+	animator->max = max;
+}
+
+void animate(Animator* animator)
+{
+	uint32_t ticks = SDL_GetTicks();
+
+	if (animator->parent->state == not_moving) {
+		animator->render_rect.y = 20;
+		animator->max = 4;
+	}
+	else if (animator->parent->state == moving) {
+		animator->render_rect.y = 20+5*(animator->offset_y);
+		animator->max = 8;
+	}
+
+	animator->frame = ticks / animator->fraction % animator->max;
+	// animator->render_rect.x = 9+animator->frame*(animator->offset_x+animator->render_rect.w);
+	animator->render_rect.x = 9+animator->frame*animator->offset_x;
+}
+
+
+SDL_Rect convert_body_to_rect(Body body)
+{
+	return (SDL_Rect){body.x, body.y, body.w, body.h};
+}
+
+void screen_blit(SDL_Renderer* renderer, SDL_Texture* texture, Body* render_rect, Body* rect, int angle, int something, int direction)
+{
+	SDL_Rect src = convert_body_to_rect(*render_rect);
+	SDL_Rect dst = convert_body_to_rect(*rect);
+	SDL_RenderCopyEx(renderer, texture, &src, &dst, angle, NULL, direction);
+}
+
+
+
+
+
+"""
+	
+	lexer = RLEXER(None, None)
+	lexer.lex(text)
+	print(lexer.tokens)
+
+
+if __name__ == "__main__":
+	run_test()
 
 class LEXER:
 	def __init__(self, parent, txt):
@@ -33,6 +326,12 @@ class LEXER:
 		self.functions = []
 		self.objects  = []
 		self.scopes  = {}
+
+		self.identifier = r"\b[a-zA-Z_]+[a-zA-Z_0-9_]*\b"
+		self.statement = {
+			"keywords" : r"\b(for|while|if|else|case|switch|do|elif)",
+			"rule" : "newline",
+		}
 
 	def lex(self, text=None):
 		# should iterate through characters make a token and then parse the token
@@ -247,11 +546,15 @@ class C_LEXER(LEXER):
 
 		last_index = ""
 		index = ""
+		word_count = 0
 
 		for self.index in range(len(self.text)-1):
 			char = self.text[self.index]
 			if (in_comment):
-				if (char == "\n"): in_comment = False
+				if (char == "\n"):
+					in_comment = False
+					word_count = 0
+
 				else: continue
 
 			if (char == " " or char == "\t"):
@@ -259,6 +562,7 @@ class C_LEXER(LEXER):
 				if (self.search_whitespace(self.index+1)):
 					line.append(word)
 					prev_word = word
+					word_count += 1
 					word = ""
 
 			elif (char == ","):
@@ -307,6 +611,8 @@ class C_LEXER(LEXER):
 				prev_word = word
 				word = ""
 
+			
+
 			elif (char == "."):
 				line.append(word)
 				word = ""
@@ -318,7 +624,8 @@ class C_LEXER(LEXER):
 				prev_word = word
 
 			elif (char == ";"):
-				pass
+				word_count = 0
+
 				
 			char_index += 1
 

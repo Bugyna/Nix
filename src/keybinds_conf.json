@@ -7,21 +7,55 @@
 
 	"BOX" :
 	{
-		"<Escape>" : "unplace",
+		"<Escape>" : "unplace_option_remove_all",
 		"<Right>" : "focus_option_next",
 		"<Left>" : "focus_option_prev"
 	},
 
 	"PROMPT_OPTION" : 
 	{
-		"<Escape>" : "unplace",
-		"<Button-1>" : "focus_self",
+		"<Escape>" : "render_parent.unplace_option_remove_all",
+		"<Button-1>" : "execute",
 		"<FocusIn>" : "highlight",
 		"<FocusOut>" : "configure_self",
 		"<Return>" : "execute",
 		"<KP_Enter>" : "execute",
 		"<Right>" : "render_parent.focus_option_next",
 		"<Left>" : "render_parent.focus_option_prev"
+	},
+
+	"GRAPHICAL_BUFFER":
+	{
+		"<Control-N>" : "parent.file_handler.new_file",
+		"<Control-n>" : "parent.file_handler.new_file",
+		"<Control-O>" : "parent.file_handler.load_file",
+		"<Control-o>" : "parent.file_handler.load_file",
+		"<Control-B>L" : "parent.file_handler.load_file",
+		"<Control-b>l" : "parent.file_handler.load_file",
+		
+		"<Control-B>W" : "parent.file_handler.close_buffer",
+		"<Control-b>w" : "parent.file_handler.close_buffer",
+		"<Control-w>" : "parent.win_close",
+		"<Control-W>" : "parent.win_close",
+
+		"<Control-G>" : "parent.nt_place",
+		"<Control-g>" : "parent.nt_place",
+		"<Control-backslash>": "parent.split",
+		"<Control-bar>": "parent.parser.unsplit",
+
+		"<Escape>": "focus_self",
+		"<Control-B>" : "empty_break",
+		"<Control-b>" : "empty_break",
+		"<Control-E>" : "parent.show_last_output",
+		"<Control-e>" : "parent.show_last_output",
+		"<Control-K>" : "kill_last_subproc",
+		"<Control-k>" : "kill_last_subproc",
+		"<Control-semicolon>" : "parent.file_handler.list_buffer",
+		"<Control-space>" : "parent.command_entry_place",
+
+		"<Control-Tab>" : "switch_buffer_next",
+		"<Control-Shift-ISO_Left_Tab>" : "switch_buffer_prev",
+		"<Control-Shift-Tab>" : "switch_buffer_prev"
 	},
 
 	"DEFAULT_TEXT_BUFFER":
@@ -63,7 +97,7 @@
 		"<Alt-d>" : "delete_line",
 		"<Alt-D>" : "delete_line",
 	
-		"<F1>" : "bell",
+		"<F1>" : "parent.ring_bell",
 		"<F2>" : "insert_time"
 	},
 
@@ -119,8 +153,8 @@
 	"COMMAND_OUT":
 	{
 		"<KeyPress>" : "add_input",
-		"<Shift-Prior>" : "scroll",
-		"<Shift-Next>" : "scroll",
+		"<Control-Prior>" : "scroll_to_start",
+		"<Control-Next>" : "scroll_to_end",
 
 		"<Control-C>" : "copy",
 		"<Control-c>" : "copy",
@@ -167,8 +201,8 @@
 		
 		"<Control-B>W" : "parent.file_handler.close_buffer",
 		"<Control-b>w" : "parent.file_handler.close_buffer",
-		"<Control-w>" : "parent.win_destroy",
-		"<Control-W>" : "parent.win_destroy",
+		"<Control-w>" : "parent.win_close",
+		"<Control-W>" : "parent.win_close",
 		"<Control-B><Delete>" : "parent.file_handler.del_file",
 		"<Control-b><Delete>" : "parent.file_handler.del_file",
 		"<Control-B>S" : "parent.file_handler.load_scratch",
@@ -196,25 +230,25 @@
 		"<Button-1>" : "mouse_left",
 		"<B1-Motion>" : "mouse_left_motion",
 		
-		"<Up>" : "move_standard",
-		"<Down>" : "move_standard",
-		"<Left>" : "move_standard",
-		"<Right>" : "move_standard",
+		"<Up>" : "move_up",
+		"<Down>" : "move_down",
+		"<Left>" : "move_left",
+		"<Right>" : "move_right",
 		
-		"<Control-Up>" : "move_jump",
-		"<Control-Down>" : "move_jump",
-		"<Control-Left>" : "move_jump",
-		"<Control-Right>" : "move_jump",
-		
-		"<Shift-Up>" : "move_select",
-		"<Shift-Down>" : "move_select",
-		"<Shift-Left>" : "move_select",
-		"<Shift-Right>" : "move_select",
-		
-		"<Control-Shift-Up>" : "move_jump_select",
-		"<Control-Shift-Down>" : "move_jump_select",
-		"<Control-Shift-Left>" : "move_jump_select",
-		"<Control-Shift-Right>" : "move_jump_select",
+		"<Control-Up>" : ["move_up", {"suffix": "Para"}],
+		"<Control-Down>" : ["move_down", {"suffix": "Para"}],
+		"<Control-Left>" : ["move_left", {"suffix": "Word"}],
+		"<Control-Right>" : ["move_right", {"suffix": "Word"}],
+
+		"<Shift-Up>" : ["move_up", {"prefix": "Select"}],
+		"<Shift-Down>" : ["move_down", {"prefix": "Select"}],
+		"<Shift-Left>" : ["move_left", {"prefix": "Select"}],
+		"<Shift-Right>" : ["move_right", {"prefix": "Select"}],
+
+		"<Control-Shift-Up>" : ["move_up", {"prefix": "Select", "suffix": "Para"}],
+		"<Control-Shift-Down>" : ["move_down", {"prefix": "Select", "suffix": "Para"}],
+		"<Control-Shift-Left>" : ["move_left", {"prefix": "Select", "suffix": "Word"}],
+		"<Control-Shift-Right>" : ["move_right", {"prefix": "Select", "suffix": "Word"}],
 		
 		"<Home>" : "home",
 		"<Shift-Home>" : "home_select",
@@ -240,9 +274,9 @@
 		"<Control-y>" : "redo",
 		"<Control-A>" : "select_all",
 		"<Control-a>" : "select_all",
-		
-		"<Control-K>" : "get_selection_count",
-		"<Control-k>" : "get_selection_count",
+
+		"<Control-K>" : "kill_last_subproc",
+		"<Control-k>" : "kill_last_subproc",
 		
 		"<Tab>" : "indent",
 		"<Control-Tab>" : "switch_buffer_next",
@@ -270,7 +304,7 @@
 		"<Control-v>" : "paste",
 		"<Control-Shift-C>" : "copy_token",
 		"<Control-Shift-c>" : "copy_token",
-		
+
 		"<Alt-S>" : "selection_index_swap",
 		"<Alt-s>" : "selection_index_swap",
 		
@@ -291,11 +325,15 @@
 		"<Alt-j>" : "move_line_down",
 		"<Alt-K>" : "move_line_up",
 		"<Alt-k>" : "move_line_up",
+		"<Alt-r>" : "self.parent.reaction_gif_widget.react",
 		
 		"<Alt-comma>" : "split_args",
 		"<Alt-bracketleft>" : "move_to_scope_start",
 		"<Alt-bracketright>" : "move_to_scope_end",
 		"<Escape>" : "parent.command_out.unplace",
+		
+		"<Alt-space>" : ["run_subprocess_wrap", {"argv": ["", ""]}],
+		"<Alt-space>" : ["parent.execute_command", {"command": ""}],
 
 		"vim_mode" : {
 			"h" : "move_left",
@@ -310,9 +348,9 @@
 			"<Up>" : "parent.suggest_widget.move_up",
 			"<Down>" : "parent.suggest_widget.move_down",
 			"<Return>" : "parent.suggest_widget.write",
-			"<KeyPress>" : "parent.suggest_widget.unplace",
 			"<Escape>" : "parent.suggest_widget.unplace"
 		}
+		
 	}
 }
 

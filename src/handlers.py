@@ -5,6 +5,7 @@ import tkinter
 import threading
 import subprocess
 import glob
+import magic
 
 from ascii_art import *
 from widgets import *
@@ -47,7 +48,7 @@ class FILE_HANDLER(object):
 		self.buffer_tab = self.buffer_list[-1][1]
 		self.buffer_tab_list.append(self.buffer_list[-1][1])
 		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
-		self.parent.buffer.insert("1.0", "\nhttps://www.asciiart.eu/")
+		# self.parent.buffer.insert("1.0", "\nhttps://www.asciiart.eu/")
 		self.parent.buffer.insert("1.0", art[random.randint(0, len(art)-1)])
 		self.parent.buffer.mark_set("insert", len(self.parent.buffer.get("1.0", "end").split("\n"))/2)
 		
@@ -99,6 +100,7 @@ class FILE_HANDLER(object):
 		self.buffer_tab_list.append(self.buffer_list[-1][1])
 
 		self.load_buffer(buffer_name=buffer_name)
+
 
 	def close_buffer(self, arg=None, buffer_name: str=None):
 		if (not buffer_name): buffer_name = self.parent.buffer.full_name
@@ -163,6 +165,7 @@ class FILE_HANDLER(object):
 		if (self.parent.focus_get() == p or self.parent.focus_get() == self.parent.command_out): self.parent.buffer.focus_set()
 		elif (self.parent.focus_get() == self.parent.find_entry): self.parent.find_entry.focus_set()
 		p.unplace() # weird (seemingly) optimalization trick
+		os.chdir(self.current_dir)
 		
 		if (arg): return "break"
 
@@ -187,6 +190,8 @@ class FILE_HANDLER(object):
 			self.parent.command_out.change_ex(self.parent.command_out.buffer_load)
 		if (not result): result = "<None>"
 		self.parent.command_out_set(result)
+
+		return "break"
 
 	def del_file(self, arg=None, filename:str=""):
 		if (not filename): filename=self.parent.buffer.full_name
@@ -224,7 +229,9 @@ class FILE_HANDLER(object):
 
 	def save_file(self, arg = None):
 		""" saves current text into opened file """
-		if (self.parent.buffer.type != "normal"): self.parent.error(f"{self.parent.buffer.type} buffer") ;return "break"
+		if (self.parent.buffer.type != "normal"): self.parent.error(f"{self.parent.buffer.type} buffer"); return "break"
+		elif (self.parent.buffer.state == []): return "break"
+
 		if (self.parent.buffer.full_name):
 			size0 = os.path.getsize(self.parent.buffer.full_name)
 
@@ -268,6 +275,7 @@ class FILE_HANDLER(object):
 		""" opens a file and loads it's content into the text widget """
 
 		buffer_type = "normal"
+		binary = False
 
 		# if (filename):
 			# if (not os.path.isfile(filename)): filename = os.path.abspath(f"{self.current_dir}/{filename}")
@@ -276,29 +284,44 @@ class FILE_HANDLER(object):
 		if (not os.path.isfile(filename)):
 			self.new_file(filename=filename)
 			return
-			
-		try:
-			current_file = open(filename, "r+") #opens the file
-		except PermissionError:
-			current_file = open(filename, "r")
-			buffer_type = "readonly"
+
+		self.cd(os.path.dirname(filename))
 		
+		if (os.access(filename, os.R_OK)):
+			filetype = magic.from_file(filename, mime=True).split('/')[0]
+			if filetype == "text":
+				if os.access(filename, os.W_OK):
+					current_file = open(filename, "r+") #opens the file
+				else:
+					current_file = open(filename, "r")
+					buffer_type = "readonly"
+
+			elif filetype == "image":
+				self.new_buffer(filename, buffer_type="GRAPHICAL"); return
+			
+			else:
+				current_file = open(filename, "rb")
+				buffer_type = "readonly"
+				binary = True
+
+		else:
+			raise Exception(f"Do not have permission to read file {filename}")
+
+		file_content = current_file.read()
+
 		t0 = time.time() # timer| gets current time in miliseconds
-		self.current_dir = os.path.dirname(filename)
-		try:
-			file_content = current_file.read()
-		except Exception:
-			current_file.close()
-			self.new_buffer(filename, buffer_type="GRAPHICAL"); return
+			
 
 		self.new_buffer(filename, buffer_type=buffer_type)
+		if (binary):
+			self.parent.buffer.highlighter.highlight = self.parent.buffer.highlighter.empty_highlight
 		if (self.parent.conf["backup_files"]):
 			file = open("."+os.path.basename(filename)+".error_swp", "w+")
 			file.write(file_content)
 			file.close()
 
-		self.parent.buffer.delete("1.0", "end") #deletes the buffer so there's not any extra text
-		self.parent.buffer.insert("1.0", file_content) #puts all of the file's text in the text widget
+		self.parent.buffer.delete("1.0", "end") # deletes the buffer so there's not any extra text
+		self.parent.buffer.insert("1.0", file_content) # puts all of the file's text in the text widget
 		self.parent.buffer.total_chars = len(file_content)+1
 		self.parent.buffer.total_lines = self.parent.buffer.get_line_count()
 		# if (platform == "Windows"): self.parent.convert_to_crlf()
@@ -313,12 +336,14 @@ class FILE_HANDLER(object):
 		elapsed_time = round(t1-t0, 3) #elapsed time
 		# puts the time it took to load and highlight the text in the command output widget
 		self.parent.notify(f"total lines: {self.parent.buffer.get_line_count()};	loaded in: {elapsed_time} seconds", tags=[
-			["1.12", f"1.{13+len(str(self.parent.buffer.get_line_count()))}"], 
+			["1.13", f"1.{13+len(str(self.parent.buffer.get_line_count()))}"], 
 			[f"1.{15+len(str(self.parent.buffer.get_line_count()))+11}", f"1.{15+len(str(self.parent.buffer.get_line_count()))+11+len(str(elapsed_time))}"]
 			]) # wild...
 		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
 
 		del file_content
+		self.parent.buffer.lexer.lex()
+		self.parent.buffer.edit_modified(False)
 
 		if (arg): return "break"
 
@@ -361,6 +386,7 @@ class FILE_HANDLER(object):
 			self.parent.error(arg=f"File/Directory {dir} not found")
 			return False
 
+		os.chdir(self.current_dir)
 		return True
 			
 	def ls(self, dir=None, sep=" ", expr=None):

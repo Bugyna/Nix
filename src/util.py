@@ -1,6 +1,8 @@
 import os
 import json
 
+from functools import wraps
+
 import platform
 platform = platform.system()
 
@@ -24,6 +26,7 @@ def bind_keys(widget, bindings: dict):
 	# unbinding has to occur first ( otherwise it would unbind the wrong bindings )
 	# mode-specific binding has to occur last to overwrite the default bindings
 	to_bind = []
+	func_args = []
 	for key, value in bindings.items():
 		if (type(value) == dict): # set of bindings
 			if (key == widget.mode):
@@ -37,6 +40,11 @@ def bind_keys(widget, bindings: dict):
 		if (type(value) == dict):
 			continue
 
+		elif (type(value) == list):
+			func_args = value[1]
+			# print(key, value, value[1], value[1]["argv"])
+			value = value[0]
+
 		func_name = value.split(".") # split the function name by dots
 		subclass_ptr = widget
 		# we're trying to parser the function name to get the function pointer
@@ -49,10 +57,19 @@ def bind_keys(widget, bindings: dict):
 			
 		try:
 			func_ptr = getattr(subclass_ptr, func_name[-1]) # get the function pointer of the last iterated pointer
-			# widget.unbind(val[0])
-			widget.bind(key, func_ptr) # bind the function to the keybinding
+
+			if (func_args):
+				def f(func, widget, func_args):
+					def f1(self, *args, **kwargs):
+						return func(self, *args, **func_args)
+					return f1
+					
+				func_ptr = f(func_ptr, widget, func_args)
+				func_args = []
+	
+			widget.bind_class(widget, key, func_ptr) # bind the function to the keybinding
 		except Exception as e:
-			if (not supress_warning): print(e)
+			if (not supress_warning): print(f"BINDING ERROR: {e}")
 
 	for bind_set in to_bind:
 		bind_keys(widget, bind_set)

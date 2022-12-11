@@ -36,7 +36,13 @@ class TASK_WIDGET(tkinter.Label):
 		self.task = ""
 
 	def place_self(self):
-		self.place(x=self.parent.key_label.winfo_width()+20, y=0, width=self.font.measure(self.task), height=self.font.metrics("linespace")//1.5+4, anchor="nw")
+		if (self.task):
+			self.place(x=self.parent.key_label.winfo_width()+20, y=0, width=self.font.measure(self.task), height=self.font.metrics("linespace")//1.5+4, anchor="nw")
+		else:
+			self.unplace()
+
+	def unplace(self):
+		self.place_forget()
 
 	def configure_self(self):
 		self.configure(bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"], text=self.task, font=self.font)

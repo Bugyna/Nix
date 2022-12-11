@@ -1,12 +1,12 @@
-import cv2
 import tkinter
-from PIL import Image, ImageTk
-import threading
 
 class CAM_MODULE(tkinter.Toplevel):
 	def __init__(self, parent):
+		# import cv2
+		# from PIL import Image, ImageTk
+		import threading
 		self.parent = parent
-		self.importable = True
+		self.importable = False
 		self.commands = {
 			"cam_start" : self.start,
 			"cam_stop" : self.stop,
