@@ -1,6 +1,7 @@
 import string
 import re
 import os
+import threading
 
 # how is this any more readable
 az         = string.ascii_letters + "_"
@@ -306,6 +307,8 @@ class LEXER:
 	def __init__(self, parent, txt):
 		self.parent = parent
 		self.buffer = txt
+		self.defines = {}
+		self.function_regex = re.compile(r"(([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]+)*([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*[\[\]\*]*[\ \t]+))([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*)(\((.*\n*)*\))")
 
 		# unsigned int eq(int a, int b) 
 		# {
@@ -412,17 +415,19 @@ class LEXER:
 		print("FNCS: ", self.functions)
 		print("OBJS: ", self.objects)
 		print("VARS: ", self.vars)
+
 		s = "FNCS: \n"
 		for word in self.functions:
 			s += "\t"+word+"\n"
+
 		s += "OBJS: \n"
 		for word in self.objects:
 			s += "\t"+word+"\n"
-		s += "VARS: \n"
-		for word in self.vars:
-			s += "\t"+word+"\n"
 
-		# self.parent.command_out_set(s)
+		self.parent.command_out_set(s)
+
+
+
 
 class PY_LEXER(LEXER):
 	""" basic lexing """
@@ -446,27 +451,58 @@ class PY_LEXER(LEXER):
 		line = []
 		prev_word = ""
 		word = ""
+		expr = ""
+		in_quote = in_quote_ = False
 
 		for self.index, char in enumerate(self.text, 0):
 			if (in_comment):
 				if (char == "\n"): in_comment = False
 				else: continue 
 
+			elif (in_quote or in_quote_):
+				expr += char
+				self.index += 1
+				if (in_quote and char == "\""):
+					in_quote = False
+					word_count = 0
+					continue
+
+				elif (in_quote_ and char == "'"):
+					in_quote_ = False
+					word_count = 0
+					continue
+
+				else:
+					continue
+
 			if (char == " " or char == "\t"):
-				self.make_func(prev_word, word)
-					
+				# self.make_func(prev_word, word, expr)
 				line.append(word)
 				prev_word = word
 				word = ""
+				expr += " "
 				
 			elif (char == "\n"):
-				self.make_func(prev_word, word)
+				# self.make_func(prev_word, word, expr)
 				line = []
 				prev_word = ""
 				word = ""
+				expr = ""
 				
 				row_index += 1
 				char_index = 0
+				continue
+
+			elif (char == "\""):
+				in_quote = not in_quote
+				self.index += 1
+				expr += char
+				continue
+
+			elif (char == "'"):
+				in_quote_ = not in_quote_
+				self.index += 1
+				expr += char
 				continue
 
 			elif (char == "#"):
@@ -474,14 +510,28 @@ class PY_LEXER(LEXER):
 
 			elif (char in az):
 				word += char
+				expr += char
 
 			elif (word and char in num):
 				word += char
+				expr += char
+
+
+			elif (char in ")]}"):
+				expr += char
+				if (char == ")"):
+					self.make_func(prev_word, word, expr)
+
+				expr = ""
+				prev_word = word
+				word = ""
+
 
 			elif (char in ("(", "[", "{")):
-				brackets[char] = brackets[char]+1
-				if (char == "("):
-					self.make_func(prev_word, word)
+				# brackets[char] = brackets[char]+1
+				expr += char
+				# if (char == "("):
+					# self.make_func(prev_word, word)
 
 				prev_word = word
 				word = ""
@@ -489,12 +539,22 @@ class PY_LEXER(LEXER):
 			elif (char == "."):
 				line.append(word)
 				word = ""
+				expr += char
+
+			elif (char == ","):
+				expr += char
 				
 			elif (char == "="):
-				self.make_var(prev_word, word)
+				expr += char
+				self.make_var(prev_word, word, expr)
 
 				word = ""
 				prev_word = word
+
+			elif (char == ":"):
+				expr += char
+				if (self.text[self.index+1] == "\n"): self.make_func(prev_word, word, expr)
+				expr = ""
 
 			# elif (char in (")", "]", "}")):
 				# brackets[char] = brackets[char]-1
@@ -506,15 +566,32 @@ class PY_LEXER(LEXER):
 		print("OBJS: ", self.objects)
 		print("VARS: ", self.vars)
 
-	def make_func(self, prev_word, word):
-		if (prev_word == "def"):
-			self.functions.append(word)
+	def make_func(self, prev_word, word, expr):
+		if (re.search("def", expr)):
+			# expr = re.sub("\s+", " ", expr)
+			# group 1 is the full type
+			# group 3 is the last part of the type
+			# group 4 is the function name
+			# group 5 are parameters
+			expr = expr.strip()
+			# print(expr)
+			m = self.function_regex.match(expr)
+			# m = re.match(r"(([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]+)*([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*[\[\]\*]*[\ \t]+))([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*)(\((.*\n*)*\))", expr)
+			# print(m)
+	
+			if (m):
+				x = ('', m.group(4), m.group(5))
+				# print(m.groups())
+				if (m.group(4) not in self.defines):
+					self.defines[m.group(4)] = x
+					self.functions.append(m.group(4))
 
 		elif (prev_word == "class" or prev_word == "import"):
 			self.objects.append(word)
 
-	def make_var(self, prev_word, word):
-		if (self.text[self.index+1] != "="): self.vars.append(word)
+	def make_var(self, prev_word, word, expr):
+		pass
+		# if (self.text[self.index+1] != "="): self.vars.append(word)
 
 
 class C_LEXER(LEXER):
@@ -522,7 +599,7 @@ class C_LEXER(LEXER):
 		super().__init__(parent, txt)
 		self.indexed_files = []
 
-	def lex(self, text=None):
+	def lex(self, text=None, file=""):
 		if (text): self.text = text
 		else: self.text = self.buffer.get("1.0", "end-1c")
 		self.file_queue = []
@@ -544,18 +621,53 @@ class C_LEXER(LEXER):
 		prev_word = ""
 		word = ""
 
+		self.index = 0
 		last_index = ""
 		index = ""
 		word_count = 0
-
-		for self.index in range(len(self.text)-1):
+		expr = ""
+		flag = 0
+		prev_char = ""
+		# print("length: ", len(self.text), file)
+		
+		# for self.index in range(len(self.text)-1):
+		while (self.index < len(self.text)-1):
+			# if (flag): print("FLAG: ", char, self.index); flag = 0
+			prev_char = self.text[self.index-1]
 			char = self.text[self.index]
 			if (in_comment):
 				if (char == "\n"):
 					in_comment = False
 					word_count = 0
 
-				else: continue
+				else: self.index += 1; continue
+
+			elif (in_multiline_comment):
+				if (char == "*" and self.text[self.index+1] == "/"):
+					in_multiline_comment = False
+					word_count = 0
+					self.index += 2
+					continue
+
+				else: self.index += 1; continue
+
+
+			elif (in_quote or in_quote_):
+				expr += char
+				self.index += 1
+				if (in_quote and char == "\""):
+					in_quote = False
+					word_count = 0
+					continue
+
+				elif (in_quote_ and char == "'"):
+					in_quote_ = False
+					word_count = 0
+					continue
+
+				else:
+					continue
+				
 
 			if (char == " " or char == "\t"):
 				# if (self.text[self.index+1] == "="): self.make_var(prev_word, word, index=self.index+1)
@@ -564,85 +676,125 @@ class C_LEXER(LEXER):
 					prev_word = word
 					word_count += 1
 					word = ""
+					if (expr): expr += " "
 
 			elif (char == ","):
 				line.append(word)
 				prev_word = word
 				word = ""
+				expr += char
 
 			elif (char == "\""):
 				in_quote = not in_quote
+				self.index += 1
 				continue
 
-			elif (char == "\'"):
+			elif (char == "'"):
 				in_quote_ = not in_quote_
+				self.index += 1
 				continue
 				
 			elif (char == "\n"):
-				if (prev_word and prev_word[0] == "#"):
-					prev_word = word
-					word = ""
+				# if (prev_word and prev_word[0] == "#"):
+					# prev_word = word
+					# word = ""
 
 				row_index += 1
 				char_index = 0
+				if (expr): expr += "\n"
+				self.index += 1
 				continue
 
 			elif (char == "/"):
 				if (self.text[self.index+1] == "/"):
-					
 					in_comment = True
+
 				elif (self.text[self.index+1] == "*"): in_multiline_comment = not in_multiline_comment
 
-			elif (not word and char == "#"):
-				word += char
-				self.add_file_to_queue()
+			elif (prev_char == "\n" and char == "#"):
+				word = ""
+				self.handle_preprocessor()
+				flag = 1
+				# print("preproc: ", self.index)
 
 			elif (char in az):
 				word += char
+				expr += char
 
 			elif (word and char in num):
 				word += char
+				expr += char
 
-			elif (char in ("(", "[", "{")):
+			elif (char in "+-=|<>./?:*%^&!~"):
+				expr += char
+
+			elif (char in "([{"):
 				brackets[char] = brackets[char]+1
-				if (char == "(" or char == "{"):
-					self.make_func(prev_word, word)
+				expr += char
+
+			elif (char in ")]}"):
+				# brackets[char] = brackets[char]-1
+				# if (char == "(" or char == "{"):
+				expr += char
+				if (char == ")"):
+					# self.make_func(prev_word, word)
+					self.make_func_new(expr)
+					expr = ""
+				elif (char == "}"):
+					expr = ""
 
 				prev_word = word
 				word = ""
-
-			
 
 			elif (char == "."):
 				line.append(word)
 				word = ""
+				expr += char
 
 			elif (char == "="):
 				self.make_var(prev_word, word)
+				expr += char
 
 				word = ""
 				prev_word = word
 
-			elif (char == ";"):
+			elif (char in ";:"):
 				word_count = 0
+				expr = ""
 
 				
 			char_index += 1
+			self.index += 1
+			# print("i: ", self.index, char, word, file)
+
+
+		# print("lexing ended")
 
 		for object in self.objects:
 			if (object not in self.buffer.highlighter.keywords): self.buffer.highlighter.keywords.append(object)
+	
+			# self.parent.command_out_set("lex finished")
+	
+		# file_queue += self.file_queue.copy()
+		# print("file Q: ", file_queue)
 
-		# self.parent.command_out_set("lex finished")
-
-		file_queue = self.file_queue
-		for file in file_queue:
+		for file in self.file_queue:
 			if (file not in self.indexed_files):
 				self.indexed_files.append(file)
 				# self.parent.command_out_set(f"file {file} is a file")
-				file = f"{os.path.dirname(self.buffer.full_name)}/{file}"
-				if (os.path.isfile(file)):
-					self.lex(text=open(file, "r").read())
-			
+				path = f"{os.path.dirname(self.buffer.full_name)}/{file}"
+				if (os.path.isfile(path)):
+					# print(path)
+					f = open(path, "r")
+					self.lex(f.read(), path)
+					f.close()
+				else:
+					path = f"/usr/include/{file}"
+					# print("dwaw: ", path)
+					if (os.path.isfile(path)):
+						f = open(path, "r")
+						self.lex(f.read(), path)
+						f.close()
 
 		# self.print_res()
 
@@ -660,6 +812,79 @@ class C_LEXER(LEXER):
 			s += "\t"+word+"\n"
 
 		self.parent.command_out_set(s)
+
+
+	def handle_preprocessor(self):
+		word = ""
+		command = ""
+		ignore_next = False
+		i = 1
+		for char in self.text[self.index+i:]:
+			if ((not command or command == "include") and char in az or char == "/" or char == "\\" or char == "."):
+				word += char
+
+			elif (command == "define" and char != "\\"):
+				word += char
+
+			elif (command == "ignore"):
+				pass
+			
+			# print(f"[{word}]")
+			
+			if (char == " " and not command and word):
+				# print("dwawd", f"[{word}]", char)
+				if (word == "include" or word == "define"):
+					command = word
+					word = ""
+				else: command = "ignore"
+
+			elif (not ignore_next and char == "\\"):
+				ignore_next = True
+
+			elif (ignore_next):
+				ignore_next = False
+
+			elif (char == "\n" and not ignore_next):
+				break
+
+			i += 1
+
+		# self.parent.command_out_set(f"file {word} was added to queue")
+
+		# print("end: ", command, word, i)
+		self.index += i
+		if (command == "include" and word not in self.indexed_files): self.file_queue.append(word)
+		elif (command == "define"):
+			x = self.parse_macro_define(word)
+			# print(x)
+			if (x[0] not in self.defines):
+				self.objects.append(x[0])
+				self.defines[x[0]] = x
+				# self.objects.append(x[0])
+				# self.defines.append(x)
+
+
+	def parse_macro_define(self, macro):
+		
+		ignore_whitespace = 0
+		ignore_next = 0
+		word = ""
+		i = 0
+		# print("macro: ", macro)
+		for c in macro:
+			i += 1
+			# print("parse macro define: ", macro, word)
+			if (ignore_next and c not in "\n \t"): ignore_next = False
+			# if (c not in "\n \t" and ignore_whitespace): ignore_whitespace = False
+			if (c == "("): ignore_whitespace = True
+			elif (c == ")"): ignore_whitespace = False
+			elif (c == "\\"): ignore_next = True
+			elif (c == "\n" and not ignore_whitespace): break
+			elif (c == " " and not ignore_whitespace): break
+			word += c
+
+		return word, macro[i:].replace("\\", "")
+
 
 	def add_file_to_queue(self):
 		word = ""
@@ -698,6 +923,33 @@ class C_LEXER(LEXER):
 			self.vars.append(name)
 
 
+	def make_func_new(self, expr):
+		# print("EXPR: ", expr)
+		if (re.search(r"=|return", expr)): return
+		# if (re.match(r"([a-zA-Z_]+[a-zA-Z_0-9]+\ )+ \(([a-zA-Z_]+[a-zA-Z_0-9]+\ )+\)", expr)): print("ok")
+		# if (re.match(r"((([a-zA-Z_]+[a-zA-Z_0-9]*\ +)*([a-zA-Z_]+[a-zA-Z_0-9]*))\((.)*\))", expr)): print("ok")
+		# if (re.match(r"([[a-zA-Z_]+[a-zA-Z_0-9]*\ +]*[a-zA-Z_]+[a-zA-Z_0-9]*)\(.*\)", expr)): pass
+
+		# expr = expr.replace("\n", "")
+		# expr = expr.replace("\t", " ")
+
+		expr = re.sub("\s+", " ", expr)
+		# group 1 is the full type
+		# group 3 is the last part of the type
+		# group 4 is the function name
+		# group 5 are parameters
+		# print("\n\nfunc: ", expr)
+		m = self.function_regex.match(expr)
+
+		if (m):
+			# print("dwadw\n\n")
+			x = (m.group(1), m.group(4), m.group(5))
+			# print(m.groups())
+			if (m.group(4) not in self.defines):
+				self.defines[m.group(4)] = x
+				self.functions.append(m.group(4))
+
+	
 	def make_func(self, prev_word, word):
 		if (prev_word == "#define"):
 			self.add_object(word)

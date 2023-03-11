@@ -1011,11 +1011,17 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 			
 		self.find_query = keyword
 
+
 		count = tkinter.IntVar()
 		for buffer in self.parent.buffer_render_list:
+			# l = []
+			# l1 = []
+			i = buffer.index("insert -1c wordstart")
 			buffer.mark_set("match_end", "1.0")
+
+			closest = self.find_match(keyword, buffer=buffer, start=i, end="end", regexp=self.regexp, count=count)
 			while True:
-				index = self.find_match(keyword, buffer=buffer, start="match_end", end="end", regexp=self.regexp, count=count)
+				index = self.find_match(keyword, buffer=buffer, start="match_end", end=f"end", regexp=self.regexp, count=count)
 				if (index):
 					buffer.mark_set("match_end", index[1])
 					buffer.tag_add("found", index[0], index[1])
@@ -1023,6 +1029,34 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 				else: break
 
 			buffer.mark_unset("match_end")
+
+		if (closest):
+			# self.parent.buffer.mark_set("insert", closest[0])
+			self.found_index = self.found[self.parent.buffer.full_name].index(closest)
+			self.select_match(5)
+			print("cloesse: ", closest, self.found_index)
+
+			# buffer.mark_set("match_end", i)
+			# while True:
+				# index = self.find_match(keyword, buffer=buffer, start="match_end", end="end", regexp=self.regexp, count=count)
+				# if (index):
+					# buffer.mark_set("match_end", index[1])
+					# buffer.tag_add("found", index[0], index[1])
+					# self.found[buffer.full_name].append(index)
+				# else: break
+
+			# buffer.mark_unset("match_end")
+			
+			# buffer.mark_set("match_end", "1.0")
+			# while True:
+				# index = self.find_match(keyword, buffer=buffer, start="match_end", end=f"{i}-1c", regexp=self.regexp, count=count)
+				# if (index):
+					# buffer.mark_set("match_end", index[1])
+					# buffer.tag_add("found", index[0], index[1])
+					# self.found[buffer.full_name].append(index)
+				# else: break
+
+			# buffer.mark_unset("match_end")
 
 		if (len(self.found[self.parent.buffer.full_name]) == 0):
 			return "break"
@@ -1238,6 +1272,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.tags = []
 		self.selected_lines = []
 		self.history = [""]
+		self.tag_history = [[]]
 		self.history_index = 0
 		self.history_index_offset = 0
 
@@ -1318,26 +1353,34 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		return "break"
 
 
-	def history_append(self, arg=None):
+	def history_append(self, arg=None, tags=[]):
 		arg = self.out if arg is None else arg
-		if (self.history and arg != self.history[-1]):
+		tags = self.tags if not tags else tags
+		if (self.history and arg != self.history[-1] or not self.history):
+			# self.tag_history.append(tags)
 			self.history.append(arg)
 			self.history_index += 1
+
+		if (self.tag_history and tags != self.tag_history[-1] or not self.tag_history):
+			self.tag_history.append(tags.copy())
 
 
 	def history_revert(self):
 		if (len(self.history) > 0):
 			self.history.pop()
+			# self.tag_history.pop()
+			self.tag_history = self.tag_history.pop()
 			self.history_index -= 1
 
 
 	def flush(self, arg=None):
-		self.history_append(self.out)
+		self.history_append(self.out, self.tags)
 		self.out = ""
 
-	def flush_revert(self):
-		self.out = self.history.pop()
-		self.history_index -= 1
+	# def flush_revert(self):
+		# self.out = self.history.pop()
+		# self.tags = self.tag_history.pop()
+		# self.history_index -= 1
 
 
 	def copy(self, arg=None):
@@ -1386,7 +1429,6 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.mark_set("match_end", "1.0")
 		count = tkinter.IntVar()
 		while (True):
-			# index = self.search(parse_path(self.input), "match_end", "end", count=count, nocase=True, regexp=True, exact=False)
 			index = self.search(self.input, "match_end", "end", count=count, nocase=True)
 			if (index == ""): break
 			if (count.get()) == 0: break
@@ -1394,24 +1436,25 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			self.modified_arg.append(self.get(index+" linestart", index+" lineend"))
 		self.mark_unset("match_end")
 		
-		# result, tags = self.parent.file_handler.highlight_ls(self.modified_arg)
-		# self.modify_stdout(result, tags)
 		self.modify_stdout("\n".join(self.modified_arg))
 
 
-	def stdout(self, arg=None, tags=None, justify="left"):
+	def stdout(self, arg=None, tags=None, justify="left", append_history=True):
 		self["state"] = "normal"
 		if (arg is None):
 			arg = self.history[-1] # for the love of god do not rewrite the declaration of self.history
+			tags = self.tag_history[-1].copy()
+			# tags = list(self.tags)
 			# if (self.history): arg = self.history[-1]
 			# else: arg = self.out
-			tags = self.tags
-		elif (arg):
-			self.history_append(arg)
+			# tags = self.tags
+		elif (arg and append_history):
+			print("appending to history", arg)
+			self.history_append(arg, tags)
 		
 		self.input = ""
 		self.show_input()
-		
+
 		del self.tags[:]
 		
 		self.out = arg
@@ -1436,7 +1479,13 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.tag_add(justify, index, "end")
 
 		if (tags):
+			# tags = tags[0]
+			for i in range(len(tags)):
+				tags[i][0] = self.index(tags[i][0])
+				tags[i][1] = self.index(tags[i][1])
+
 			self.tags += tags
+			# self.tags.append(tags)
 			
 			self.highlight_tags()
 
@@ -1458,7 +1507,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 				if tag[2:]: self.tag_add(tag[2], tag[0], tag[1])
 				else: self.tag_add("keywords", tag[0], tag[1])
 
-			else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
+			# else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
 
 
 	def change_ex(self, new_ex):
@@ -1861,6 +1910,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		""" Home """
 		index = ""
 		i = 0
+		self.current_line = self.get("insert linestart", "insert lineend +1c")
 		for i, char in enumerate(self.current_line, 0):
 			if (not re.match(r"\s", char)): index = f"{self.cursor_index[0]}.{i}"; break
 		
@@ -1874,6 +1924,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		""" Shift-Home """
 		index = ""
 		i = 0
+		self.current_line = self.get("insert linestart", "insert lineend +1c")
 		for i, char in enumerate(self.current_line, 0):
 			if (not re.match(r"\t", char)): index = f"{self.cursor_index[0]}.{i}"; break
 
@@ -1903,12 +1954,13 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.parent.update_buffer()
 		return "break"
 
-	@moving
+	# @moving
 	def mouse_left_motion(self, arg=None):
-		if (not self.sel_start):
-			self.sel_start = self.index("current")
-		self.mark_set("current", "insert")
-		self.parent.update_buffer()
+		# if (not self.sel_start):
+			# self.sel_start = self.index("current")
+		# self.mark_set("current", "insert")
+		# self.parent.update_buffer()
+		self.parent.update_index()
 
 	def todo_set(self, arg=None, text=None):
 		# smort
@@ -1988,7 +2040,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def move_line_up(self, arg=None):
 		return self.move_line(arg, up=True)
 
-	@add_command_to_history
+	# @add_command_to_history
 	def comment_line(self, arg=None) -> str:
 		""" I wish I knew what the fuck is going on in here I am depressed """
 		
@@ -2012,6 +2064,60 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 		self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
 		return "break" # returning "break" prevents system/tkinter to call default bindings
+
+
+	def comment_line_force(self, arg=None) -> str:
+		start_index, stop_index = self.queue_get()
+
+		comment_len = len(self.highlighter.comment_sign)
+
+		for line_no in range(start_index, stop_index):
+			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
+			for i, current_char in enumerate(current_line, 0):
+				if (not re.match("\s", current_char)):
+					self.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
+					break
+
+		self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
+		return "break"
+
+	def comment_line_uncommented(self, arg=None) -> str:
+		start_index, stop_index = self.queue_get()
+
+		comment_len = len(self.highlighter.comment_sign)
+
+		for line_no in range(start_index, stop_index):
+			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
+			for i, current_char in enumerate(current_line, 0):
+				if (self.highlighter.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+					break
+					
+				elif (not re.match("\s", current_char)):
+					self.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
+					break
+
+		self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
+		return "break"
+
+
+	def uncomment_line(self, arg=None) -> str:
+		start_index, stop_index = self.queue_get()
+
+		comment_len = len(self.highlighter.comment_sign)
+
+		for line_no in range(start_index, stop_index):
+			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
+			for i, current_char in enumerate(current_line, 0):
+				if (self.highlighter.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+					if (self.get(f"{line_no}.{i+comment_len}", f"{line_no}.{i+1+comment_len}") == " "):
+						self.delete(f"{line_no}.{i}", f"{line_no}.{i+1+comment_len}")
+					else:
+						self.delete(f"{line_no}.{i}", f"{line_no}.{i+comment_len}")
+					break
+
+		self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
+		return "break"
+
 
 	def indent(self, arg=None):
 		""" Tab """
@@ -2064,9 +2170,12 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.see("insert +3l")
 		
 		tab_offset = self.parent.conf["line_end"]
-		column_index = self.get_column_index()
+		column_index = int(self.cursor_index[1])
 		
-		match = re.search(r"^\t+", self.current_line)
+		line = self.get(f"insert linestart", "insert lineend")
+		match = re.search(r"\t+", line)
+		# match = re.search(r"^\t+", self.current_line)
+		# print("d", match.group(), "d")
 		if (match):
 			tab_offset += match.group()
 			if (len(tab_offset) > column_index):
@@ -2101,16 +2210,16 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 				offset = tab_offset
 				self.insert(self.index("insert"), offset)
 				self.mark_set("insert", f"insert+{len(tab_offset)+2}c")
-		
+
 		else:
-			if (re.match(r"\t+(\n|\r\n)", self.current_line)):
+			if (re.match(r"^\s+$", line)):
 				self.delete("insert linestart", "insert lineend") #removes extra tabs if the line is empty
-				
+
 			offset = tab_offset # if this line gets removed it fucks up
 			self.insert("insert", offset)
 
 		self.total_lines += len(re.findall("\n", offset))
-		self.lexer.lex() # lex text for variables, functions, structures and class etc.
+		self.after(1, self.lexer.lex) # lex text for variables, functions, structures and class etc.
 		
 		return "break"
 
@@ -2177,6 +2286,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		return "break"
 
 	def copy_token(self, arg=None):
+		self.get_current_token()
 		self.parent.clipboard_clear()
 		self.parent.clipboard_append(self.current_token)
 		self.parent.update()
@@ -2318,34 +2428,43 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			self.parent.command_out.change_ex(self.parent.command_out.open_line)
 
 
-		def run():
-			start_time = time.time()
-			process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-			self.parent.subprocesses.append(process)
-			index = len(self.parent.subprocesses)-1
+		def run(argv):
+			try:
+				start_time = time.time()
+				process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+				self.parent.subprocesses.append(process)
+				index = len(self.parent.subprocesses)-1
+	
+	
+				out = ""
+				self.parent.command_out_set("")
+				# process.stdin.write(b"a\n")
+				# self.parent.command_out.place_self()
+	
+				while (process.poll() is None or process.returncode == 2):
+					line = process.stdout.readline().decode("UTF-8")
+					if (not line):
+						# process.returncode = -9
+						self.parent.command_out.add_stdout("\n")
+						break
+					# self.parent.command_out.add_stdout(line)
+					if ("error" in line):
+						self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "error"]])
+					# if ("warning" in line):
+						# self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "upcase"]])
+					else:
+						self.parent.command_out.add_stdout(line)
+					print(line, end="")
 
+				# self.parent.subprocesses.pop(index)
+				self.parent.kill_last_subproc()
+				self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])
+			except Exception as e:
+				self.parent.kill_last_subproc()
+				print(e)
+	
 
-			out = ""
-			self.parent.command_out_set("")
-			# self.parent.command_out.place_self()
-
-			while (True):
-				line = process.stdout.readline().decode("UTF-8")
-				if (not line): break
-				if ("error" in line):
-					self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "error"]])
-				elif ("warning" in line):
-					self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "upcase"]])
-				else:
-					self.parent.command_out.add_stdout(line)
-				print(line, end="")
-
-			# self.parent.subprocesses.pop(index)
-			self.parent.kill_last_subproc()
-			self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])
-
-
-		threading.Thread(target=run, daemon=True).start()
+		threading.Thread(target=run, daemon=True, args=(argv,)).start()
 
 
 		return "break"

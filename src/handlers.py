@@ -24,6 +24,8 @@ class FILE_HANDLER(object):
 		self.current_file_name = None
 		self.current_buffer = None
 
+		self.magic = magic.Magic(mime=True, mime_encoding=True)
+
 		self.buffer_dict = {}
 		self.buffer_list = []
  
@@ -53,6 +55,16 @@ class FILE_HANDLER(object):
 		self.parent.buffer.mark_set("insert", len(self.parent.buffer.get("1.0", "end").split("\n"))/2)
 		
 		self.parent.buffer.tag_add("center", "1.0", "end")
+
+	def renew_scratch(self):
+		buffer_name = self.scratch_buffer.name
+		self.buffer_list.append([self.scratch_buffer, BUFFER_TAB(buffer_name, self.parent, render=False)])
+		self.buffer_dict[buffer_name] = self.buffer_list[-1]
+		self.load_buffer(buffer_name=buffer_name)
+		# self.parent.buffer_render_list.insert(self.parent.buffer_render_index, self.buffer_list[-1][0])
+		# self.parent.buffer = self.parent.buffer_render_list[self.parent.buffer_render_index]
+		# self.buffer_tab = self.buffer_list[-1][1]
+		# self.buffer_tab_list.append(self.buffer_list[-1][1])
 
 	# def load_scratch(self, arg=None):
 		# self.parent.buffer_unplace()
@@ -90,7 +102,7 @@ class FILE_HANDLER(object):
 		
 		self.current_file_name = self.current_buffer = new_buffer_name
 
-	def new_buffer(self, buffer_name, buffer_type="normal"):
+	def new_buffer(self, buffer_name, buffer_type="normal", load=True):
 		if (self.buffer_exists(buffer_name)): self.load_buffer(buffer_name=buffer_name); return
 
 		if (buffer_type == "GRAPHICAL"): self.buffer_list.append([GRAPHICAL_BUFFER(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
@@ -99,7 +111,8 @@ class FILE_HANDLER(object):
 		self.buffer_dict[buffer_name] = self.buffer_list[-1]
 		self.buffer_tab_list.append(self.buffer_list[-1][1])
 
-		self.load_buffer(buffer_name=buffer_name)
+		if (load): self.load_buffer(buffer_name=buffer_name)
+		return self.buffer_list[-1][0]
 
 
 	def close_buffer(self, arg=None, buffer_name: str=None):
@@ -110,7 +123,7 @@ class FILE_HANDLER(object):
 			if (buffer == self.buffer_dict[buffer_name][0]):
 				self.parent.buffer_render_list.pop(i)
 				self.parent.split_mode = "nosplit"
-				self.parent.buffer_render_index = i-1 if i-1 >= 0 else 0
+				self.parent.buffer_render_index = i-1 if i-1 > 0 else 0
 
 		self.buffer_dict[buffer_name][0].unplace()
 		self.buffer_dict[buffer_name][1].unplace()
@@ -129,12 +142,16 @@ class FILE_HANDLER(object):
 
 		# self.load_buffer(buffer_index=len(self.buffer_list)-1)
 		# if (len(self.buffer_list) == 0):
-		self.load_buffer(buffer_index=buffer_index)
+		self.load_buffer(buffer_index=buffer_index-1)
 
 		if (arg): return "break"
 
 
 	def load_buffer(self, arg=None, buffer_name: str = None, buffer_index: int = None):
+		if (len(self.buffer_list) == 0):
+			self.renew_scratch()
+			return
+
 		if (buffer_index and buffer_index >= len(self.buffer_list)):
 			buffer_index = 0
 			
@@ -207,7 +224,7 @@ class FILE_HANDLER(object):
 		if (not filename):
 			i = 0
 			filename = f"{self.current_dir}/untitled_{i}.txt"
-			while (os.path.isfile(filename)):
+			while (os.path.isfile(filename) and i < 9):
 				i += 1
 				filename = f"{self.current_dir}/untitled_{i}.txt"
 
@@ -288,8 +305,11 @@ class FILE_HANDLER(object):
 		self.cd(os.path.dirname(filename))
 		
 		if (os.access(filename, os.R_OK)):
-			filetype = magic.from_file(filename, mime=True).split('/')[0]
-			if filetype == "text":
+			info = self.magic.from_file(filename).split(';')
+			filetype = info[0].split('/')[0]
+			encoding = info[1].split('=')[1]
+
+			if encoding != "binary":
 				if os.access(filename, os.W_OK):
 					current_file = open(filename, "r+") #opens the file
 				else:
@@ -297,7 +317,8 @@ class FILE_HANDLER(object):
 					buffer_type = "readonly"
 
 			elif filetype == "image":
-				self.new_buffer(filename, buffer_type="GRAPHICAL"); return
+				self.new_buffer(filename, buffer_type="GRAPHICAL")
+				return
 			
 			else:
 				current_file = open(filename, "rb")
@@ -312,22 +333,22 @@ class FILE_HANDLER(object):
 		t0 = time.time() # timer| gets current time in miliseconds
 			
 
-		self.new_buffer(filename, buffer_type=buffer_type)
+		buffer = self.new_buffer(filename, buffer_type=buffer_type)
 		if (binary):
-			self.parent.buffer.highlighter.highlight = self.parent.buffer.highlighter.empty_highlight
+			buffer.highlighter.highlight = buffer.highlighter.empty_highlight
 		if (self.parent.conf["backup_files"]):
 			file = open("."+os.path.basename(filename)+".error_swp", "w+")
 			file.write(file_content)
 			file.close()
 
-		self.parent.buffer.delete("1.0", "end") # deletes the buffer so there's not any extra text
-		self.parent.buffer.insert("1.0", file_content) # puts all of the file's text in the text widget
-		self.parent.buffer.total_chars = len(file_content)+1
-		self.parent.buffer.total_lines = self.parent.buffer.get_line_count()
+		buffer.delete("1.0", "end") # deletes the buffer so there's not any extra text
+		buffer.insert("1.0", file_content) # puts all of the file's text in the text widget
+		buffer.total_chars = len(file_content)+1
+		buffer.total_lines = self.parent.buffer.get_line_count()
 		# if (platform == "Windows"): self.parent.convert_to_crlf()
 		# else: self.parent.convert_to_lf()
-		self.parent.buffer.mark_set("insert", "1.0") #puts the cursor at the start of the file
-		self.parent.buffer.see("insert")
+		buffer.mark_set("insert", "1.0") #puts the cursor at the start of the file
+		buffer.see("insert")
 	
 		current_file.close()
 	
@@ -342,8 +363,8 @@ class FILE_HANDLER(object):
 		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
 
 		del file_content
-		self.parent.buffer.lexer.lex()
-		self.parent.buffer.edit_modified(False)
+		# buffer.lexer.lex()
+		buffer.edit_modified(False)
 
 		if (arg): return "break"
 

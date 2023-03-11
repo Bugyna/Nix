@@ -177,7 +177,7 @@ class WIN(tkinter.Tk):
 		# self.buffer is only meant to be a pointer to the focused text buffer
 		# this pointer points to buffer_render_list which is a list of pointers pointing to
 		# text buffers stored in the file_handler.buffer_list
-		
+
 		# self.test_label = tkinter.Label(text="test")
 		# self.buffer.window_create("1.0", window=self.test_label, stretch=1)
 		# print(self.buffer.dlineinfo("1.0"))
@@ -328,7 +328,8 @@ class WIN(tkinter.Tk):
 						
 					else: # normal tag
 						buffer.tag_configure(item[0], bgstipple="gray50", selectbackground=item[1], selectforeground=self.theme["window"]["bg"], foreground=item[1], font=buffer.font, fgstipple="hourglass") # , borderwidth=2, relief="groove", bgstipple="gray75"
-						self.command_out.tag_configure(item[0], underline=True, underlinefg=item[1], foreground=item[1], font=self.command_out.font)
+						self.command_out.tag_configure(item[0], bgstipple="gray50", selectbackground=item[1], selectforeground=self.theme["window"]["bg"], foreground=item[1], font=self.command_out.font) # , borderwidth=2, relief="groove", bgstipple="gray75"
+						# self.command_out.tag_configure(item[0], underline=True, underlinefg=item[1], foreground=item[1], font=self.command_out.font)
 						self.suggest_widget.tag_configure(item[0], foreground=item[1], font=self.suggest_widget.font)
 
 				else:
@@ -641,7 +642,7 @@ class WIN(tkinter.Tk):
 		token = self.buffer.current_token.strip()
 
 		if (not resize):
-			if (re.match(r"[a-zA-Z_]+([0-9])*", token)):
+			if (re.match(r"[a-zA-Z_]+([a-zA-Z_0-9])*", token)):
 				self.suggest_widget.delete("1.0", "end")
 				
 				longest_line = 0
@@ -652,9 +653,11 @@ class WIN(tkinter.Tk):
 						self.suggest_widget.insert("insert", m+"\n")
 						if (len(m) > longest_line): longest_line = len(m)
 						
-				for m in self.buffer.highlighter.funcs + self.buffer.lexer.functions:
+				for m in self.buffer.lexer.functions:
 					if (re.match(token, m)):
-						self.suggest_widget.insert("insert", m+"\n")
+						x = self.buffer.lexer.defines[m]
+						m = f"{x[1]}{x[2]}\n"
+						self.suggest_widget.insert("insert", m)
 						self.suggest_widget.tag_add("functions", "insert -1l linestart", "insert -1l lineend")
 						if (len(m) > longest_line): longest_line = len(m)
 	
@@ -669,7 +672,8 @@ class WIN(tkinter.Tk):
 				c = list(self.buffer.bbox("insert"))
 				out_len = len(self.suggest_widget.get("1.0", "end").split("\n"))
 				
-				if (out_len <= 0):
+				if (out_len <= 1 or not self.suggest_widget.get("1.0", "end-1c")):
+					self.suggest_widget.unplace()
 					self.buffer.mode_set(mode="normal", force=True)
 					self.buffer.focus_set()
 					return
@@ -711,6 +715,7 @@ class WIN(tkinter.Tk):
 		if (type(arg) == tkinter.Event): arg=-1
 		elif (type(arg) != int):
 			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
+
 		if (len(self.subprocesses) >= 1):
 			self.subprocesses[arg].kill()
 			self.subprocesses.pop(arg)
@@ -754,6 +759,7 @@ class WIN(tkinter.Tk):
 		return "break"
 
 	def find_place_with_token(self, arg=None):
+		self.buffer.get_current_token()
 		self.find_place(text=self.buffer.current_token)
 
 		return "break"
@@ -772,7 +778,7 @@ class WIN(tkinter.Tk):
 				self.command_out.focus_set()
 				# if (append_history and arg): self.command_out.append_history(arg)
 
-			self.command_out.stdout(arg=arg, tags=tags, justify=justify)
+			self.command_out.stdout(arg=arg, tags=tags, justify=justify, append_history=append_history)
 
 		self.command_out.place_self(lines=lines if lines else None)
  
@@ -786,7 +792,7 @@ class WIN(tkinter.Tk):
 		# one hack after another
 		# self.command_out["state"] = "normal"
 		self.command_out_set(arg=arg, tags=tags, focus=True, justify=justify, append_history=False)
-		if (not self.conf["allow_notifications"]): self.command_out.unplace() # HACK
+		# if (not self.conf["allow_notifications"]): self.command_out.unplace() # HACK
 		# self.command_out["state"] = "disabled"
 
 	def error(self, arg=None, tags=None, justify="left"):
@@ -794,15 +800,14 @@ class WIN(tkinter.Tk):
 		self.notify("Error: "+arg, tags, justify)
 
 	def show_last_output(self, arg=None): 
-		# self.command_out_set(arg=None, tags=None)
-		self.command_out.place_self()
+		self.command_out_set()
+		# self.command_out.place_self()
 		return "break"
 
 	def cmmand(self, arg=None, command=None):
 		# gets input from the command_entry widget, checks if there's any actual input or if it's an empty string
 		# if it's not an empty string it sends it to the parser class and if it's a valid command defined in the "commands" dictionary
 		# and if it's defined it runs the function related to that name
-		""" """
 		
 		if (not command): command  = self.command_entry.get("1.0", "end-1c") #turns command into a list of arguments
 		if (not command): self.command_entry.unplace(); return #if no input/argument were provided hide the command entry widget and break function
@@ -949,7 +954,7 @@ class WIN(tkinter.Tk):
 			self.key_label["text"] = f"[{arg.state}|{arg.keysym}]"
 			if (arg.keysym in ("Up", "Down", "Left", "Right")): return # ends function if it was triggered by arrow keys (as they have different functions to handle them)
 		
-		self.update_index()
+		self.after(1, self.update_index)
 		# if (self.buffer.total_chars != len(self.buffer.get("1.0", "end"))): # checks if any changes have been made to the text
 		if (self.buffer.edit_modified()):
 			self.buffer.edit_modified(False)
@@ -963,7 +968,8 @@ class WIN(tkinter.Tk):
 			# self.buffer.total_chars = self.buffer.current_char_abs_pos+len(self.buffer.get("insert", "end"))
 			# self.buffer.lexer.lex() # lex text for variables, functions, structures and class etc.
 			self.buffer.typing_index_set() # Alt-Shift-M: sets your cursor to the position you were last typing in
-			if (self.conf["highlighting"]): self.buffer.highlighter.highlight(self.buffer.cursor_index[0]) # highlight current line
+			# if (self.conf["highlighting"]): self.buffer.highlighter.highlight(self.buffer.cursor_index[0]) # highlight current line
+			if (self.conf["highlighting"]): self.after(1, self.buffer.highlighter.highlight) # highlight current line
 
 			# if the following widgets are not focused they are hidden
 			# if (self.focus_displayof() != self.command_entry):
@@ -1008,7 +1014,7 @@ class WIN(tkinter.Tk):
 				self.update()
 				self.update_idletasks()
 				# time.sleep(1)
-				self.get_time()
+				self.after(1, self.get_time)
 				# counter += 1
 				# if (counter == 1650):
 					# self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
@@ -1072,7 +1078,9 @@ class WIN(tkinter.Tk):
 				for i in range(start_index, stop_index+1):
 					buffer.highlighter.highlight(i)
 					buffer.highlighter.lex_line(i)
-			threading.Thread(target=highlight, args=(buffer, ), daemon=True).start()
+			t = threading.Thread(target=highlight, args=(buffer, ), daemon=True)
+			t.start()
+			return t
 		
 	def unhighlight_chunk(self, arg=None, start_index=None, stop_index=None):
 		if (not self.conf["highlighting"]): return
@@ -1083,7 +1091,9 @@ class WIN(tkinter.Tk):
 			buffer.convert_line_index("int", stop_index)
 			def unhighlight(buffer):
 				[buffer.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)]
-			threading.Thread(target=unhighlight, args=(buffer, ), daemon=True).start()
+			t = threading.Thread(target=unhighlight, args=(buffer, ), daemon=True)
+			t.start()
+			return t
 
 
 	def unhighlight_chunk_no_threading(self, arg=None, start_index=None, stop_index=None):

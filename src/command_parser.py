@@ -110,6 +110,7 @@ class PARSER:
 			'list_mark': [self.list_mark, 'lists all marks in current buffer'],
 			'jump(_to)*' : [self.jump_to, 'jump to a created mark or an index'],
 			'sel_count' : [self.selection_count_get, 'get the length of selected text'],
+			# 'stdin' : [self.write_to_stdin, 'communicate with last opened process'],
 		}
 
 		# for i in range(len(self.commands.values())): # autogenerate power go brr
@@ -337,6 +338,12 @@ class PARSER:
 					arg.insert(i, file)
 
 		self.parent.buffer.run_subprocess(argv=arg[1:])
+
+	# @has_argument
+	# def write_to_stdin(self, arg=None):
+		# if (not self.parent.subprocesses): self.parent.error("no process is open"); return
+		# self.parent.subprocesses[-1].communicate(''.join(arg[1:]).encode("utf-8"))
+		
 
 	def python_execute(self, arg=None):
 		print("ARGS: ", " ".join(arg[1:]))

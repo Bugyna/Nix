@@ -96,6 +96,9 @@
 		"<Control-Shift-D>" : "delete_prev_word",
 		"<Alt-d>" : "delete_line",
 		"<Alt-D>" : "delete_line",
+
+		"<Control-K>" : "kill_last_subproc",
+		"<Control-k>" : "kill_last_subproc",
 	
 		"<F1>" : "parent.ring_bell",
 		"<F2>" : "insert_time"
@@ -256,6 +259,7 @@
 		"<Shift-End>" : "end_select",
 		
 		"<Shift-Return>" : "run_make",
+		"<Control-Return>" : ["run_subprocess_wrap", {"argv" : ["./main"]}],
 		
 		"<MouseWheel>" : "scroll",
 		"<Button-4>" : "scroll",
@@ -267,6 +271,10 @@
 		"<Return>" : "keep_indent",
 		"<KP_Enter>" : "keep_indent",
 		"<Control-slash>" : "comment_line",
+		"<Control-Shift-question>" : "comment_line_force",
+		"<Control-Shift-Alt-question>" : "comment_line_uncommented",
+		"<Control-Alt-slash>" : "uncomment_line",
+		
 		
 		"<Control-Z>" : "undo",
 		"<Control-z>" : "undo",
@@ -347,6 +355,8 @@
 		{
 			"<Up>" : "parent.suggest_widget.move_up",
 			"<Down>" : "parent.suggest_widget.move_down",
+			"<Left>" : "empty_break",
+			"<Right>" : "empty_break",
 			"<Return>" : "parent.suggest_widget.write",
 			"<Escape>" : "parent.suggest_widget.unplace"
 		}

@@ -180,6 +180,7 @@ class highlighter(object):
 			"(py|pyw)$": "\n\ndef main():\n\tpass\n\nif __name__ == \"__main__\":\n\tmain()",
 			"html|htm|css": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n</body>\n</html>",
 			"java|jsp|class": "",
+			"cs": "",
 			"php": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n\t<?php\n\t\t\n\t?>\n</body>\n</html>",
 			"js": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n\t<title> placeholder </title>\n\n</head>\n\n<body>\n\n\t<script>\n\t\t\n\t</script>\n</body>\n</html>",
 			"go": "",
@@ -262,6 +263,7 @@ class highlighter(object):
 			"(py|pyw)$": {"keywords": self.py_keywords, "numerical_keywords": self.py_numerical_keywords, "logical_keywords": self.py_logical_keywords, "highlight": self.python_highlight, "comment_sign": "#", "make_argv": ["python3", f"{self.buffer.full_name}"]},
 			"html|htm|css": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.html_highlight, "comment_sign": "<!-- ", "make_argv": ["firefox -new-window", self.buffer.full_name]},
 			"java|jsp|class": {"keywords": self.java_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["firefox", "-new-window", self.buffer.full_name]},
+			"cs": {"keywords": self.java_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["msc", self.buffer.full_name]},
 			"php": {"keywords": self.php_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
 			"js": {"keywords": self.javascript_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
 			"go": {"keywords": self.go_keywords, "numerical_keywords": self.go_numerical_keywords, "logical_keywords": self.go_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["go", "run", f"{self.buffer.full_name}"]},
@@ -299,7 +301,8 @@ class highlighter(object):
 		self.commment_regex = re.compile(rf"{self.comment_sign}")
 		self.buffer.make_argv = lang_set["make_argv"]
 		
-		if (key != "None"): self.buffer.lexer = C_LEXER(self.parent, self.buffer)
+		if (key != "None" and key != "(py|pyw)$"): self.buffer.lexer = C_LEXER(self.parent, self.buffer)
+		elif (key == "(py|pyw)$"): self.buffer.lexer = PY_LEXER(self.parent, self.buffer)
 		else: self.buffer.lexer = EMPTY_LEXER(self.parent, self.buffer)
 		# self.buffer.lexer.keywords = self.keywords	
 
@@ -504,7 +507,6 @@ class highlighter(object):
 
 		while (i < 800):
 			t = self.buffer.get(f"{origin_index}-{i}l linestart", f"{origin_index}-{i}l lineend")[::-1]
-			self.parent.notify(f"aaaaaaa: {t}")
 			for index, char in enumerate(t, 1):
 				if (char not in "()[]{}"): continue
 				if (char in "([{"):
@@ -774,10 +776,13 @@ class highlighter(object):
 
 		# self.buffer.mark_unset("match_end")
 								
-	def python_highlight(self, line_no: int, line: str=None):
+	def python_highlight(self, line_no=None, line: str=None):
 		""" highlighting for python language """
+		if (not line_no):
+			line_no = self.buffer.cursor_index[0]
+
 		if (not line):
-			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend")
+			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend +1c")
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -854,10 +859,13 @@ class highlighter(object):
 				last_separator = f"{line_no}.{last_separator_index}"
 				self.set_pattern("")
 
-	def c_highlight(self, line_no: int, line: str=None):
+	def c_highlight(self, line_no=None, line: str=None):
 		""" highlighting for C-like languages """
+		if (not line_no):
+			line_no = self.buffer.cursor_index[0]
+
 		if (not line):
-			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend")
+			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend +1c")
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -879,7 +887,7 @@ class highlighter(object):
 			except Exception:
 				pass
 
-			if (self.c_preprocessor_regex.match(current_char)):
+			if (i == 0 and self.c_preprocessor_regex.match(current_char)):
 				if (special_highlighting_mode == 0): special_highlighting_mode = 1
 			
 			if (special_highlighting_mode != 0):
@@ -957,8 +965,11 @@ class highlighter(object):
 
 
 	def script_highlight(self, line_no: int = None, line: str=None):
+		if (not line_no):
+			line_no = self.buffer.cursor_index[0]
+
 		if (not line):
-			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend")
+			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend +1c")
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -1025,8 +1036,11 @@ class highlighter(object):
 				
 	def html_highlight(self, line_no: int=None, line: str=None):
 		""" I am crying while looking at this hideous thing """
+		if (not line_no):
+			line_no = self.buffer.cursor_index[0]
+
 		if (not line):
-			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend")
+			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend +1c")
 
 		last_separator_index = 0
 		last_separator = f"{line_no}.{last_separator_index}"
@@ -1115,7 +1129,10 @@ class highlighter(object):
 
 
 
-	def unhighlight(self, line_no: int, line: str=None):
+	def unhighlight(self, line_no = None, line: str=None):
+		if (not line_no):
+			line_no = self.buffer.cursor_index[0]
+
 		if (not line):
 			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend")
 
