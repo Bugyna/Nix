@@ -1,0 +1,73 @@
+theme="union"
+tab_size=3
+# CRLF or LF
+line_end=LF
+backup_files=0
+show_keypress=1
+
+orientate = "down"
+show_buffer_tab = 1
+start_width = 80
+start_height = 32
+
+change_line_no = change_line_no_text
+# line_no_pos = "down"
+# time_pos = "down"
+
+# font="Fira Code"
+# font="Mx437 VTech BIOS"
+
+
+# font="Px437 DOS/V re.ANK16"
+# font="Px437 Amstrad PC-2y"
+# font="ProggyTinyTT"
+# font="ProggyCleanTT"
+# font="cozetteVector"
+# font="Press Start 2P"
+
+# font="BigBlue TerminalPlus"
+# font="MxPlus IBM BIOS-2x"
+
+font="Terminus (TTF)"
+
+# font="Mx437 VTech BIOS"
+
+font_size=18
+smaller_font_size=14
+suggest=0
+
+default_find_mode="/"
+highlight_line=0
+username="bugyna"
+alpha=100
+timezone="UTC"
+
+supress_keybind_warning=0
+find_on_key = 0
+
+percentage_pos_func = get_abs_percentage_pos
+
+command_entry_font_size= 16
+find_entry_font_size = 16
+command_out_font_size = 18
+show_info = 1
+
+# buffer_border_style="ridge"
+command_entry_border_style="ridge"
+command_out_border_style="ridge"
+find_border_style="ridge"
+suggest_widget_border_style="ridge"
+
+buffer_border_style="solid"
+# command_entry_border_style="solid"
+# command_out_border_style="solid"
+# find_border_style="solid"
+# suggest_widget_border_style="solid"
+
+# buffer_border_style="flat"
+# command_entry_border_style="flat"
+# command_out_border_style="flat"
+# find_border_style="flat"
+# suggest_widget_border_style="flat"
+
+reaction_gif_path="/home/bugy/Pictures/reaction_gifs/"
