@@ -7,7 +7,18 @@ import os
 import re
 import platform
 import pty
+import io
+import select
+import fcntl
+import sys
+
 platform = platform.system()
+import pexpect
+
+cc_pattern_text = r'\x1b\[[0-9]*(;[0-9]+)*m\x1b\[K'
+cc_pattern = re.compile(cc_pattern_text)
+cc_num_pattern = re.compile(r"[0-9]+m\x1b")
+
 
 from tkinter import font, PhotoImage
 try: from PIL import ImageTk, Image
@@ -1627,6 +1638,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.edit_reset()
 
 	def add_stdout(self, arg=None, tags=None, justify="left"):
+		# print("arg: ", arg)
 		self.out += arg
 
 		index = self.index("end")
@@ -2615,98 +2627,70 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 
 		def run(argv):
-			master_fd, slave_fd = pty.openpty()
-
 			try:
 				start_time = time.time()
-				# process = subprocess.Popen(argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-				with subprocess.Popen(argv, stdout=slave_fd, stderr=slave_fd) as process:
-					self.parent.subprocesses.append(process)
-					index = len(self.parent.subprocesses)-1
-					out = ""
-					self.parent.command_out_set("")
-					pipe_fd = os.fdopen(master_fd, "rb")
-					# process.stdin.write(b"a\n")
-					# self.parent.command_out.place_self()
-					cc_pattern_text = r'\x1b\[[0-9]*(;[0-9]+)*m\x1b\[K'
-					cc_pattern = re.compile(cc_pattern_text)
-					cc_num_pattern = re.compile(r"[0-9]+m\x1b")
-	
-					while (1):
-						res = pipe_fd.readline().decode("utf-8")
-						# result = re.findall(r'\[\[0-9]+[[0-9]+;[0-9]+m\]', line)
-						# result = re.findall(r'\[01m\[K', line)
-						# result = re.search(r'\x1b\[[0-9]+(;[0-9]+)*m\x1b\[K', line)
-						# line = cc_pattern.sub(res, '')
-						line = re.sub(cc_pattern_text+r"|\r", '', res)
-						# line = res
-						replacing = 1
-						pos = 0
-						offset = 0
-						tags = []
-						while replacing:
-							# print(pos)
-							if (pos >= len(res)-1): replacing = 0; break
-							
-							first = cc_pattern.search(res, pos=pos)
-							if (first is None): replacing = 0; break
-							
-							color = cc_num_pattern.search(first[0], 0)
-							# print(first[0].encode())
-							if color:
-								color = color[0]
-								# print("c: ", color)
-								color = (int(color[:-2])&0x0F)+3
-								# print("col: ", color)
-								color = list(self.parent.theme["highlighter"])[color]
-							else:
-								color = "quotes"
+				process = pexpect.spawn(argv)
+				
+				self.parent.subprocesses.append(process)
+				index = len(self.parent.subprocesses)-1
+				out = ""
+				self.parent.command_out_set("")
+				
+				
+				line = "something"
 
-							offset += len(first[0])
-							first = first.span()[1]
-							pos = first+1
+				while (1):
+					res = process.readline().decode("utf-8")
+					
+					print(res, end="")
 
-							second = cc_pattern.search(res, pos=first)
-							second = second.span()[0]
-							if (second is None): second = len(res)-1
-							tags.append([f"insert -1l linestart +{first-offset}c", f"insert -1l linestart +{second-offset}c", color])
-							# tags.append([f"1.0", f"1.0", color])
-							break
-								
-						# \x1b\[[0-9]+m\x1b\[K
-						# print("\n", result)
-						if (not line):
-							self.parent.command_out.add_stdout("\n")
-							break
-
-						# self.parent.command_out.add_stdout(line)
-						# if ("error" in line):
-							# self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "error"]])
-						# if ("warning" in line):
-							# self.parent.command_out.add_stdout(line, tags=[["insert -1l linestart", "insert -1l lineend", "quote"]])
+					line = re.sub(cc_pattern_text+r"|\r", '', res)
+					replacing = 1
+					pos = 0
+					offset = 0
+					tags = []
+					while replacing:
+						# print(pos)
+						if (pos >= len(res)-1): replacing = 0; break
+						
+						first = cc_pattern.search(res, pos=pos)
+						if (first is None): replacing = 0; break
+						
+						color = cc_num_pattern.search(first[0], 0)
+						
+						offset += len(first[0])
+						first = first.span()[1]
+						pos = first+1
+						
+						if color:
+							color = color[0]
+							color = (int(color[:-2])&0x0F)+3
+							color = list(self.parent.theme["highlighter"])[color]
 						else:
-							self.parent.command_out.add_stdout(line, tags)
-							# self.parent.command_out.see("1.0")
-	
-						# print(line, end="")
-						# print(res, end="")
-	
-						if (process.poll() is not None and (process.returncode == 2 and not line)):
-							self.parent.command_out.add_stdout("\n")
-							self.parent.command_out.save_current_state()
-							break
-	
-					self.parent.subprocesses.pop(index)
-					self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])
-					self.parent.kill_last_subproc()
+							continue
+
+						second = cc_pattern.search(res, pos=first)
+						if (second is None): second = len(res)-1
+						else: second = second.span()[0]
+						tags.append([f"insert -1l linestart +{first-offset}c", f"insert -1l linestart +{second-offset}c", color])
+							
+					self.parent.command_out.add_stdout(line, tags)
+
+					if not line or not res:
+						break
+
+				# self.parent.subprocesses.pop(index)
+				# self.parent.kill_last_subproc()
 			
 			except Exception as e:
-				self.parent.kill_last_subproc()
+				# self.parent.kill_last_subproc()
 				print("RUNNING SUBPROC ERR:", e)
 
+			# print("end")
+			self.parent.command_out.add_stdout("\n")
+			self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])
 			self.parent.command_out.save_current_state()
-			os.close(master_fd)
-			os.close(slave_fd)
+			self.parent.kill_last_subproc()
 			print("\n\n")
 	
 

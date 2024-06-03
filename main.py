@@ -13,7 +13,7 @@ import subprocess
 import requests
 try: from bs4 import BeautifulSoup # usually don't get imported when running as root
 except Exception: pass
-
+	
 import random
 import threading
 import sys
@@ -314,6 +314,7 @@ class WIN(tkinter.Tk):
 		
 	def theme_make(self):
 		for buffer in self.buffer_render_list: # because fuck effieciency, right?
+			# buffer.tag_bind("functions", "<Button-3>", lambda arg: self.notify("what"))
 			# buffer.tag_configure("sel", bgstipple="gray75")
 			if (type(buffer) != TEXT): return # if the buffer isn't a text buffer we don't want to set these
 			for item in self.theme["highlighter"].items(): # iterate through the theme
@@ -339,6 +340,8 @@ class WIN(tkinter.Tk):
 
 				else:
 					item[1]["font"] = buffer.font
+					# if ("background" not in item[1]):
+						# item[1]["background"] = self.theme["window"]["bg"]
 					if ("bold" in item[1]):
 						item[1]["font"] = buffer.font_bold
 						item[1].pop("bold")
@@ -351,7 +354,7 @@ class WIN(tkinter.Tk):
 		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
 		try:
 			self.buffer.tag_raise("keywords")
-			# self.buffer.tag_raise("cursor")
+			self.buffer.tag_lower("cursor")
 		except Exception as e:
 			print(e)
 
@@ -656,26 +659,36 @@ class WIN(tkinter.Tk):
 		token = self.buffer.current_token.strip()
 
 		if (not resize):
-			if (re.match(r"[a-zA-Z_]+([a-zA-Z_0-9])*", token)):
+			if (re.match(r"[a-zA-Z_][a-zA-Z_0-9]*", token)):
 				self.suggest_widget.delete("1.0", "end")
 				
 				longest_line = 0
 				ret = ""
 
-				for m in self.buffer.highlighter.vars + self.buffer.lexer.vars:
+				for m in self.buffer.highlighter.vars + list(self.buffer.lexer.vars.keys()):
 					if (re.match(token, m)):
 						self.suggest_widget.insert("insert", m+"\n")
 						if (len(m) > longest_line): longest_line = len(m)
 						
-				for m in self.buffer.lexer.functions:
+				for m in list(self.buffer.lexer.functions.keys()):
 					if (re.match(token, m)):
 						x = self.buffer.lexer.defines[m]
 						m = f"{x[1]}{x[2]}\n"
 						self.suggest_widget.insert("insert", m)
 						self.suggest_widget.tag_add("functions", "insert -1l linestart", "insert -1l lineend")
 						if (len(m) > longest_line): longest_line = len(m)
+
+				for m in list(self.buffer.lexer.objs.keys()):
+					if (re.match(token, m)):
+						x = self.buffer.lexer.defines[m]
+						# print("x:::::::::", x)
+						m = f"{x[0]}{x[1]}\n"
+						self.suggest_widget.insert("insert", m)
+						self.suggest_widget.tag_add("upcase", "insert -1l linestart", "insert -1l lineend")
+						if (len(m) > longest_line): longest_line = len(m)
+
 	
-				for m in self.buffer.highlighter.keywords + self.buffer.highlighter.logical_keywords + self.buffer.highlighter.numerical_keywords:
+				for m in self.buffer.lexer.keywords + self.buffer.lexer.logical_keywords + self.buffer.lexer.numerical_keywords:
 					if (re.match(token, m)):
 						self.suggest_widget.insert("insert", m+"\n")
 						self.suggest_widget.tag_add("keywords", "insert -1l linestart", "insert -1l lineend")
@@ -690,7 +703,7 @@ class WIN(tkinter.Tk):
 					self.suggest_widget.unplace()
 					self.buffer.mode_set(mode="normal", force=True)
 					self.buffer.focus_set()
-					return
+					return "break"
 				
 				self.buffer.mode_set(mode="suggest", force=True)
 				self.suggest_widget.tkraise()
@@ -708,6 +721,7 @@ class WIN(tkinter.Tk):
 				self.suggest_widget.place(x=c[0]+30, y=c[1])
 
 		self.buffer.focus_set()
+		return "break"
 
 
 	def execute_command(self, arg, command):
@@ -1045,8 +1059,8 @@ class WIN(tkinter.Tk):
 		counter = 0
 		def a(counter=0): # some annoying notifications
 			while (self.run):
-				self.update()
-				self.update_idletasks()
+				# self.update()
+				# self.update_idletasks()
 				# time.sleep(1)
 				self.after(1, self.get_time)
 				# counter += 1
@@ -1086,7 +1100,7 @@ class WIN(tkinter.Tk):
 		
 		while (self.run):
 			self.update()
-			self.update_idletasks()
+			# self.update_idletasks()
 			self.get_time()
 
 

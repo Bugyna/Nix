@@ -212,6 +212,9 @@ class WIN(tkinter.Tk):
 		self.command_out.configure_self()
 		self.alpha_set(self.conf["alpha"])
 
+		self.right_click_menu = tkinter.Menu()
+		self.right_click_menu.add_command(label="test", font=self.smaller_font, command=lambda: print("test"))
+
 		bind_keys_from_conf(self)
 		
 
@@ -350,6 +353,7 @@ class WIN(tkinter.Tk):
 					item[1].pop("font")
 					self.command_out.tag_configure(item[0], **item[1], font=self.command_out.font)
 					self.suggest_widget.tag_configure(item[0], **item[1], font=self.suggest_widget.font)
+			buffer.tag_bind("functions", "<Button-3>", self.go_to_definition)
 
 		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
 		try:
@@ -654,6 +658,11 @@ class WIN(tkinter.Tk):
 		self.alert.option_add("ok", self.alert.unplace_option_remove_all)
 		self.alert.place_self()
 
+	def go_to_definition(self, arg=None):
+		# print(self.buffer.index("current wordstart"))
+		word = self.buffer.get(self.buffer.index("current wordstart"), self.buffer.index("current wordend"))
+		print(self.buffer.lexer.functions[word])
+
 	def suggest(self, arg=None, resize=False):
 		self.buffer.get_current_token()
 		token = self.buffer.current_token.strip()
@@ -745,7 +754,7 @@ class WIN(tkinter.Tk):
 			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
 
 		if (len(self.subprocesses) >= 1):
-			self.subprocesses[arg].kill()
+			self.subprocesses[arg].terminate(1)
 			self.subprocesses.pop(arg)
 
 		return "break"

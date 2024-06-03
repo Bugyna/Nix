@@ -298,7 +298,7 @@
 		"<Control-Shift-Tab>" : "switch_buffer_prev",
 
 
-		"<B3-Motion>" : ["on_mouse_drag", {"left": "switch_buffer_prev", "right": "switch_buffer_next"}],
+		"<B2-Motion>" : ["on_mouse_drag", {"left": "switch_buffer_prev", "right": "switch_buffer_next"}],
 		
 		"<Shift-ISO_Left_Tab>" : "unindent",
 		"<Shift-Tab>" : "unindent",
