@@ -215,8 +215,6 @@
 		"<Control-W>" : "parent.win_destroy",
 		"<Control-B><Delete>" : "parent.file_handler.del_file",
 		"<Control-b><Delete>" : "parent.file_handler.del_file",
-		"<Control-B>S" : "parent.file_handler.load_scratch",
-		"<Control-b>s" : "parent.file_handler.load_scratch",
 		
 		"<Control-E>" : "parent.show_last_output",
 		"<Control-e>" : "parent.show_last_output",
@@ -373,7 +371,8 @@
 			"<Right>" : "empty_break",
 			"<Return>" : "parent.suggest_widget.write",
 			"<Escape>" : "parent.suggest_widget.unplace"
-		}
+		},
+		"<Return>" : "keep_indent"
 	}
 }
 

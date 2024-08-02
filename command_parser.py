@@ -110,6 +110,7 @@ class PARSER:
 			'list_mark': [self.list_mark, 'lists all marks in current buffer'],
 			'jump(_to)*' : [self.jump_to, 'jump to a created mark or an index'],
 			'sel_count' : [self.selection_count_get, 'get the length of selected text'],
+			'save_bin' : [self.save_binary_file, 'force saving of binary file if possible']
 			# 'stdin' : [self.write_to_stdin, 'communicate with last opened process'],
 		}
 
@@ -540,6 +541,10 @@ class PARSER:
 		if (not arg[1:]): arg = f"{time.time()}"
 		else: arg = " ".join(arg[1:])
 		self.parent.file_handler.new_buffer(buffer_name=arg, buffer_type="temp")
+
+	def save_binary_file(self, arg=None):
+		self.parent.buffer.is_binary = True
+		self.parent.file_handler.save_file(force=True)
 
 	@has_argument
 	def create_mark(self, arg=None):

@@ -373,22 +373,23 @@ class C_LEXER(LEXER):
 
 		if (type == "(c|h)$"):
 			self.keywords = [
-				'auto', 'break', 'char', 'const', 'continue', 'default', 'do', 'double',
-			 	'float', 'int', 'long', 'register', 'return', 'short', 'signed', 'sizeof',
-			  	'static', 'struct', 'typedef', 'union', 'unsigned', 'void',
+				'auto', 'char', 'default', 'double',
+			 	'float', 'int', 'long', 'return', 'short', 'sizeof',
+			  	'struct', 'union', 'void',
 				"size_t", "u8", "u16", "u32", "u64", "bool",
 	   		]
 	
 			self.numerical_keywords = [
-				"false", "true", "enum", "NULL", 
+				"false", "true", "enum", "NULL", 'signed', 'unsigned'
 			]
 	
 			self.logical_keywords = [
-				"switch", "case", "if", "else", "goto", "for", "while"
+				"switch", "case", "if", "else", "goto", "for", "while", 'continue', 'break', 'do'
 			]
 
 			self.special_keywords = [
 				"asm", "__attribute__", "const", "extern", "volatile",
+				'typedef', 'static', 'register'
 			]
 
 		elif (type == "(cpp|hpp|cc|hh)$"):
@@ -573,11 +574,11 @@ class C_LEXER(LEXER):
 		# print("length: ", len(self.text), start_file)
 		
 		# for self.index in range(len(self.text)-1):
-		while (self.index < len(self.text)-1):
+		while (self.index < len(self.text)):
 			self.column += 1
 			self.prev_char = self.text[self.index-1]
 			self.char = self.text[self.index]
-			self.next_char = self.text[self.index+1]
+			# self.next_char = self.text[self.index+1]
 			# if (flag): print("FLAG: ", f"|{char}|", self.index, f"|{self.expr}|"); flag = 0
 
 			# print(self.row, self.column, self.index, f"|{char}|")
@@ -913,9 +914,14 @@ class C_LEXER(LEXER):
 
 
 	def handle_new_line(self):
+		print("newline!!!: ", self.row, self.column)
 		self.row += 1
 		self.column = -1
 		self.handle_word_end()
+
+	def handle_new_line_o(self):
+		self.row += 1
+		self.column = -1
 
 
 	def handle_expression(self):
@@ -937,10 +943,12 @@ class C_LEXER(LEXER):
 		# self.word_start = [self.row, self.column]
 
 	def handle_typedef(self):
-		print("typedef happpened", self.line)
+		# print("typedef happpened", self.line)
 		if (self.line[-1] not in self.defines):
 			self.add_object(self.line[-1])
-			self.add_define(self.line[-1], " ".join(self.line[1:]))
+			self.add_define(self.line[-1], self.line[1:])
+			# print(self.defines[self.line[-1])
+		print("typedef happpened", self.line, self.defines[self.line[-1]])
 
 	def highlight_comment(self):
 		self.buffer.tag_add("comments", f"{self.expr_start[0]}.{self.expr_start[1]}", f"{self.expr_end[0]}.{self.expr_end[1]}")
@@ -986,7 +994,7 @@ class C_LEXER(LEXER):
 				# print('preproc: ', self.word, f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
 				self.buffer.tag_add("numbers", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
 			elif (self.word[0] == "<"):
-				# print("bs", self.word, f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
+				print("bs", self.word, f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
 				self.buffer.tag_add("keywords", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
 			
 	
@@ -1020,6 +1028,83 @@ class C_LEXER(LEXER):
 		self.word_start = [self.row, self.column]
 
 
+	# def handle_preprocessor(self, file_queue):
+		# word = ""
+		# command = ""
+		# ignore_next = False
+		# i = 1
+		# self.word = ""
+		# self.handle_word_end()
+		# self.word = "#"
+		# in_if = False
+		# in_if_end_maybe = False
+		
+		# for char in self.text[self.index+i:]:
+			# self.column += 1
+			
+			# if ((not command or command == "include") and char in az or char in "/.\\"):
+				# word += char
+
+			# elif (command == "define" and char != "\\"):
+				# word += char
+
+			# elif (command == "ignore"):
+				# pass
+
+			# # elif (command in ["ifdef", "ifndef", "if"]):
+				# # break
+
+			
+			# if (char == " " and not command and word):
+				# # self.highlight_word("upcase")
+				# self.word = "#" + word
+				# self.handle_word_end()
+				# # print("fff", f"[{word}]", f"[{self.word}]", self.word_start)
+				
+				# if (word == "include" or word == "define"):
+					# command = word
+					# word = ""
+				# else: command = "ignore"
+
+
+			# elif (not ignore_next and char == "\\"):
+				# ignore_next = True
+
+			# elif (ignore_next):
+				# ignore_next = False
+
+			# elif (char == "\n" and not ignore_next):
+				# if (command == "include"):
+					# self.word = "<"+word
+					# self.handle_word_end()
+
+				# self.handle_new_line()
+				# break
+
+			# if (char == "\n"):
+				# self.handle_new_line()
+			# i += 1
+
+		# # self.parent.command_out_set(f"file {word} was added to queue")
+
+		# # print("end: ", command, word, i)
+		# # print("before: ", self.index)
+		# self.index += i+1
+		# # print("after: ", self.index)
+		# # if (command == "include" and word not in self.indexed_files and word not in file_queue): print(f"adding {word} to file queue"); file_queue.append(word)
+		# if (command == "include" and word):
+			# # with lock:
+				# # file_queue.add(word)
+				# # print(f"adding {word} to file queue", word not in self.indexed_files, word not in file_queue)
+			# if (word not in self.indexed_files and word not in self.file_queue): self.file_queue.add(word)
+
+		# elif (command == "define"):
+			# x = self.parse_macro_define(word)
+			# if (x[0] not in self.defines):
+				# self.add_object(x[0])
+				# self.add_define(x[0], x)
+
+
 	def handle_preprocessor(self, file_queue):
 		word = ""
 		command = ""
@@ -1030,94 +1115,477 @@ class C_LEXER(LEXER):
 		self.word = "#"
 		in_if = False
 		in_if_end_maybe = False
-		
-		for char in self.text[self.index+i:]:
+		escaped = False
+
+		print("macro start: ", word, self.row, self.column)
+		# for c in self.text[self.index+i:]:
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.index += 1
 			self.column += 1
+
+			if (c == "\n"):
+				self.handle_new_line()
+
+
+			if (c not in " \t\n"):
+				word += c
 			
-			if ((not command or command == "include") and char in az or char in "/.\\"):
-				word += char
-
-			elif (command == "define" and char != "\\"):
-				word += char
-
-			elif (command == "ignore"):
-				pass
-
-			elif (command in ["ifdef", "ifndef", "if"]):
-				break
-			
-
-			
-			if (char == " " and not command and word):
-				# self.highlight_word("upcase")
+			else:
+				if (c == "\n"): print("what##############"); self.index += 1; break
 				self.word = "#" + word
 				self.handle_word_end()
-				# print("fff", f"[{word}]", f"[{self.word}]", self.word_start)
-				
-				if (word == "include" or word == "define"):
-					command = word
-					word = ""
-				else: command = "ignore"
-
-
-			elif (not ignore_next and char == "\\"):
-				ignore_next = True
-
-			elif (ignore_next):
-				ignore_next = False
-
-			elif (char == "\n" and not ignore_next):
-				if (command == "include"):
-					self.word = "<"+word
-					self.handle_word_end()
-
-				self.handle_new_line()
+				# print("macro start: ", word)
+				if (word == "define"): self.parse_macro_define()
+				elif (word == "include"): self.parse_macro_include(file_queue)
+				elif (word == "ifndef"): self.parse_macro_ifndef()
+				elif (word == "ifdef"): self.parse_macro_ifdef()
+				elif (word == "if"): self.parse_macro_if()
+				# elif (word == "endif"): self.index += i+1; break
+				else: self.parse_macro_undefined()
+				# if (self.text[self.index] == "\n"): self.index+=1
 				break
 
-			if (char == "\n"):
-				self.handle_new_line()
-			i += 1
+			if (escaped): escaped = False
 
-		# self.parent.command_out_set(f"file {word} was added to queue")
-
-		# print("end: ", command, word, i)
-		# print("before: ", self.index)
-		self.index += i+1
-		# print("after: ", self.index)
-		# if (command == "include" and word not in self.indexed_files and word not in file_queue): print(f"adding {word} to file queue"); file_queue.append(word)
-		if (command == "include" and word):
-			# with lock:
-				# file_queue.add(word)
-				# print(f"adding {word} to file queue", word not in self.indexed_files, word not in file_queue)
-			if (word not in self.indexed_files and word not in file_queue): file_queue.add(word)
-
-		elif (command == "define"):
-			x = self.parse_macro_define(word)
-			if (x[0] not in self.defines):
-				self.add_object(x[0])
-				self.add_define(x[0], x)
+		# self.index -= 1
+		# self.index += 1
+		# print("macro end: ", word, self.row, self.column, self.index, self.index+i, len(self.text))
+		
 
 
 
-	def parse_macro_define(self, macro):
-		ignore_whitespace = 0
-		ignore_next = 0
-		word = ""
+	def parse_macro_undefined(self):
 		i = 0
-		# print("macro: ", macro)
-		for c in macro:
-			i += 1
-			# print("parse macro define: ", macro, word)
-			if (ignore_next and c not in "\n \t"): ignore_next = False
-			# if (c not in "\n \t" and ignore_whitespace): ignore_whitespace = False
-			if (c == "("): ignore_whitespace = True
-			elif (c == ")"): ignore_whitespace = False
-			elif (c == "\\"): ignore_next = True
-			elif (c == "\n" and not ignore_whitespace): break
-			elif (c == " " and not ignore_whitespace): break
-			word += c
+		word = ""
+		escaped = False
+		ignore_whitespace = True
 
-		return word, macro[i:].replace("\\", "")
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.column += 1
+
+			if (ignore_whitespace):
+				if (c in " \t"):
+					i += 1
+					continue
+				else:
+					ignore_whitespace = False
+
+			if (c == "\\" and self.text[self.index+i+1] == "\\"):
+				self.column += 1
+				i += 2
+				escaped = True
+				print("escaped: ", self.text[self.index+i])
+				continue
+
+			elif (c == "\n"):
+				self.handle_new_line_o();
+				if not escaped: i += 1; break
+				else: ignore_whitespace = True
+
+			elif (c in " \t"):
+				ignore_whitespace = True
+
+			else:
+				word += c
+
+			if (escaped): escaped = False
+			
+			i += 1
+
+
+		print("macro ignored: ", word)
+		self.index += i
+
+
+
+
+	def parse_macro_define(self):
+		i = 0
+		word = ""
+		escaped = False
+		ignore_whitespace = True
+		in_brackets = False
+		bracket_count = 0
+		stopped = False
+
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.column += 1
+
+			if (ignore_whitespace):
+				if (c in " \t"):
+					i += 1
+					continue
+				else:
+					ignore_whitespace = False
+
+			if (c == "\\" and self.text[self.index+i+1] == "\\"):
+				self.column += 1
+				i += 2
+				escaped = True
+				print("escaped: ", self.text[self.index+i])
+				continue
+
+			elif (c == "\n"):
+				self.handle_new_line_o();
+				if not escaped: i += 1; break
+				else: ignore_whitespace = True
+
+			elif (c == "("):
+				if not stopped: word += c
+				in_brackets = True
+				bracket_count += 1
+
+			elif (c == ")"):
+				if not stopped: word += c
+				bracket_count -= 1
+				if (bracket_count == 0):
+					stopped = True
+
+			elif (c in " \t"):
+				if not stopped: word += c
+				ignore_whitespace = True
+
+			else:
+				if not stopped: word += c
+
+			if (escaped): escaped = False
+			i += 1
+
+
+		# self.word = "<"+word
+		# self.handle_word_end()
+
+
+		word += " "
+		print("macro define: ", word, self.row, self.column)
+		x = word.split(" ")
+		if (x[0] not in self.defines):
+				self.add_object(word)
+				self.add_define(word, (word, ""))
+		
+		self.index += i
+
+
+
+
+	def parse_macro_include(self, file_queue):
+		i = 0
+		word = ""
+		escaped = False
+		ignore_whitespace = True
+		in_quotes = False
+		stopped = False
+
+		print("include start: ", self.text[self.index+i])
+		self.word = ""
+		self.handle_word_end_without_highlight()
+
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.column += 1
+
+			
+			if (ignore_whitespace):
+				if (c in " \t"):
+					i += 1
+					continue
+				else:
+					ignore_whitespace = False
+
+			if (c == "\\" and self.text[self.index+i+1] == "\\"):
+				self.column += 1
+				i += 2
+				escaped = True
+				print("escaped: ", self.text[self.index+i])
+				continue
+
+			elif (c == "\n"):
+				self.handle_new_line_o();
+				if not escaped: i += 1; break
+				else: ignore_whitespace = True
+
+			elif (c == "\""):
+				# in_quotes = not in_quotes
+				if (in_quotes): in_quotes = False; stopped = True
+				else: in_quotes = True
+
+			elif (c == "<"):
+				pass
+
+			elif (c == ">"):
+				stopped = True
+
+			elif (c in " \t"):
+				ignore_whitespace = True
+
+			else:
+				if (not stopped): word += c
+
+			if (escaped): escaped = False
+			i += 1
+
+
+
+		self.word = "<" + word
+		if (word not in self.indexed_files and word not in file_queue): file_queue.add(word)
+		print("macro include: ", word, self.word, self.row, self.column)
+		self.handle_word_end()
+		self.index += i
+
+
+
+
+	def parse_macro_ifndef(self):
+		i = 0
+		word = ""
+		escaped = False
+		ignore_whitespace = True
+		in_quotes = False
+
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.column += 1
+
+			
+			if (ignore_whitespace):
+				if (c in " \t"):
+					i += 1
+					continue
+				else:
+					ignore_whitespace = False
+
+			if (c == "\\" and self.text[self.index+i+1] == "\\"):
+				self.column += 1
+				i += 2
+				escaped = True
+				print("escaped: ", self.text[self.index+i])
+				continue
+
+			elif (c == "\n"):
+				if not escaped: self.handle_new_line(); i += 1; break
+				else: self.handle_new_line(); ignore_whitespace = True
+
+			elif (c in " \t"):
+				ignore_whitespace = True
+
+			else:
+				word += c
+
+			if (escaped): escaped = False
+			i += 1
+
+			
+		print("macro ifndef: ", word)
+
+		endif_word_maybe = ""
+		endif_word = ""
+		# print(word in self.defines, self.defines)
+		if (word in self.defines):
+			print("aa")
+			while (self.index+i < len(self.text)):
+				c = self.text[self.index+i]
+				self.column += 1
+
+				if (c == "\n"):
+					self.handle_new_line()
+
+				if (c == "#"):
+					endif_word_maybe = True
+
+				elif (endif_word_maybe):
+					print(endif_word)
+					if (c not in " \t\n"):
+						 endif_word += c
+					
+					elif (endif_word == "endif"):
+						print("endif found!!")
+						i += 1
+						break
+
+					else:
+						endif_word = ""
+
+				i += 1
+
+
+		self.index += i
+
+
+
+
+
+
+	def parse_macro_ifdef(self):
+		i = 0
+		word = ""
+		escaped = False
+		ignore_whitespace = True
+		in_quotes = False
+
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.column += 1
+
+
+			if (ignore_whitespace):
+				if (c in " \t"):
+					i += 1
+					continue
+				else:
+					ignore_whitespace = False
+
+			if (c == "\\" and self.text[self.index+i+1] == "\\"):
+				self.column += 1
+				i += 2
+				escaped = True
+				print("escaped: ", self.text[self.index+i])
+				continue
+
+			elif (c == "\n"):
+				if not escaped: self.handle_new_line(); i += 1; break
+				else: self.handle_new_line(); ignore_whitespace = True
+
+			elif (c in " \t"):
+				ignore_whitespace = True
+
+			else:
+				word += c
+
+			if (escaped): escaped = False
+			i += 1
+
+			
+		print("macro ifdef: ", word)
+
+		# TODO: CHECK if not def and go to endif
+
+		endif_word_maybe = ""
+		endif_word = ""
+		if (word in self.defines):
+			while (self.index+i < len(self.text)):
+				c = self.text[self.index+i]
+				self.column += 1
+
+				if (c == "\n"):
+					self.handle_new_line()
+
+				if (c == "#"):
+					endif_word_maybe = True
+
+				elif (endif_word_maybe):
+					if (c not in " \t\n"):
+						 endif_word += c
+					
+					elif (endif_word == "endif"):
+						i += 1
+						break
+
+					else:
+						endif_word = ""
+
+				i += 1
+			
+		self.index += i
+
+
+
+
+	def parse_macro_if(self):
+		i = 0
+		print("start: ", self.row, self.column, i)
+		word = ""
+		escaped = False
+		ignore_whitespace = True
+		in_quotes = False
+
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.column += 1
+
+
+			if (ignore_whitespace):
+				if (c in " \t"):
+					i += 1
+					continue
+				else:
+					ignore_whitespace = False
+
+			if (c == "\\" and self.text[self.index+i+1] == "\\"):
+				self.column += 1
+				i += 2
+				escaped = True
+				print("escaped: ", self.text[self.index+i])
+				continue
+
+			elif (c == "\n"):
+				if not escaped: self.handle_new_line(); i += 1; break
+				else: self.handle_new_line(); ignore_whitespace = True
+
+			elif (c in " \t"):
+				ignore_whitespace = True
+
+			else:
+				word += c
+
+			if (escaped): escaped = False
+			i += 1
+
+			
+		print("macro if: ", word)
+
+		
+		endif_word_maybe = ""
+		endif_word = ""
+		# print(word in self.defines, self.defines)
+		print("aa")
+		while (self.index+i < len(self.text)):
+			c = self.text[self.index+i]
+			self.column += 1
+
+			if (c == "\n"):
+				self.handle_new_line()
+
+			if (c == "#"):
+				endif_word_maybe = True
+
+			elif (endif_word_maybe):
+				# print(endif_word)
+				if (c not in " \t\n"):
+					 endif_word += c
+				
+				elif (endif_word == "endif"):
+					print("endif found!!")
+					self.word = "#endif"
+					self.handle_word_end()
+					i += 1
+					break
+
+				else:
+					endif_word = ""
+
+			i += 1
+
+		self.index += i
+		
+
+
+
+
+	# def parse_macro_define(self, macro):
+		# ignore_whitespace = True
+		# ignore_next = False
+		# word = ""
+		# i = 0
+		# print("macro: ", macro)
+		# # for c in macro:
+			# # i += 1
+			# # if (ignore_whitespace and c in "\n \t"): continue
+			# # word += c
+
+		# return word, macro[i:].replace("\\", "")
 
 
 	def add_file_to_queue(self, file_queue):

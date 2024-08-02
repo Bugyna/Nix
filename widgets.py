@@ -1788,8 +1788,11 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 	def move_down(self, arg=None):
 		return self.move(arg, up=False)
 
-	def write(self, arg=None):		
-		self.parent.buffer.insert("insert", self.get("insert linestart", "insert lineend")[len(self.parent.buffer.current_token):])
+	def write(self, arg=None):
+		complete = self.get("insert linestart", "insert lineend")
+		self.parent.buffer.insert("insert", complete[len(self.parent.buffer.current_token):])
+		m = self.parent.buffer.lexer.defines[complete]
+		self.parent.helper_widget.stdout(f'{m}\n')
 		self.unplace()
 		return "break"
 
@@ -1810,9 +1813,10 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 
 
 class TEXT(DEFAULT_TEXT_BUFFER):
-	def __init__(self, parent, name, type="normal"):
+	def __init__(self, parent, name, type="normal", is_binary=False):
 		super().__init__(parent, name, type)
 
+		self.is_binary = is_binary
 		self.make_argv = ""
 		self.highlighter = highlighter(self.parent, self)
 		self.set_highlighter()
@@ -2475,6 +2479,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def get_current_token(self, arg=None):
 		self.current_line = self.get(f"insert linestart", f"insert lineend+1c") #+1c so the line includes the newline character
 		self.current_token = self.get("insert wordstart", "insert wordend")
+		# print("current_token: ", f'|{self.current_token}|')
 		
 		if (re.match(r"^\s+", self.current_token) and len(self.current_token) <= 1):
 			self.current_token = self.get("insert wordstart -1c wordstart", "insert wordstart -1c wordend")
@@ -2629,7 +2634,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		def run(argv):
 			try:
 				start_time = time.time()
-				process = pexpect.spawn(argv)
+				process = pexpect.spawn(" ".join(argv))
 				
 				self.parent.subprocesses.append(process)
 				index = len(self.parent.subprocesses)-1
@@ -2638,12 +2643,12 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 				
 				
 				line = "something"
-
+	
 				while (1):
 					res = process.readline().decode("utf-8")
 					
 					print(res, end="")
-
+	
 					line = re.sub(cc_pattern_text+r"|\r", '', res)
 					replacing = 1
 					pos = 0
@@ -2664,11 +2669,12 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 						
 						if color:
 							color = color[0]
-							color = (int(color[:-2])&0x0F)+3
+							color = (int(color[:-2])&0x0B)+3
+							print("color: ", color)
 							color = list(self.parent.theme["highlighter"])[color]
 						else:
 							continue
-
+	
 						second = cc_pattern.search(res, pos=first)
 						if (second is None): second = len(res)-1
 						else: second = second.span()[0]
@@ -2676,17 +2682,24 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 							
 					self.parent.command_out.add_stdout(line, tags)
 
+					# process.expect(pexpect.EOF)
 					if not line or not res:
+						process.close()
+						print(process.exitstatus)
+						self.parent.command_out.add_stdout(f"\n")
+						status = process.exitstatus if process.exitstatus is not None else f"{process.exitstatus} -> POSSIBLE SEGFAULT"
+						self.parent.command_out.add_stdout(f"[RETURN CODE {status}]", tags=[["insert linestart", "insert lineend", "logical_keywords"], ["insert linestart +13c", "insert lineend-1c", "functions"]])
 						break
 
-				# self.parent.subprocesses.pop(index)
-				# self.parent.kill_last_subproc()
-			
+			# self.parent.subprocesses.pop(index)
+			# self.parent.kill_last_subproc()
+		
 			except Exception as e:
 				# self.parent.kill_last_subproc()
 				print("RUNNING SUBPROC ERR:", e)
 
 			# print("end")
+			# print(argv, pexpect.split_command_line(argv))
 			self.parent.command_out.add_stdout("\n")
 			self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])
 			self.parent.command_out.save_current_state()

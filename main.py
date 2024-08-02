@@ -175,6 +175,7 @@ class WIN(tkinter.Tk):
 		self.key_label = tkinter.Label()
 		self.buffer_name_label = tkinter.Label()
 
+
 		self.buffer = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
 		self.load_modules()
 		self.file_handler.init(".scratch") #see handlers.py/FILE_HANDLER
@@ -195,6 +196,8 @@ class WIN(tkinter.Tk):
 		self.suggest_widget.configure_self()
 		self.alert = PROMPT(self)
 		self.prompt = PROMPT(self)
+		# self.helper_widget = tkinter.Label(self, text="aa")
+		self.helper_widget = COMMAND_OUT(self)
 
 		self.canvas.configure(bd=0, highlightthickness=0)
 		self.buffer_tab_frame.configure(relief="ridge", borderwidth=0, highlightthickness=0)
@@ -206,6 +209,8 @@ class WIN(tkinter.Tk):
 		self.fps_label.configure(fill=None, anchor="w", justify="left")
 		self.key_label.configure(fill=None, anchor="w", justify="left")
 		self.buffer_name_label.configure(fill=None, anchor="w", justify="left")
+
+		# self.helper_widget.configure(fill=None, anchor="ne", justify="left")
 
 		self.command_entry.configure_self()
 		self.find_entry.configure_self()
@@ -311,9 +316,11 @@ class WIN(tkinter.Tk):
 
 	def reload_modules(self, dir=None):
 		self.load_modules(dir, reload=True)
+
 		
 	def theme_make(self):
 		for buffer in self.buffer_render_list: # because fuck effieciency, right?
+			# self.buffer.highlighter.unhighlight_all()
 			# buffer.tag_bind("functions", "<Button-3>", lambda arg: self.notify("what"))
 			# buffer.tag_configure("sel", bgstipple="gray75")
 			if (type(buffer) != TEXT): return # if the buffer isn't a text buffer we don't want to set these
@@ -333,25 +340,50 @@ class WIN(tkinter.Tk):
 						self.suggest_widget.tag_configure(item[0][:-2], foreground=item[1], font=self.suggest_widget.font_bold)
 						
 					else: # normal tag
-						buffer.tag_configure(item[0], bgstipple="gray50", selectbackground=item[1], selectforeground=self.theme["window"]["bg"], foreground=item[1], font=buffer.font, fgstipple="hourglass") # , borderwidth=2, relief="groove", bgstipple="gray75"
+					 	# , borderwidth=2, relief="groove", bgstipple="gray75, underline=False
+						
+						buffer.tag_configure(item[0], background="", bgstipple="gray50", selectbackground=item[1], selectforeground=self.theme["window"]["bg"], foreground=item[1], font=buffer.font, fgstipple="hourglass", underline=False)
+					
+						
+						
 						self.command_out.tag_configure(item[0], bgstipple="gray50", selectbackground=item[1], selectforeground=self.theme["window"]["bg"], foreground=item[1], font=self.command_out.font) # , borderwidth=2, relief="groove", bgstipple="gray75"
 						# self.command_out.tag_configure(item[0], underline=True, underlinefg=item[1], foreground=item[1], font=self.command_out.font)
 						self.suggest_widget.tag_configure(item[0], foreground=item[1], font=self.suggest_widget.font)
 
 				else:
 					item[1]["font"] = buffer.font
-					# if ("background" not in item[1]):
-						# item[1]["background"] = self.theme["window"]["bg"]
+					if ("background" not in item[1]):
+						item[1]["background"] = ""
 					if ("bold" in item[1]):
 						item[1]["font"] = buffer.font_bold
 						item[1].pop("bold")
+
+					if ("underline" not in item[1]):
+						item[1]["underline"] = False
 						 
 					buffer.tag_configure(item[0], **item[1])
 					item[1].pop("font")
 					self.command_out.tag_configure(item[0], **item[1], font=self.command_out.font)
 					self.suggest_widget.tag_configure(item[0], **item[1], font=self.suggest_widget.font)
 
-		self.command_entry.tag_configure("command_keywords", foreground=self.theme["highlighter"]["command_keywords"])
+
+		if (type(self.theme["highlighter"]["command_keywords"]) == str):
+			self.command_entry.tag_configure("command_keywords", background="", foreground=self.theme["highlighter"]["command_keywords"])
+		else:
+			c = self.theme["highlighter"]["command_keywords"]
+			c["font"] = self.command_entry.font
+			if ("bold" in c):
+				c["font"] = self.command_entry.font_bold
+				c.pop("bold")
+
+			if ("background" not in c):
+					c["background"] = ""
+
+			if ("underline" not in c):
+					c["underline"] = False
+
+			self.command_entry.tag_configure("command_keywords", **c)
+			
 		try:
 			self.buffer.tag_raise("keywords")
 			self.buffer.tag_lower("cursor")
@@ -381,6 +413,10 @@ class WIN(tkinter.Tk):
 		self.fps_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 		self.key_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 		self.buffer_name_label.configure(text=self.buffer.name, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+
+
+		# self.helper_widget.configure(fill=None, anchor="ne", justify="left", text="aa", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.helper_widget.configure_self()
 
 		self.command_entry.configure_self()
 		self.find_entry.configure_self()
@@ -539,6 +575,10 @@ class WIN(tkinter.Tk):
 
 		self.split_mode_options[self.split_mode]()
 
+		self.helper_widget.tkraise(self.buffer)
+		self.helper_widget.place(relx=1, y=40, width=200, height=200, anchor="ne")
+		# self.helper_widget.stdout("aaaaaa")
+
 	def ring_bell(self, arg=None):
 		self.bell()
 
@@ -681,9 +721,10 @@ class WIN(tkinter.Tk):
 				for m in list(self.buffer.lexer.objs.keys()):
 					if (re.match(token, m)):
 						x = self.buffer.lexer.defines[m]
-						# print("x:::::::::", x)
-						m = f"{x[0]}{x[1]}\n"
-						self.suggest_widget.insert("insert", m)
+						# self.helper_widget.stdout(f'{x}\n')
+						# print("x:::::::::", m)
+						# m = f"{x[0]}{x[1]}\n"
+						self.suggest_widget.insert("insert", m+"\n")
 						self.suggest_widget.tag_add("upcase", "insert -1l linestart", "insert -1l lineend")
 						if (len(m) > longest_line): longest_line = len(m)
 

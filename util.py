@@ -85,7 +85,7 @@ def bind_keys_from_conf(widget, filename=f"{SOURCE_PATH}/keybinds_conf.json", re
 		try: keybinds[name]
 		except Exception: continue
 
-		bind_keys(widget, keybinds[name], reset_only_mode_bindings)
+		bind_keys(widget, keybinds[name], False)
 	
 
 def load_themes(filename):

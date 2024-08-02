@@ -1158,6 +1158,7 @@ class highlighter(object):
 		self.buffer.tag_remove(["operators"], last_separator, line_end_index)
 		self.buffer.tag_remove(["upcase"], last_separator, line_end_index)
 		self.buffer.tag_remove(["separator"], last_separator, line_end_index)
+		self.buffer.tag_remove(["command_keywords"], last_separator, line_end_index)
 
 	def unhighlight_all(self):
 		self.buffer.tag_remove(["quotes"], "1.0", "end")
@@ -1171,4 +1172,5 @@ class highlighter(object):
 		self.buffer.tag_remove(["operators"], "1.0", "end")
 		self.buffer.tag_remove(["upcase"], "1.0", "end")
 		self.buffer.tag_remove(["separator"], "1.0", "end")
+		self.buffer.tag_remove(["command_keywords"], "1.0", "end")
 

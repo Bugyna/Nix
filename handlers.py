@@ -102,11 +102,11 @@ class FILE_HANDLER(object):
 		
 		self.current_file_name = self.current_buffer = new_buffer_name
 
-	def new_buffer(self, buffer_name, buffer_type="normal", load=True):
+	def new_buffer(self, buffer_name, buffer_type="normal", load=True, is_binary=False):
 		if (self.buffer_exists(buffer_name)): self.load_buffer(buffer_name=buffer_name); return
 
 		if (buffer_type == "GRAPHICAL"): self.buffer_list.append([GRAPHICAL_BUFFER(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
-		else: self.buffer_list.append([TEXT(self.parent, buffer_name, buffer_type), BUFFER_TAB(buffer_name, self.parent)])
+		else: self.buffer_list.append([TEXT(self.parent, buffer_name, buffer_type, is_binary=is_binary), BUFFER_TAB(buffer_name, self.parent)])
 		
 		self.buffer_dict[buffer_name] = self.buffer_list[-1]
 		self.buffer_tab_list.append(self.buffer_list[-1][1])
@@ -244,16 +244,25 @@ class FILE_HANDLER(object):
 
 		if (arg): return "break"
 
-	def save_file(self, arg = None):
+	def save_file(self, arg = None, force=False):
 		""" saves current text into opened file """
-		if (self.parent.buffer.type != "normal"): self.parent.error(f"{self.parent.buffer.type} buffer"); return "break"
+		if (self.parent.buffer.type != "normal" and not force): self.parent.error(f"{self.parent.buffer.type} buffer"); return "break"
 		elif (self.parent.buffer.state == []): return "break"
 
 		if (self.parent.buffer.full_name):
 			size0 = os.path.getsize(self.parent.buffer.full_name)
 
-			current_file = open(self.parent.buffer.full_name, "w")
-			current_file.write(self.parent.buffer.get("1.0", "end-1c"))
+			current_file = None
+			if (not self.parent.buffer.is_binary):
+				current_file = open(self.parent.buffer.full_name, "w")
+				current_file.write(self.parent.buffer.get("1.0", "end-1c"))
+			else: 
+				current_file = open(self.parent.buffer.full_name, "wb")
+				hex = "".join(self.parent.buffer.get("1.0", "end-1c").split())
+				print(hex)
+				hex = bytes.fromhex(hex)
+				current_file.write(hex)
+			
 			current_file.close()
 			self.parent.buffer.file_start_time = os.stat(self.parent.buffer.full_name).st_mtime
 
@@ -325,19 +334,24 @@ class FILE_HANDLER(object):
 				current_file = open(filename, "rb")
 				buffer_type = "readonly"
 				binary = True
+				
 
 		else:
 			raise Exception(f"Do not have permission to read file {filename}")
 
-		file_content = current_file.read()
 
 		t0 = time.time() # timer| gets current time in miliseconds
+		file_content = current_file.read()
 			
 
-		buffer = self.new_buffer(filename, buffer_type=buffer_type)
+		buffer = self.new_buffer(filename, buffer_type=buffer_type, is_binary=binary)
 		if (binary):
 			buffer.highlighter.highlight = buffer.highlighter.empty_highlight
-
+			hex = file_content.hex()
+			l = [hex[i:i+4] for i in range(0, len(hex), 4)]
+			print(hex)
+			# print(len(hex), " ".join(l))
+			file_content = " ".join(l)
 
 		if (self.parent.conf["backup_files"]):
 			file = open("."+os.path.basename(filename)+".error_swp", "w+")

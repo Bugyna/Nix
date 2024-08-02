@@ -1,4 +1,4 @@
-theme="union"
+theme="wrap"
 tab_size=3
 # CRLF or LF
 line_end=LF
@@ -52,13 +52,13 @@ find_entry_font_size = 16
 command_out_font_size = 18
 show_info = 1
 
-# buffer_border_style="ridge"
+buffer_border_style="ridge"
 command_entry_border_style="ridge"
 command_out_border_style="ridge"
 find_border_style="ridge"
 suggest_widget_border_style="ridge"
 
-buffer_border_style="solid"
+# buffer_border_style="solid"
 # command_entry_border_style="solid"
 # command_out_border_style="solid"
 # find_border_style="solid"
