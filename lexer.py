@@ -421,7 +421,8 @@ class C_LEXER(LEXER):
 			self.keywords = [
 				"self", "return", "impl", "struct", "fn", "mod", "move", "ref", "super", "trait", "type",
 				'abstract', 'alignof', 'macro', 'offsetof', 'final', 'box', 'override', 'priv', 'pure',
-				'sizeof', 'typeof', 'unsized', 'virtual', 'yield', 'union', 'dyn', 'let', 'var'
+				'sizeof', 'typeof', 'unsized', 'virtual', 'yield', 'union', 'dyn', 'let', 'var',
+				 'i8', 'i16', 'i32', 'i64', 'f32', 'f64'
 			]
 
 			self.numerical_keywords = [
@@ -1011,7 +1012,7 @@ class C_LEXER(LEXER):
 			elif (separator.match(self.word)):
 				if word_regex.match(self.prev_word): self.buffer.tag_add("quotes", f"{self.prev_word_start[0]}.{self.prev_word_start[1]}", f"{self.prev_word_end[0]}.{self.prev_word_end[1]}")
 				self.buffer.tag_add("command_keywords", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
-				print("separator: ", self.word_start, self.word_end, self.word)
+				# print("separator: ", self.word_start, self.word_end, self.word)
 				
 			elif (self.word[0] in num): self.buffer.tag_add("numbers", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
 			elif (operators.match(self.word)): self.buffer.tag_add("operators", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")

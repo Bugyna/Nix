@@ -1820,7 +1820,8 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		super().__init__(parent, name, type)
 
 		self.is_binary = is_binary
-		self.make_argv = ""
+		self.make_argv = [""]
+		self.run_argv = [""]
 		self.highlighter = highlighter(self.parent, self)
 		self.set_highlighter()
 
@@ -2722,4 +2723,8 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 	def run_make(self, arg=None):
 		return self.run_subprocess(make=True)
+
+	def run_project(self, arg=None):
+		print("running project: ", self.run_argv)
+		return self.run_subprocess(argv=self.run_argv)
 	

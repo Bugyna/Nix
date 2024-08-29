@@ -350,7 +350,7 @@
 		"<Alt-R>" : "parent.reaction_gif_widget.react",
 		"<Alt-r>" : "parent.reaction_gif_widget.react",
 
-		"<Control-Return>" : ["run_subprocess_wrap", {"argv" : ["./main"]}],
+		"<Control-Return>" : "run_project",
 		"<F1>" : ["run_subprocess_wrap", {"argv" : ["make", "concept"]}],
 		"<F2>" : ["run_subprocess_wrap", {"argv" : ["./concept"]}],
 		"<F4>" : ["run_subprocess_wrap", {"argv" : ["cat", "todo"]}],

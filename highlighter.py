@@ -269,7 +269,7 @@ class highlighter(object):
 			"php": {"keywords": self.php_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
 			"js": {"keywords": self.javascript_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ""},
 			"go": {"keywords": self.go_keywords, "numerical_keywords": self.go_numerical_keywords, "logical_keywords": self.go_logical_keywords, "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["go", "run", f"{self.buffer.full_name}"]},
-			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["cargo", "build"]},
+			"rs": {"keywords": self.rust_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.c_highlight, "comment_sign": "//", "make_argv": ["cargo", "build"], 'run_argv': ["cargo", "run"]},
 			"sh": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "#", "make_argv": [f"./{self.buffer.full_name}"]},
 			"bat|cmd": {"keywords": self.sh_keywords, "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "::", "make_argv": [f"./{self.buffer.full_name}"]},
 			"json": {"keywords": [], "numerical_keywords": [], "logical_keywords": [], "highlight": self.script_highlight, "comment_sign": "//", "make_argv": ""},
@@ -303,6 +303,12 @@ class highlighter(object):
 		self.comment_sign = lang_set["comment_sign"]
 		self.commment_regex = re.compile(rf"{self.comment_sign}")
 		self.buffer.make_argv = lang_set["make_argv"]
+		if "run_argv" in lang_set:
+			self.buffer.run_argv = lang_set["run_argv"]
+			print("run_argv", self.buffer.run_argv)
+
+		else:
+			self.buffer.run_argv = ["./main"]
 		
 		if (key != "None" and key != "(py|pyw)$"): self.buffer.lexer = C_LEXER(self.parent, self.buffer, key)
 		elif (key == "(py|pyw)$"): self.buffer.lexer = PY_LEXER(self.parent, self.buffer)
