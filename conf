@@ -39,7 +39,7 @@ suggest=0
 default_find_mode="/"
 highlight_line=0
 username="bugyna"
-alpha=92
+alpha=100
 timezone="UTC"
 
 supress_keybind_warning=0

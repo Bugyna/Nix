@@ -12,9 +12,9 @@ alphanum   = az + num
 whitespace = " \t\n\r"
 # operators = "+-*/"
 logic_operators = "!=<>"
-operators_text = "+-=|<>./?*%^&!~"
-operators = re.compile(r"^[+-=|<>./?*%^&!~]+$")
-separator = re.compile(r"[.;:]|(->)")
+operators_text = "+-=|<>./?*%^&!~:"
+operators = re.compile(r"^[+-=|<>./?*%^&!~:]+$")
+separator = re.compile(r"[.;]|(->)|(::)")
 brackets = "()[]{}"
 left_brackets = "([{"
 right_brackets = ")]}"
@@ -417,6 +417,25 @@ class C_LEXER(LEXER):
 				"asm", "__attribute__", "const", "extern", "volatile", "internal", "private", "public"
 			]
 
+		elif (type == "rs"):
+			self.keywords = [
+				"self", "return", "impl", "struct", "fn", "mod", "move", "ref", "super", "trait", "type",
+				'abstract', 'alignof', 'macro', 'offsetof', 'final', 'box', 'override', 'priv', 'pure',
+				'sizeof', 'typeof', 'unsized', 'virtual', 'yield', 'union', 'dyn', 'let', 'var'
+			]
+
+			self.numerical_keywords = [
+				"false", "true", "enum", "NULL", "Self",
+			]
+
+			self.logical_keywords = [
+				"switch", "case", "if", "else", "goto", "loop", "for", 'while', 'continue', 'break', 'do', "match"
+			]
+
+			self.special_keywords = [
+				"use", "mut", "in", "as", "crate", "Self", "unsafe", "extern", "pub", "private", "const", "where"
+			]
+
 
 		elif (type == "php"):
 			self.keywords = [
@@ -654,6 +673,7 @@ class C_LEXER(LEXER):
 				self.expr += self.char
 
 
+
 			elif (self.char == "\""):
 				self.expr_start = [self.row, self.column]
 				self.in_quote = not self.in_quote
@@ -680,14 +700,15 @@ class C_LEXER(LEXER):
 				# continue
 
 
-			elif (self.char == self.comment_sign[0]):
-				if ((self.char+self.text[self.index+1]) == self.comment_sign):
+			# elif (self.char == self.comment_sign[0]):
+			elif ((self.char+self.text[self.index+1]) == self.comment_sign):
+				# if ((self.char+self.text[self.index+1]) == self.comment_sign):
 					self.expr_start = [self.row, self.column]
 					self.in_comment = True
 
-				elif ((self.char+self.text[self.index+1]) == self.multiline_comment_sign):
-					self.expr_start = [self.row, self.column]
-					self.in_multiline_comment = True
+			elif ((self.char+self.text[self.index+1]) == self.multiline_comment_sign):
+				self.expr_start = [self.row, self.column]
+				self.in_multiline_comment = True
 
 			
 					
@@ -782,7 +803,15 @@ class C_LEXER(LEXER):
 
 				self.handle_word_end()
 
-			elif (self.char in ";:"):
+			# elif (self.char == ":" and self.prev_char == ":"):
+				# self.handle_word_end()
+				# self.word = "::"
+				# self.column += 1
+				# self.handle_word_end()
+				# self.column -= 1
+				# # self.expr += "::"
+
+			elif (self.char in ";"):
 				self.handle_word_end()
 				self.word = self.char
 				if (not start_file): self.highlight_word()
@@ -982,6 +1011,7 @@ class C_LEXER(LEXER):
 			elif (separator.match(self.word)):
 				if word_regex.match(self.prev_word): self.buffer.tag_add("quotes", f"{self.prev_word_start[0]}.{self.prev_word_start[1]}", f"{self.prev_word_end[0]}.{self.prev_word_end[1]}")
 				self.buffer.tag_add("command_keywords", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
+				print("separator: ", self.word_start, self.word_end, self.word)
 				
 			elif (self.word[0] in num): self.buffer.tag_add("numbers", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
 			elif (operators.match(self.word)): self.buffer.tag_add("operators", f"{self.word_start[0]}.{self.word_start[1]}", f"{self.word_end[0]}.{self.word_end[1]}")
