@@ -786,7 +786,7 @@ class WIN(tkinter.Tk):
 			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
 
 		if (len(self.subprocesses) >= 1):
-			self.subprocesses[arg].kill()
+			self.subprocesses[arg].kill(9)
 			self.subprocesses.pop(arg)
 
 		return "break"

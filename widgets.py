@@ -15,9 +15,11 @@ import sys
 platform = platform.system()
 import pexpect
 
-cc_pattern_text = r'\x1b\[[0-9]*(;[0-9]+)*m\x1b\[K'
+# cc_pattern_text = r'\x1b\[[0-9]*(;[0-9]+)*m\x1b\[K'
+# cc_pattern_text = r'\x1b\[([0-9]*;*m*)*\x1b\[K'
+cc_pattern_text = r'(\[([0-9]*(;[0-9]+)*m?)(\x1b\[K)?)+'
 cc_pattern = re.compile(cc_pattern_text)
-cc_num_pattern = re.compile(r"[0-9]+m\x1b")
+cc_num_pattern = re.compile(r"((([0-9]+))m)[\x1b\[K]*$")
 
 
 from tkinter import font, PhotoImage
@@ -1791,8 +1793,9 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 	def write(self, arg=None):
 		complete = self.get("insert linestart", "insert lineend")
 		self.parent.buffer.insert("insert", complete[len(self.parent.buffer.current_token):])
-		m = self.parent.buffer.lexer.defines[complete]
-		self.parent.helper_widget.stdout(f'{m}\n')
+		if (complete in self.parent.buffer.lexer.defines[complete]):
+			m = self.parent.buffer.lexer.defines[complete]
+			self.parent.helper_widget.stdout(f'{m}\n')
 		self.unplace()
 		return "break"
 
@@ -2660,24 +2663,29 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 						
 						first = cc_pattern.search(res, pos=pos)
 						if (first is None): replacing = 0; break
-						
+						color = None
 						color = cc_num_pattern.search(first[0], 0)
+						print("frist: ", first, color)
 						
 						offset += len(first[0])
 						first = first.span()[1]
 						pos = first+1
 						
 						if color:
-							color = color[0]
-							color = (int(color[:-2])&0x0B)+3
-							print("color: ", color)
-							color = list(self.parent.theme["highlighter"])[color]
+							# print("color 0: ", color, color.group(1))
+							color = color.group(1)
+							if color != "0m": 
+								color = (int(color[:-1])&0x0B)+3
+								# print("color: ", color)
+								# color = 2
+								color = list(self.parent.theme["highlighter"])[color]
 						else:
 							continue
 	
 						second = cc_pattern.search(res, pos=first)
 						if (second is None): second = len(res)-1
 						else: second = second.span()[0]
+						# print("second: ", color)
 						tags.append([f"insert -1l linestart +{first-offset}c", f"insert -1l linestart +{second-offset}c", color])
 							
 					self.parent.command_out.add_stdout(line, tags)

@@ -1,4 +1,4 @@
-theme="wrap"
+theme="custom2"
 tab_size=3
 # CRLF or LF
 line_end=LF
@@ -32,14 +32,14 @@ font="Terminus (TTF)"
 
 # font="Mx437 VTech BIOS"
 
-font_size=18
-smaller_font_size=14
+font_size=12
+smaller_font_size=10
 suggest=0
 
 default_find_mode="/"
 highlight_line=0
 username="bugyna"
-alpha=100
+alpha=92
 timezone="UTC"
 
 supress_keybind_warning=0
@@ -47,22 +47,22 @@ find_on_key = 0
 
 percentage_pos_func = get_abs_percentage_pos
 
-command_entry_font_size= 16
-find_entry_font_size = 16
-command_out_font_size = 18
+command_entry_font_size= 13
+find_entry_font_size = 12
+command_out_font_size = 14
 show_info = 1
 
-buffer_border_style="ridge"
-command_entry_border_style="ridge"
-command_out_border_style="ridge"
-find_border_style="ridge"
-suggest_widget_border_style="ridge"
+# buffer_border_style="ridge"
+# command_entry_border_style="ridge"
+# command_out_border_style="ridge"
+# find_border_style="ridge"
+# suggest_widget_border_style="ridge"
 
-# buffer_border_style="solid"
-# command_entry_border_style="solid"
-# command_out_border_style="solid"
-# find_border_style="solid"
-# suggest_widget_border_style="solid"
+buffer_border_style="solid"
+command_entry_border_style="solid"
+command_out_border_style="solid"
+find_border_style="solid"
+suggest_widget_border_style="solid"
 
 # buffer_border_style="flat"
 # command_entry_border_style="flat"

@@ -484,17 +484,22 @@ class C_LEXER(LEXER):
 			self.multiline_comment_sign = ""
 			self.multiline_comment_sign_end = ""
 
-		self.index_extern = True
-		if (os.path.exists(f"/tmp/.tmp_{self.buffer.name}")):
-			print('LOADING FROM SAVE: ', f"/tmp/.tmp_{self.buffer.name}")
-			# self.index_extern = False
-			f = open(f"/tmp/.tmp_{self.buffer.name}", "rb")
-			ll = pickle.load(f)
-			# print(ll)
-			self.types, self.modifiers, self.vars, self.functions, self.objs, self.defines, self.indexed_files = ll
-			# print(self.objs, self.functions)
-			f.close()
 
+		# self.index_extern = False
+		self.index_extern = True
+
+		if (self.buffer):
+			self.index_extern = True
+			if (os.path.exists(f"/tmp/.tmp_{self.buffer.name}")):
+				print('LOADING FROM SAVE: ', f"/tmp/.tmp_{self.buffer.name}")
+				# self.index_extern = False
+				f = open(f"/tmp/.tmp_{self.buffer.name}", "rb")
+				ll = pickle.load(f)
+				# print(ll)
+				self.types, self.modifiers, self.vars, self.functions, self.objs, self.defines, self.indexed_files = ll
+				# print(self.objs, self.functions)
+				f.close()
+	
 
 		# self.stuff = [
 			# ["keywords", [
@@ -509,7 +514,7 @@ class C_LEXER(LEXER):
 		# ]
 
 
-	def lex(self, text=None, start_file="", index=["1.0", "end"]):
+	def lex(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
 		self.curr_file = start_file
 		if (text): self.text = text
 		else:
@@ -521,7 +526,7 @@ class C_LEXER(LEXER):
 				self.buffer.highlighter.unhighlight_all()
 				# TODO: delete all stored information on new lex of whole file
 
-		if (start_file):
+		if (start_file or not should_highlight):
 			self.parse_quotes = self.parse_quotes_simple
 			self.handle_word_end = self.handle_word_end_without_highlight
 
@@ -840,21 +845,22 @@ class C_LEXER(LEXER):
 							# threading.Thread(target=self.lex, args=(ttt, path)).start()
 							# self.parent.after(0, lambda: self.lex(ttt, path))
 
-		
-			ll = [self.types, self.modifiers, self.vars, self.functions, self.objs, self.defines, self.indexed_files]
-			f = open(f"/tmp/.tmp_{self.buffer.name}", "wb")
-			f.write(pickle.dumps(ll))
-			f.close()
+
+			if (self.buffer):
+				ll = [self.types, self.modifiers, self.vars, self.functions, self.objs, self.defines, self.indexed_files]
+				f = open(f"/tmp/.tmp_{self.buffer.name}", "wb")
+				f.write(pickle.dumps(ll))
+				f.close()
 
 		# print("\n\n\n\n----------------------------\n\n\n\n")
 		# print(f"FINISHED LEXING {start_file}, {self.file_queue}")
 		# self.print_res()
 
 	def print_res(self):
-		print("INDEXED: ", self.indexed_files)
-		print("FNCS: ", self.functions)
-		print("OBJS: ", self.objs)
-		print("VARS: ", self.vars)
+		# print("INDEXED: ", self.indexed_files)
+		# print("FNCS: ", self.functions)
+		# print("OBJS: ", self.objs)
+		# print("VARS: ", self.vars)
 
 		s = "INDEXED: \n"
 		for word in self.indexed_files:
@@ -875,7 +881,7 @@ class C_LEXER(LEXER):
 		# s = "VARS: \n"
 		# for word in self.vars:
 			# s += "\t"+word+"\n"
-
+		print(s)
 		
 		if (self.parent): self.parent.command_out_set(s)
 
@@ -914,7 +920,7 @@ class C_LEXER(LEXER):
 
 
 	def handle_new_line(self):
-		print("newline!!!: ", self.row, self.column)
+		# print("newline!!!: ", self.row, self.column)
 		self.row += 1
 		self.column = -1
 		self.handle_word_end()
@@ -1815,3 +1821,18 @@ class C_LEXER(LEXER):
 							return None
 
 			self.buffer.tag_remove("error_bg", f"1.0+{index}c")
+
+
+
+
+
+
+if __name__ == "__main__":
+	l = C_LEXER(None, None)
+	f = open("lexer_test/gui.c", "r")
+	text = f.read()
+	f.close()
+	l.lex(text=text, start_file="gui.c", should_highlight=False)
+	l.print_res()
+
+

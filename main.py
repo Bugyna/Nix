@@ -227,7 +227,13 @@ class WIN(tkinter.Tk):
 		
 		# self.command_out.unplace() # weird fucking bug making the output widget appear for basically no reason
 
-		if (len(sys.argv) > 1): [self.file_handler.load_file(filename=os.path.abspath(arg)) for arg in sys.argv[1:]]; self.file_handler.load_buffer(buffer_index=1)
+		orig_path = os.getcwd()
+		if (len(sys.argv) > 1):
+			# [self.file_handler.load_file(filename=os.path.abspath(arg)) for arg in sys.argv[1:]]
+			for arg in sys.argv[1:]:
+				self.file_handler.load_file(filename=os.path.abspath(arg))
+				os.chdir(orig_path)
+			self.file_handler.load_buffer(buffer_index=1)
 
 	def load_conf(self):
 		# this is gross, but it works

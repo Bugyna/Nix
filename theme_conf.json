@@ -188,6 +188,6 @@
 	"custom2":
 	{
 		"window": {"bg": "#000000", "fg": "#FF8822", "insertbg": "#FF5511", "selectbg": "#222222", "selectfg": "#929292", "widget_fg": "#b2b2b2", "select_widget": "#FFFFAA", "select_widget_fg": "#CCCCCC"},
-		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#FF8822", "logical_keywords": "#FF8822", "functions": "#FF8822", "upcase": {"foreground" : "#FFFFFF", "bold" : true}, "numbers": "#FF8822", "operators": "#FF8822", "special_chars": "#229955", "quotes": "#2222FF", "comments": "#444444", "command_keywords": "#00AD00", "pair": {"background" : "#0000FF"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#008800"}, "error": {"background" : "#FF0000", "foreground" : "#000000"}}
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#FF8822", "logical_keywords": "#FF8822", "functions": "#FF8822", "upcase": {"foreground" : "#A512D4", "bold" : true}, "numbers": "#FF8822", "operators": "#FF8822", "special_chars": "#229955", "quotes": "#2222FF", "comments": "#444444", "command_keywords": "#00AD00", "pair": {"background" : "#0000FF"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#008800"}, "error": {"background" : "#FF0000", "foreground" : "#000000"}}
 	}
 }
