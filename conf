@@ -1,4 +1,4 @@
-theme="custom2"
+theme="byte"
 tab_size=3
 # CRLF or LF
 line_end=LF
@@ -32,8 +32,12 @@ font="Terminus (TTF)"
 
 # font="Mx437 VTech BIOS"
 
-font_size=12
-smaller_font_size=10
+font = "Fira Code"
+font_size=17
+smaller_font_size=14
+
+# font_size=14
+# smaller_font_size=11
 suggest=0
 
 default_find_mode="/"

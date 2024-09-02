@@ -35,17 +35,6 @@ CRLF="\r\n"
 LF="\n"
 
 class WIN(tkinter.Tk):
-	# """
-	# this whole project is very weird and I made a lot of pretty bad decisions,
-	# but ultimately it's working (at least a bit on Linux anyways) 
-	# It lags a lot on macOS and Windows, because tkinter sucks with a lot of text
-	# (especially with long lines) and can't process it very well, which makes it lag
-	# also making a text editor in Python is a very questionable idea on it's own
-	# it also isn't really optimized in any way at all
-	# summary: this editor sucks, but I can use it better than other editors so I don't care
-	# if you use mainly C, C++ check out 4coder (it's going to become free as of 1.7.2021),
-	# it's a really cool editor
-	# """
 	def __init__(self, file=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
