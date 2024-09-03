@@ -13,6 +13,7 @@ if (platform == "Windows"):
 def get_source_path(file):
 	return os.path.dirname(os.path.abspath(file))
 
+
 SOURCE_PATH = get_source_path(__file__)
 
 def bind_keys(widget, bindings: dict, reset_only_mode_bindings=False):
@@ -88,8 +89,11 @@ def bind_keys_from_conf(widget, filename=f"{SOURCE_PATH}/keybinds_conf.json", re
 		bind_keys(widget, keybinds[name], False)
 	
 
+
 def load_themes(filename):
 	return json.load(open(filename, "r"))
+
+
 
 def add_command_to_history(func):
 	def wrapped_func(self, *args, **kwargs):

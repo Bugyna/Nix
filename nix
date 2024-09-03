@@ -35,17 +35,6 @@ CRLF="\r\n"
 LF="\n"
 
 class WIN(tkinter.Tk):
-	# """
-	# this whole project is very weird and I made a lot of pretty bad decisions,
-	# but ultimately it's working (at least a bit on Linux anyways) 
-	# It lags a lot on macOS and Windows, because tkinter sucks with a lot of text
-	# (especially with long lines) and can't process it very well, which makes it lag
-	# also making a text editor in Python is a very questionable idea on it's own
-	# it also isn't really optimized in any way at all
-	# summary: this editor sucks, but I can use it better than other editors so I don't care
-	# if you use mainly C, C++ check out 4coder (it's going to become free as of 1.7.2021),
-	# it's a really cool editor
-	# """
 	def __init__(self, file=None, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 
@@ -77,6 +66,7 @@ class WIN(tkinter.Tk):
 			"show_time": True,
 			"show_line_no": True,
 			"show_keypress": True,
+			"show_code_location": True,
 			"show_buffer_name": True,
 			"highlight_line": False,
 			"cursor_style": 2,
@@ -146,6 +136,7 @@ class WIN(tkinter.Tk):
 		except Exception as e: print(e)
 
 		self.canvas = tkinter.Canvas()
+		self.info_frame = tkinter.Frame(self)
 		self.buffer_tab_frame = tkinter.Frame(self)
 		self.buffer_frame = tkinter.Canvas(self)
 		self.buffer_render_list = []
@@ -166,14 +157,16 @@ class WIN(tkinter.Tk):
 		for i in range(1000):
 			self.l.insert("insert", f"{i}\n")
 		self.l.place(x=-1, y=20, w=0, h=1000)
-		self.time_label = tkinter.Label()
+		self.time_label = tkinter.Label(self.info_frame)
 		self.time_label_value = tkinter.StringVar()
-		self.time_label_value.set("0:0:0")
-		self.temperature_label = tkinter.Label(text=self.get_rand_temperature())
-		self.line_no = tkinter.Label()
-		self.fps_label = tkinter.Label()
-		self.key_label = tkinter.Label()
-		self.buffer_name_label = tkinter.Label()
+		self.time_label_value.set("-44:44:44")
+		self.temperature_label = tkinter.Label(self.info_frame, text=self.get_rand_temperature())
+		
+		self.line_no = tkinter.Label(self.info_frame)
+		self.fps_label = tkinter.Label(self.info_frame)
+		self.key_label = tkinter.Label(self.info_frame)
+		self.code_location_label = tkinter.Label(self.info_frame)
+		self.buffer_name_label = tkinter.Label(self.info_frame)
 
 
 		self.buffer = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
@@ -200,14 +193,18 @@ class WIN(tkinter.Tk):
 		self.helper_widget = COMMAND_OUT(self)
 
 		self.canvas.configure(bd=0, highlightthickness=0)
+		
+		self.info_frame.configure(relief="flat", borderwidth=0, highlightthickness=0)
 		self.buffer_tab_frame.configure(relief="ridge", borderwidth=0, highlightthickness=0)
 		self.buffer_frame.configure(relief="flat", borderwidth=0, highlightthickness=0)
+		
 
 		self.time_label.configure(fill=None, anchor="w", justify="left")
 		self.temperature_label.configure(fill=None, anchor="w")
 		self.line_no.configure(fill=None, anchor="w", justify="left")
 		self.fps_label.configure(fill=None, anchor="w", justify="left")
 		self.key_label.configure(fill=None, anchor="w", justify="left")
+		self.code_location_label.configure(fill=None, anchor="w", justify="left")
 		self.buffer_name_label.configure(fill=None, anchor="w", justify="left")
 
 		# self.helper_widget.configure(fill=None, anchor="ne", justify="left")
@@ -227,7 +224,13 @@ class WIN(tkinter.Tk):
 		
 		# self.command_out.unplace() # weird fucking bug making the output widget appear for basically no reason
 
-		if (len(sys.argv) > 1): [self.file_handler.load_file(filename=os.path.abspath(arg)) for arg in sys.argv[1:]]; self.file_handler.load_buffer(buffer_index=1)
+		orig_path = os.getcwd()
+		if (len(sys.argv) > 1):
+			# [self.file_handler.load_file(filename=os.path.abspath(arg)) for arg in sys.argv[1:]]
+			for arg in sys.argv[1:]:
+				self.file_handler.load_file(filename=os.path.abspath(arg))
+				os.chdir(orig_path)
+			self.file_handler.load_buffer(buffer_index=1)
 
 	def load_conf(self):
 		# this is gross, but it works
@@ -404,6 +407,8 @@ class WIN(tkinter.Tk):
 		self.configure(bg=self.theme["window"]["bg"], cursor=None)
 
 		self.canvas.configure(bg=self.theme["window"]["bg"])
+		
+		self.info_frame.configure(bg=self.theme["window"]["bg"])
 		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"])
 		self.buffer_frame.configure(bg=self.theme["window"]["bg"])
 
@@ -412,6 +417,7 @@ class WIN(tkinter.Tk):
 		self.line_no.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 		self.fps_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 		self.key_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.code_location_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 		self.buffer_name_label.configure(text=self.buffer.name, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
 
 
@@ -517,12 +523,19 @@ class WIN(tkinter.Tk):
 		self.wm_attributes("-alpha", arg/100)
 
 	def reposition_widgets(self, arg=None):
+		if (arg and arg.widget != self):
+			return
+		# print("arg: ", arg, dir(arg), arg.widget)
+
 		btf_bd = self.buffer_tab_frame["bd"]+1 # border width
 		fs = self.widget_font.metrics("linespace") # font height
 		buffer_tab_y = fs//1.5+4
 		txt_y = fs*2
 		win_width = self.winfo_width()
 		win_height = self.winfo_height()
+
+		self.info_frame.place(x=0, y=0, relwidth=1, height=fs)
+		print("y: ", buffer_tab_y+btf_bd)
 
 		if (self.conf["show_buffer_tab"] and len(self.file_handler.buffer_list) > 0): # checks if we can show the buffer tabs in the config and if there are any buffers opened except the scratch buffer
 			self.buffer_tab_frame.place(x=0, y=buffer_tab_y+btf_bd, width=self.buffer_frame.winfo_width(), height=fs+btf_bd+4, anchor="nw")
@@ -544,20 +557,32 @@ class WIN(tkinter.Tk):
 			self.buffer_frame.place(x=0, y=buffer_tab_y, relwidth=1, height=win_height-buffer_tab_y, anchor="nw")	
 
 		if (self.conf["show_info"]):
-			if (self.conf["show_time"]):
-				if (self.conf["time_pos"] == "up"): self.time_label.place(x=self.temperature_label.winfo_x(), y=0, height=buffer_tab_y, anchor="ne")
-				elif (self.conf["time_pos"] == "down"): self.time_label.place(x=self.temperature_label.winfo_x(), y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
-			if (self.conf["show_temperature"]):
-				if (self.conf["temperature_pos"] == "up"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=0, height=buffer_tab_y, anchor="ne")
-				elif (self.conf["temperature_pos"] == "down"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
-			# if (self.conf["show_line_no"]): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=buffer_tab_y, anchor="nw")
-			if (self.conf["show_line_no"]):
-				if (self.conf["line_no_pos"] == "up"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=buffer_tab_y, anchor="nw")
-				elif (self.conf["line_no_pos"] == "down"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="nw")
+			
+			# if (self.conf["show_time"]):
+				# if (self.conf["time_pos"] == "up"): self.time_label.place(x=self.temperature_label.winfo_x(), y=0, height=buffer_tab_y, anchor="ne")
+				# elif (self.conf["time_pos"] == "down"): self.time_label.place(x=self.temperature_label.winfo_x(), y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
+			# if (self.conf["show_temperature"]):
+				# if (self.conf["temperature_pos"] == "up"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=0, height=buffer_tab_y, anchor="ne")
+				# elif (self.conf["temperature_pos"] == "down"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
+			# # if (self.conf["show_line_no"]): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=buffer_tab_y, anchor="nw")
+			# if (self.conf["show_line_no"]):
+				# if (self.conf["line_no_pos"] == "up"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=buffer_tab_y, anchor="nw")
+				# elif (self.conf["line_no_pos"] == "down"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="nw")
 
-			if (self.conf["show_speed"]): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=buffer_tab_y, anchor="ne")
-			if (self.conf["show_keypress"]): self.key_label.place(x=0, y=0, height=buffer_tab_y, anchor="nw")
-			if (self.conf["show_buffer_name"]): self.buffer_name_label.place(x=self.buffer_frame.winfo_width()//2+self.buffer_name_label.winfo_width()//2, y=0, height=buffer_tab_y, anchor="ne")
+			# self.fps_label.pack(side="left", padx=10)
+			self.key_label.pack(side="left")
+			self.code_location_label.pack(side="left", padx=10)
+
+			
+			self.line_no.pack(side="right")
+			self.temperature_label.pack(side="right")
+			self.time_label.pack(side="right")
+
+			# self.buffer_name_label.pack(side="top", expand=1, anchor="center")
+			# if (self.conf["show_speed"]): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=buffer_tab_y, anchor="ne")
+			# if (self.conf["show_keypress"]): self.key_label.place(x=0, y=0, height=buffer_tab_y, anchor="nw")
+			# if (self.conf["show_code_location"]): self.code_location_label.place(x=self.key_label.winfo_x(), y=0, height=buffer_tab_y, anchor="nw")
+			if (self.conf["show_buffer_name"]): self.buffer_name_label.place(x=self.info_frame.winfo_width()//2+self.buffer_name_label.winfo_width()//2, y=0, anchor="ne")
 
 		else:
 			self.buffer_frame.place(x=0, y=0, relwidth=1, height=win_height, anchor="nw")	
@@ -705,7 +730,7 @@ class WIN(tkinter.Tk):
 				longest_line = 0
 				ret = ""
 
-				for m in self.buffer.highlighter.vars + list(self.buffer.lexer.vars.keys()):
+				for m in list(self.buffer.lexer.vars.keys()):
 					if (re.match(token, m)):
 						self.suggest_widget.insert("insert", m+"\n")
 						if (len(m) > longest_line): longest_line = len(m)
@@ -721,8 +746,8 @@ class WIN(tkinter.Tk):
 				for m in list(self.buffer.lexer.objs.keys()):
 					if (re.match(token, m)):
 						x = self.buffer.lexer.defines[m]
-						self.helper_widget.stdout(f'{x}\n')
-						print("x:::::::::", m)
+						# self.helper_widget.stdout(f'{x}\n')
+						# print("x:::::::::", m)
 						# m = f"{x[0]}{x[1]}\n"
 						self.suggest_widget.insert("insert", m+"\n")
 						self.suggest_widget.tag_add("upcase", "insert -1l linestart", "insert -1l lineend")
@@ -786,7 +811,7 @@ class WIN(tkinter.Tk):
 			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
 
 		if (len(self.subprocesses) >= 1):
-			self.subprocesses[arg].kill(9)
+			self.subprocesses[arg].kill()
 			self.subprocesses.pop(arg)
 
 		return "break"
@@ -964,6 +989,7 @@ class WIN(tkinter.Tk):
 			self.get_temperature()
 
 		self.time_label_value.set(d_time)# return time #updates the time label/widget to show current time
+		self.after(1000, self.get_time)
 
 	def get_abs_percentage_pos(self):
 		return math.ceil(self.buffer.current_char_abs_pos*100/self.buffer.total_chars) # m(a)eth
@@ -1005,7 +1031,7 @@ class WIN(tkinter.Tk):
 		# self.line_no.configure(text=f"line: {self.buffer.cursor_index[0]} column: {self.buffer.cursor_index[1]}") #updates the line&column widget to show current cursor index/position
 		self.conf["change_line_no"]()
 
-		self.buffer.highlighter.bracket_pair_make()
+		# self.buffer.highlighter.bracket_pair_make()
 
 		# self.buffer.current_line = self.buffer.get(f"insert linestart", f"insert lineend+1c") #+1c so the line includes the newline character
 		# self.buffer.current_token = self.buffer.get("insert wordstart", "insert wordend")
@@ -1035,8 +1061,8 @@ class WIN(tkinter.Tk):
 
 	def update_buffer(self, arg=None):
 		""" updates some of the widgets when a key is released """
+		self.buffer.lexer.update_code_location()
 		# called upon every keyrelease
-		
 		if (arg): # shows the characters that were released (eg. Control: D), but it can't handle more than one character (eg. Control: b-w)
 			if (re.match("Control|Alt|Shift", arg.keysym)): return # ignore keyrelease of Control Alt Shift etc.
 			self.key_label["text"] = f"[{arg.state}|{arg.keysym}]"
@@ -1068,7 +1094,7 @@ class WIN(tkinter.Tk):
 
 			# if (self.conf["suggest"]): self.buffer.highlighter.suggest(self.buffer.cursor_index[0], self.buffer.current_line)
 		
-		self.update_win()
+		# self.update_win()
 
 
 	def update_win(self):
@@ -1095,21 +1121,23 @@ class WIN(tkinter.Tk):
 
 	def main(self):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
-		self.buffer.focus_set()
-		t0 = time.time(); self.c = 0
-		counter = 0
-		def a(counter=0): # some annoying notifications
-			while (self.run):
-				# self.update()
-				# self.update_idletasks()
-				# time.sleep(1)
-				self.after(1, self.get_time)
-				# counter += 1
-				# if (counter == 1650):
-					# self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
-				# elif (counter == 3600):
-					# self.notify("You've been programming for an hour now. Consider taking a break")
-					# counter = 0
+		pass
+		
+		# self.buffer.focus_set()
+		# t0 = time.time(); self.c = 0
+		# counter = 0
+		# def a(counter=0): # some annoying notifications
+			# while (self.run):
+				# # self.update()
+				# # self.update_idletasks()
+				# # time.sleep(1)
+				# self.after(1, self.get_time)
+				# # counter += 1
+				# # if (counter == 1650):
+					# # self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+				# # elif (counter == 3600):
+					# # self.notify("You've been programming for an hour now. Consider taking a break")
+					# # counter = 0
 
 		# threading.Thread(target=a, daemon=True).start()
 		
@@ -1139,10 +1167,10 @@ class WIN(tkinter.Tk):
 
 		# threading.Thread(target=b, daemon=True).start()
 		
-		while (self.run):
-			self.update()
-			# self.update_idletasks()
-			self.get_time()
+		# while (self.run):
+			# self.update()
+			# # self.update_idletasks()
+			# self.get_time()
 
 
 	def highlight_chunk_main_thread(self, arg=None, start_index=None, stop_index=None):
@@ -1153,8 +1181,9 @@ class WIN(tkinter.Tk):
 			buffer.convert_line_index("int", start_index)
 			buffer.convert_line_index("int", stop_index)
 			for i in range(start_index, stop_index+1):
-				buffer.highlighter.highlight(i)
-				buffer.highlighter.lex_line(i)
+				pass
+				# buffer.highlighter.highlight(i)
+				# buffer.highlighter.lex_line(i)
 
 	def highlight_chunk(self, arg=None, start_index=None, stop_index=None):
 		if (not self.conf["highlighting"]): return
@@ -1164,9 +1193,9 @@ class WIN(tkinter.Tk):
 			buffer.convert_line_index("int", start_index)
 			buffer.convert_line_index("int", stop_index)
 			def highlight(buffer):
-				for i in range(start_index, stop_index+1):
-					buffer.highlighter.highlight(i)
-					buffer.highlighter.lex_line(i)
+				pass
+				# for i in range(start_index, stop_index+1):
+					# buffer.lexer.lex_line(i)
 			t = threading.Thread(target=highlight, args=(buffer, ), daemon=True)
 			t.start()
 			return t
@@ -1179,7 +1208,7 @@ class WIN(tkinter.Tk):
 			buffer.convert_line_index("int", start_index)
 			buffer.convert_line_index("int", stop_index)
 			def unhighlight(buffer):
-				[buffer.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)]
+				[buffer.lexer.unhighlight(i) for i in range(start_index, stop_index+1)]
 			t = threading.Thread(target=unhighlight, args=(buffer, ), daemon=True)
 			t.start()
 			return t
@@ -1192,7 +1221,7 @@ class WIN(tkinter.Tk):
 			if (not stop_index): stop_index = buffer.get_line_count()
 			buffer.convert_line_index("int", start_index)
 			buffer.convert_line_index("int", stop_index)
-			[buffer.highlighter.unhighlight(i) for i in range(start_index, stop_index+1)]
+			[buffer.lexer.unhighlight(i) for i in range(start_index, stop_index+1)]
 
 			
 
@@ -1213,10 +1242,14 @@ if __name__ == "__main__":
 		# WINDOW_MARGIN = 24 # weird GTK fuckery
 	
 	win.after(0, win.main)
+	win.after(1, win.get_time)
 	win.buffer.focus_set()
 	win.mainloop()
 	
 	print("thank you for using Nix")
+
+
+
 
 
 

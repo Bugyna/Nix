@@ -110,7 +110,8 @@ class PARSER:
 			'list_mark': [self.list_mark, 'lists all marks in current buffer'],
 			'jump(_to)*' : [self.jump_to, 'jump to a created mark or an index'],
 			'sel_count' : [self.selection_count_get, 'get the length of selected text'],
-			'save_bin' : [self.save_binary_file, 'force saving of binary file if possible']
+			'save_bin' : [self.save_binary_file, 'force saving of binary file if possible'],
+			'lex_line_test': [self.lex_line_test, 'test lexer'],
 			# 'stdin' : [self.write_to_stdin, 'communicate with last opened process'],
 		}
 
@@ -561,6 +562,9 @@ class PARSER:
 	@has_argument
 	def jump_to(self, arg=None):
 		self.parent.buffer.mark_set("insert", arg[1])
+
+	def lex_line_test(self, arg=None):
+		self.parent.buffer.lexer.lex_line()
 
 	def command_not_found(self, arg=None):
 		res = ""

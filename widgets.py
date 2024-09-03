@@ -938,7 +938,7 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 		else: self["bd"] = 2
 		
 	def on_key(self, arg=None) -> None:
-		self.parent.buffer.highlighter.command_highlight()
+		# self.parent.buffer.highlighter.command_highlight()
 		self.see("insert")
 
 	def insert_newline(self, arg=None) -> str:
@@ -1142,7 +1142,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		if (match):
 			self.found[self.parent.buffer.full_name][self.found_index] = match
 
-		self.parent.buffer.highlighter.highlight(line_no=self.parent.buffer.convert_line_index("int", start))
+		# self.parent.buffer.highlighter.highlight(line_no=self.parent.buffer.convert_line_index("int", start))
 		self.scroll_through_found()
 
 		return "break"
@@ -1820,10 +1820,14 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		super().__init__(parent, name, type)
 
 		self.is_binary = is_binary
-		self.make_argv = [""]
-		self.run_argv = [""]
-		self.highlighter = highlighter(self.parent, self)
-		self.set_highlighter()
+		# self.make_argv = [""]
+		# self.run_argv = [""]
+		
+		self.lexer = None
+
+		self.file_type = name.split('.')[-1]
+		if (not is_binary): self.lexer = LEXER(self.parent, self, self.file_type)
+		else: self.lexer = LEXER(self.parent, self, "NaN")
 
 		try: self.file_start_time = os.stat(self.full_name).st_mtime
 		except FileNotFoundError: self.file_start_time = 0
@@ -2243,12 +2247,13 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		
 		start_index, stop_index = self.queue_get()
 
-		comment_len = len(self.highlighter.comment_sign)
+		comment_len = len(self.lexer.comment_sign)
 
 		for line_no in range(start_index, stop_index):
 			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
 			for i, current_char in enumerate(current_line, 0):
-				if (self.highlighter.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+				if (self.lexer.comment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+				# if (self.lexer.comment_sign == current_char+current_line[i+1:i+1+comment_len]):
 					if (self.get(f"{line_no}.{i+comment_len}", f"{line_no}.{i+1+comment_len}") == " "):
 						self.delete(f"{line_no}.{i}", f"{line_no}.{i+1+comment_len}")
 					else:
@@ -2256,7 +2261,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 					break
 
 				elif (not re.match("\s", current_char)):
-					self.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
+					self.insert(f"{line_no}.{i}", self.lexer.comment_sign+" ")
 					break
 
 		self.parent.unhighlight_chunk_main_thread(start_index=start_index, stop_index=stop_index)
@@ -2268,13 +2273,13 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def comment_line_force(self, arg=None) -> str:
 		start_index, stop_index = self.queue_get()
 
-		comment_len = len(self.highlighter.comment_sign)
+		comment_len = len(self.lexer.comment_sign)
 
 		for line_no in range(start_index, stop_index):
 			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
 			for i, current_char in enumerate(current_line, 0):
 				if (not re.match("\s", current_char)):
-					self.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
+					self.insert(f"{line_no}.{i}", self.lexer.comment_sign+" ")
 					break
 
 		self.parent.unhighlight_chunk_main_thread(start_index=start_index, stop_index=stop_index)
@@ -2285,16 +2290,16 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def comment_line_uncommented(self, arg=None) -> str:
 		start_index, stop_index = self.queue_get()
 
-		comment_len = len(self.highlighter.comment_sign)
+		comment_len = len(self.lexer.comment_sign)
 
 		for line_no in range(start_index, stop_index):
 			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
 			for i, current_char in enumerate(current_line, 0):
-				if (self.highlighter.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+				if (self.lexer.commment_sign == current_char+current_line[i+1:i+1+comment_len]):
 					break
 					
 				elif (not re.match("\s", current_char)):
-					self.insert(f"{line_no}.{i}", self.highlighter.comment_sign+" ")
+					self.insert(f"{line_no}.{i}", self.lexer.comment_sign+" ")
 					break
 
 		self.parent.unhighlight_chunk_main_thread(start_index=start_index, stop_index=stop_index)
@@ -2307,12 +2312,13 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def uncomment_line(self, arg=None) -> str:
 		start_index, stop_index = self.queue_get()
 
-		comment_len = len(self.highlighter.comment_sign)
+		comment_len = len(self.lexer.comment_sign)
 
 		for line_no in range(start_index, stop_index):
 			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
 			for i, current_char in enumerate(current_line, 0):
-				if (self.highlighter.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+				if (self.lexer.commment_regex.match(current_char+current_line[i+1:i+1+comment_len])):
+				# if (self.lexer.commment_sign == current_char+current_line[i+1:i+1+comment_len]):
 					if (self.get(f"{line_no}.{i+comment_len}", f"{line_no}.{i+1+comment_len}") == " "):
 						self.delete(f"{line_no}.{i}", f"{line_no}.{i+1+comment_len}")
 					else:
@@ -2453,7 +2459,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def get_time(self, arg=None) -> None:
 		date = datetime.date.today()
 		day_name = datetime.date.today().strftime("%A")
-		return f"{self.highlighter.comment_sign} ~\t[ {day_name} ] [ {self.parent.time_label_value.get()} ] [ {date} ] "
+		return f"{self.lexer.comment_sign} ~\t[ {day_name} ] [ {self.parent.time_label_value.get()} ] [ {date} ] "
 
 	def replace_x_with_y(self, x, y, arg=None, regexp=False) -> None: #replace spaces with tabs for example
 		self.mark_set("match_end", "1.0")
@@ -2559,13 +2565,19 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def move_to_scope_end(self, arg=None):
 		pass
 
-	def set_highlighter(self) -> None:
+	def set_language(self) -> None:
 		""" sets the highlighter accordingly to the current file extension """
-		try: arg = self.name.split(".")[-1]
-		except Exception: arg = "NaN"
+		if (self.is_binary):
+			self.lexer.set_languague("")
+
+		try:
+			self.file_type = self.name.split(".")[-1]
+
+		except Exception:
+			self.file_type = "NaN"
 
 		self.parent.highlighting = True
-		self.highlighter.set_languague(arg)
+		self.lexer.set_language(self.file_type)
 
 	def unplace(self):
 		# self.pack_forget()
@@ -2631,7 +2643,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 	def run_subprocess(self, argv=None, make=False) -> str:
 		if (make):
-			argv = self.make_argv
+			argv = self.lexer.build_argv
 			self.parent.command_out.change_ex(self.parent.command_out.open_line)
 
 
@@ -2725,6 +2737,6 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		return self.run_subprocess(make=True)
 
 	def run_project(self, arg=None):
-		print("running project: ", self.run_argv)
-		return self.run_subprocess(argv=self.run_argv)
+		print("running project: ", self.lexer.run_argv)
+		return self.run_subprocess(argv=self.lexer.run_argv)
 	

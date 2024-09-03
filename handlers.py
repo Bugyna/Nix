@@ -122,7 +122,7 @@ class FILE_HANDLER(object):
 		for i, buffer in enumerate(self.parent.buffer_render_list, 0):
 			if (buffer == self.buffer_dict[buffer_name][0]):
 				self.parent.buffer_render_list.pop(i)
-				self.parent.split_mode = "nosplit"
+				# self.parent.split_mode = "nosplit"
 				self.parent.buffer_render_index = i-1 if i-1 > 0 else 0
 
 		self.buffer_dict[buffer_name][0].unplace()
@@ -240,7 +240,7 @@ class FILE_HANDLER(object):
 		self.current_dir = os.path.dirname(filename)
 		self.parent.title(f"Nix: <{self.parent.buffer.name}>")
 		
-		self.parent.buffer.set_highlighter()
+		# self.parent.buffer.set_language()
 
 		if (arg): return "break"
 
@@ -266,7 +266,7 @@ class FILE_HANDLER(object):
 			current_file.close()
 			self.parent.buffer.file_start_time = os.stat(self.parent.buffer.full_name).st_mtime
 
-			self.parent.buffer.set_highlighter()
+			self.parent.buffer.set_language()
 			size1 = os.path.getsize(self.parent.buffer.full_name)
 			
 			self.current_dir = os.path.dirname(self.parent.buffer.full_name)
@@ -346,7 +346,7 @@ class FILE_HANDLER(object):
 
 		buffer = self.new_buffer(filename, buffer_type=buffer_type, is_binary=binary)
 		if (binary):
-			buffer.highlighter.highlight = buffer.highlighter.empty_highlight
+			# buffer.highlighter.highlight = buffer.highlighter.empty_highlight
 			hex = file_content.hex()
 			l = [hex[i:i+4] for i in range(0, len(hex), 4)]
 			print(hex)
