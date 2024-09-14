@@ -652,6 +652,10 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 	def empty_break(self, arg=None):
 		return "break"
 
+	def selection_anchor(self, index):
+		"""Set the fixed end oft the selection to INDEX."""
+		self.tk.call(self._w, 'selection', 'anchor', index)
+
 	def call_last_command(self, arg=None):
 		if (self.parent.command_history):
 			print("calling: ", self.parent.command_history[-1])
@@ -2104,6 +2108,22 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.sel_start = self.index(self.mark_names()[-1])
 		return "break"
 
+
+	@moving
+	def select_line(self, arg=None):
+		index = ""
+		i = 0
+		self.current_line = self.get("insert linestart", "insert lineend +1c")
+		for i, char in enumerate(self.current_line, 0):
+			if (not re.match(r"\t", char)): index = f"{self.cursor_index[0]}.{i}"; break
+		
+		if (self.index("insert") != index):
+			self.event_generate("<<LineStart>>")
+			[self.event_generate("<<NextChar>>") for i in range(i)]
+
+		self.event_generate("<<SelectLineEnd>>")
+		
+
 	@moving
 	def home(self, arg=None):
 		""" Home """
@@ -2548,13 +2568,35 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		if (arg): return "break"
 
 	def selection_index_swap(self, arg=None):
+		i = self.tag_ranges("sel")
 		swp_index = self.index("insert")
-		self.mark_set("insert", self.sel_start)
-		self.mark_set(self.mark_names()[-1], swp_index)
-		self.sel_start = swp_index
-		self.see("insert")
-		
+		# print(self.tk.eval('$env'))
+		# print(i, swp_index, self.compare(swp_index, "==", i[0]), self.mark_names(), self.index(self.mark_names()[-1]))
+
+		if (not self.compare(swp_index, "==", i[0])):
+			self.mark_set("insert", i[0])
+			# self.selection_anchor(i[1])
+			self.mark_set(self.mark_names()[-2], i[1])
+			self.sel_start = i[0]
+			self.see("insert")
+
+		else:
+			self.mark_set("insert", i[1])
+			# self.selection_anchor(i[0])
+			self.mark_set(self.mark_names()[-2], i[0])
+			self.sel_start = i[1]
+			self.see("insert")
+
+		# self.event_generate("<<Selection>>")
+		# print("after: ", self.index("insert"))
 		if (arg): return "break"
+
+
+
+	# def ordered_selection_index(self, arg=None):
+		# s = self.tag_ranges("sel")
+		# print(s)
+		
 
 	def split_args(self, arg=None):
 		pass

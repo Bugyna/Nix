@@ -335,6 +335,12 @@ class LEXER(EMPTY_LEXER):
 
 			self.language = tree_sitter.Language(tsrust.language(), 'rust')
 			self.query = self.language.query('''
+
+					(identifier) @variable
+		
+					((identifier) @upcase
+					 (#match? @upcase "^[A-Z_][A-Z_]+$"))
+			
 					(type_identifier) @type
 					(primitive_type) @type.builtin
 					(field_identifier) @property
@@ -376,9 +382,11 @@ class LEXER(EMPTY_LEXER):
 					
 					(call_expression
 					  function: (identifier) @function)
+					
 					(call_expression
 					  function: (field_expression
 					    field: (field_identifier) @function.method))
+					
 					(call_expression
 					  function: (scoped_identifier
 					    "::"
@@ -408,13 +416,6 @@ class LEXER(EMPTY_LEXER):
 					(line_comment (doc_comment)) @comment.documentation
 					(block_comment (doc_comment)) @comment.documentation
 					
-					"(" @punctuation.bracket
-					")" @punctuation.bracket
-					"[" @punctuation.bracket
-					"]" @punctuation.bracket
-					"{" @punctuation.bracket
-					"}" @punctuation.bracket
-					
 					(type_arguments
 					  "<" @punctuation.bracket
 					  ">" @punctuation.bracket)
@@ -422,57 +423,82 @@ class LEXER(EMPTY_LEXER):
 					  "<" @punctuation.bracket
 					  ">" @punctuation.bracket)
 					
-					"::" @punctuation.delimiter
-					":" @punctuation.delimiter
-					"." @punctuation.delimiter
 					"," @punctuation.delimiter
 					";" @punctuation.delimiter
+
+					;;":" @delimeter
+					"::" @delimeter
+					"." @delimeter
+
+
+					[
+						"("
+						")"
+						"["
+						"]"
+						"{"
+						"}"
+					] @parenthesis
 					
 					(parameter (identifier) @variable.parameter)
 					
 					(lifetime (identifier) @label)
 					
-					"as" @keyword
-					"async" @keyword
-					"await" @keyword
-					"break" @keyword
-					"const" @keyword
-					"continue" @keyword
-					"default" @keyword
-					"dyn" @keyword
-					"else" @keyword
-					"enum" @keyword
-					"extern" @keyword
-					"fn" @keyword
-					"for" @keyword
-					"if" @keyword
-					"impl" @keyword
-					"in" @keyword
-					"let" @keyword
-					"loop" @keyword
-					"macro_rules!" @keyword
-					"match" @keyword
-					"mod" @keyword
-					"move" @keyword
-					"pub" @keyword
-					"ref" @keyword
-					"return" @keyword
-					"static" @keyword
-					"struct" @keyword
-					"trait" @keyword
-					"type" @keyword
-					"union" @keyword
-					"unsafe" @keyword
-					"use" @keyword
-					"where" @keyword
-					"while" @keyword
-					"yield" @keyword
+					[
+						"impl"
+						"struct"
+						"fn"
+						"mod"
+						"move"
+						"ref"
+						"trait"
+						"type"
+						"yield"
+						"union"
+						"dyn"
+						"let"
+					] @keyword
 					(crate) @keyword
 					(mutable_specifier) @keyword
 					(use_list (self) @keyword)
 					(scoped_use_list (self) @keyword)
 					(scoped_identifier (self) @keyword)
 					(super) @keyword
+
+					(self) @special_keywords
+
+					[
+						"false"
+						"true"
+						"enum"
+					] @numerical_keywords
+
+					((identifier) @numerical_keywords
+					 (#match? @numerical_keywords "usize"))
+
+					[
+						"if"
+						"else"
+						"loop"
+						"for"
+						"while"
+						"continue"
+						"break"
+						"match"
+						"return"
+					] @logical_keywords
+
+					[
+						"use"
+						"in"
+						"as"
+						"unsafe"
+						"extern"
+						"pub"
+						"const"
+						"where"
+					] @special_keywords
+
 					
 					(self) @variable.builtin
 					
@@ -489,9 +515,42 @@ class LEXER(EMPTY_LEXER):
 					(attribute_item) @attribute
 					(inner_attribute_item) @attribute
 					
-					"*" @operator
-					"&" @operator
-					"'" @operator
+					[
+					  "-"
+					  "-="
+					  "!="
+					  "*"
+					  "*="
+					  "/"
+					  "/="
+					  "&"
+					  "&="
+					  "%"
+					  "%="
+					  "^"
+					  "^="
+					  "+"
+					  "->"
+					  "+="
+					  "<"
+					  "<<"
+					  "<<="
+					  "<="
+					  "="
+					  "=="
+					  ">"
+					  ">="
+					  ">>"
+					  ">>="
+					  "|"
+						"|="
+						"&&"
+						"||"
+						"!"
+						"^"
+						"'"
+						":"
+					] @operator
 
 					; ADT definitions
 					
@@ -538,12 +597,8 @@ class LEXER(EMPTY_LEXER):
 					(call_expression
 					    function: (identifier) @name) @reference.call
 					
-					(call_expression
-					    function: (field_expression
-					        field: (field_identifier) @name)) @reference.call
-					
 					(macro_invocation
-					    macro: (identifier) @name) @reference.call
+					    macro: (identifier) @name) @reference.call @function.method
 					
 					; implementations
 					
@@ -915,24 +970,30 @@ class LEXER(EMPTY_LEXER):
 			elif (catch_type == "comment"):
 				self.buffer.tag_add("comments", start, end)
 
-			elif (catch_type == "parenthesis" or catch_type == "special_chars"):
+			elif (catch_type == "parenthesis" or catch_type == "special_chars" or catch_type == "delimeter"):
 				self.buffer.tag_add("special_chars", start, end)
 
 			elif (catch_type == "upcase"):
 				self.buffer.tag_add("upcase", start, end)
 
-			elif (catch_type == "type"):
-				self.buffer.tag_add("keywords", start, end)
+			elif (catch_type == "type" or node.type == "type_parameters"):
+				self.buffer.tag_add("special_chars", start, end)
 
-			elif (catch_type == "special_keywords"):
+			elif (catch_type == "special_keywords" or catch_type == "attribute"):
 				self.buffer.tag_add("command_keywords", start, end)
+
+			elif (catch_type == "logical_keywords"):
+				self.buffer.tag_add(catch_type, start, end)
+
+			elif (catch_type == "numerical_keywords"):
+				self.buffer.tag_add("numbers", start, end)
 
 			# elif (node.type == "identifier"):
 				# if (node.text.decode() in self.keywords):
 					# self.buffer.tag_add("keywords", start, end)
 
 			if ((catch_type == "property" or catch_type == "delimeter")):
-				# print("proprety: ", i)
+				print("proprety: ", node, catch_type)
 				self.current_scope[node.text.decode()] = node.parent.text.decode()
 				if ("parenthesis" not in last_type and node.type != "field_identifier"):
 					self.buffer.tag_add("command_keywords", *last)

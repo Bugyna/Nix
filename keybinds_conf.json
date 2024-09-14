@@ -266,6 +266,9 @@
 		"<Shift-Home>" : "home_select",
 		"<End>" : "end",
 		"<Shift-End>" : "end_select",
+		"<Control-Shift-L>" : "select_line",
+		"<Control-Shift-l>" : "select_line",
+		
 		
 		"<Shift-Return>" : "run_make",
 		
