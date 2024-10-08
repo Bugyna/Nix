@@ -266,7 +266,7 @@ class FILE_HANDLER(object):
 			current_file.close()
 			self.parent.buffer.file_start_time = os.stat(self.parent.buffer.full_name).st_mtime
 
-			self.parent.buffer.set_language()
+			# self.parent.buffer.set_language()
 			size1 = os.path.getsize(self.parent.buffer.full_name)
 			
 			self.current_dir = os.path.dirname(self.parent.buffer.full_name)
@@ -293,6 +293,7 @@ class FILE_HANDLER(object):
 		os.rename(filename, new_filename)
 		self.rename_buffer(filename, new_filename)
 		self.save_file()
+		self.parent.buffer.set_language()
 		# self.parent.highlight_chunk()
 		# self.lexer.lex()
 

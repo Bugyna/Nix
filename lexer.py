@@ -9,7 +9,12 @@ import tree_sitter
 import tree_sitter_python as tspython
 import tree_sitter_c as tsc
 import tree_sitter_rust as tsrust
+import tree_sitter_commonlisp as tslisp
+import tree_sitter_html as tshtml
+import tree_sitter_php as tsphp
 
+PHP_LANGUAGE = tree_sitter.Language(tsphp.language_php(), 'php')
+HTML_LANGUAGE = tree_sitter.Language(tshtml.language(), 'html')
 
 class EMPTY_LEXER:
 	def __init__(self, parent, buffer_widget, type="c"):
@@ -60,7 +65,7 @@ class EMPTY_LEXER:
 		self.build_argv = ["make"]
 		self.run_argv = ["./main"]
 		
-		
+		self.available_languages = ["c", "cpp", "php", "py", "html", "rs", "hs"]
 		self.language = None
 		self.parser = None
 		self.query = None
@@ -151,11 +156,13 @@ class LEXER(EMPTY_LEXER):
 				# print(self.objs, self.functions)
 				f.close()
 
-	def set_language(self, type):
+	def set_language(self, lang_type):
+		if (type(lang_type) == list): lang_type = lang_type[0]
+
 		self.query = None
 		self.language = None
 
-		if (type in ["c", "h", "cpp", "hpp", "cc", "hh"]):
+		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh"]):
 			self.keywords = [
 				'auto', 'char', 'default', 'double',
 			 	'float', 'int', 'long', 'return', 'short', 'sizeof',
@@ -189,6 +196,26 @@ class LEXER(EMPTY_LEXER):
 
 			((identifier) @upcase
 			 (#match? @upcase "^[A-Z_][A-Z_1-9]+$"))
+
+			[
+				"switch"
+				"case"
+				"if"
+				"else"
+				"goto"
+				"for"
+				"while"
+				"continue"
+				"break"
+				"do"
+			] @logical_keywords
+
+			[
+				"enum"
+				"NULL"
+				"signed"
+				"unsigned"
+			] @numerical_keywords
 
 			[
 				"asm"
@@ -283,7 +310,7 @@ class LEXER(EMPTY_LEXER):
 			)
 
 
-		elif (type == "(cpp|hpp|cc|hh)$"):
+		elif (lang_type == "(cpp|hpp|cc|hh)$"):
 			self.keywords = [
 				"alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case",
 				 "catch", "char", "char8_t", "char16_t", "char32_t", "class", "compl", "concept", "const", "const_cast",
@@ -310,7 +337,7 @@ class LEXER(EMPTY_LEXER):
 
 			self.query = c_query
 
-		elif (type == "rs"):
+		elif (lang_type == "rs"):
 			self.keywords = [
 				"self", "return", "impl", "struct", "fn", "mod", "move", "ref", "super", "trait", "type",
 				'abstract', 'alignof', 'macro', 'offsetof', 'final', 'box', 'override', 'priv', 'pure',
@@ -612,7 +639,7 @@ class LEXER(EMPTY_LEXER):
 					)
 			
 
-		elif (type == "hs"):
+		elif (lang_type == "hs"):
 			self.keywords = [
 				'as', 'case', 'of', 'class', 'data', 'data', 'family', 'instance',
 				'default', 'deriving', 'instance', 'do', 'forall', 'foreign', 'hiding',
@@ -628,15 +655,355 @@ class LEXER(EMPTY_LEXER):
 				
 			]
 
-		elif (type == "php"):
-			self.keywords = [
-				 '__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
-				 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach',
-				 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print',
-				 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'
-			]
+		elif (lang_type == "php"):
+			# self.keywords = [
+				 # '__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
+				 # 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach',
+				 # 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print',
+				 # 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'
+			# ]
 
-		elif type == "js":
+			self.build_argv = []
+			self.run_argv = []
+
+			self.language = PHP_LANGUAGE
+			self.query = self.language.query('''
+					[
+					  "?>"
+					] @tag
+					
+					; Keywords
+					
+					[
+					  "and"
+					  "as"
+					  "break"
+					  "case"
+					  "catch"
+					  "class"
+					  "clone"
+					  "const"
+					  "continue"
+					  "declare"
+					  "default"
+					  "do"
+					  "echo"
+					  "else"
+					  "elseif"
+					  "enddeclare"
+					  "endfor"
+					  "endforeach"
+					  "endif"
+					  "endswitch"
+					  "endwhile"
+					  "enum"
+					  "exit"
+					  "extends"
+					  "finally"
+					  "fn"
+					  "for"
+					  "foreach"
+					  "function"
+					  "global"
+					  "goto"
+					  "if"
+					  "implements"
+					  "include"
+					  "include_once"
+					  "instanceof"
+					  "insteadof"
+					  "interface"
+					  "match"
+					  "namespace"
+					  "new"
+					  "or"
+					  "print"
+					  "require"
+					  "require_once"
+					  "return"
+					  "switch"
+					  "throw"
+					  "trait"
+					  "try"
+					  "use"
+					  "while"
+					  "xor"
+					  "yield"
+					  (abstract_modifier)
+					  (final_modifier)
+					  (readonly_modifier)
+					  (static_modifier)
+					  (visibility_modifier)
+					] @keyword
+
+					[
+						"("
+						")"
+						"["
+						"]"
+						"{"
+						"}"
+					] @parenthesis
+
+					"." @delimeter
+					"->" @delimeter
+					";" @delimiter
+					
+					(yield_expression "from" @keyword)
+					(function_static_declaration "static" @keyword)
+					
+					; Namespace
+					
+					(namespace_definition
+					  name: (namespace_name
+					    (name) @module))
+					
+					(namespace_name
+					  (name) @module)
+					
+					(namespace_use_clause
+					  [
+					    (name) @type
+					    (qualified_name
+					      (name) @type)
+					    alias: (name) @type
+					  ])
+					
+					(namespace_use_clause
+					  type: "function"
+					  [
+					    (name) @function
+					    (qualified_name
+					      (name) @function)
+					    alias: (name) @function
+					  ])
+					
+					(namespace_use_clause
+					  type: "const"
+					  [
+					    (name) @constant
+					    (qualified_name
+					      (name) @constant)
+					    alias: (name) @constant
+					  ])
+					
+					; Variables
+					
+					(relative_scope) @variable.builtin
+					
+					(variable_name) @variable
+					
+					(method_declaration name: (name) @constructor
+					  (#eq? @constructor "__construct"))
+					
+					(object_creation_expression [
+					  (name) @constructor
+					  (qualified_name (name) @constructor)
+					])
+					
+					((name) @constant
+					 (#match? @constant "^_?[A-Z][A-Z\\d_]+$"))
+					((name) @constant.builtin
+					 (#match? @constant.builtin "^__[A-Z][A-Z\d_]+__$"))
+					(const_declaration (const_element (name) @constant))
+					
+					; Types
+					
+					(primitive_type) @type.builtin
+					(cast_type) @type.builtin
+					(named_type [
+					  (name) @type
+					  (qualified_name (name) @type)
+					]) @type
+					(named_type (name) @type.builtin
+					  (#any-of? @type.builtin "static" "self"))
+					
+					; Functions
+					
+					(array_creation_expression "array" @function.builtin)
+					(list_literal "list" @function.builtin)
+					(exit_statement "exit" @function.builtin "(")
+					
+					(method_declaration
+					  name: (name) @function.method)
+					
+					(function_call_expression
+					  function: [(qualified_name (name)) (name)] @function)
+					
+					(scoped_call_expression
+					  name: (name) @function)
+					
+					(member_call_expression
+					  name: (name) @function.method)
+					
+					(function_definition
+					  name: (name) @function)
+					
+					; Member
+					
+					(property_element
+					  (variable_name) @property)
+					
+					(member_access_expression
+					  name: (variable_name (name)) @property)
+					(member_access_expression
+					  name: (name) @property)
+					
+					; Basic tokens
+					[
+					  (string)
+					  (string_content)
+					  (encapsed_string)
+					  (heredoc)
+					  (heredoc_body)
+					  (nowdoc_body)
+					] @string
+					(boolean) @constant.builtin
+					(null) @constant.builtin
+					(integer) @number
+					(float) @number
+					(comment) @comment
+					
+					((name) @variable.builtin
+					 (#eq? @variable.builtin "this"))
+					
+					"$" @operator
+					
+					[
+					  "-"
+					  "-="
+					  "!="
+					  "*"
+					  "*="
+					  "/"
+					  "/="
+					  "&"
+					  "&="
+					  "%"
+					  "%="
+					  "^"
+					  "^="
+					  "+"
+					  "->"
+					  "+="
+					  "<"
+					  "<<"
+					  "<<="
+					  "<="
+					  "="
+					  "=="
+					  ">"
+					  ">="
+					  ">>"
+					  ">>="
+					  "|"
+						"|="
+						"&&"
+						"||"
+						"!"
+						"^"
+						"'"
+						":"
+					] @operator
+
+					((text) @injection.content
+					 (#set! injection.language "html")
+					 (#set! injection.combined))
+
+					((comment) @injection.content
+					  (#set! injection.language "phpdoc"))
+					
+					(heredoc
+					  (heredoc_body) @injection.content
+					  (heredoc_end) @injection.language)
+					
+					(nowdoc
+					  (nowdoc_body) @injection.content
+					  (heredoc_end) @injection.language)
+
+					(namespace_definition
+					  name: (namespace_name) @name) @module
+					
+					(interface_declaration
+					  name: (name) @name) @definition.interface
+					
+					(trait_declaration
+					  name: (name) @name) @definition.interface
+					
+					(class_declaration
+					  name: (name) @name) @definition.class
+					
+					(class_interface_clause [(name) (qualified_name)] @name) @impl
+					
+					(property_declaration
+					  (property_element (variable_name (name) @name))) @definition.field
+					
+					(function_definition
+					  name: (name) @name) @definition.function
+					
+					(method_declaration
+					  name: (name) @name) @definition.function
+					
+					(object_creation_expression
+					  [
+					    (qualified_name (name) @name)
+					    (variable_name (name) @name)
+					  ]) @reference.class
+					
+					(function_call_expression
+					  function: [
+					    (qualified_name (name) @name)
+					    (variable_name (name)) @name
+					  ]) @reference.call
+					
+					(scoped_call_expression
+					  name: (name) @name) @reference.call
+					
+					(member_call_expression
+					  name: (name) @name) @reference.call
+					'''
+			)
+
+
+		elif (lang_type == "html"):
+			self.language = HTML_LANGUAGE
+			self.query = self.language.query(
+				'''
+				(tag_name) @tag @keyword
+				(erroneous_end_tag_name) @tag.error
+				(doctype) @constant @logical_keywords
+				(attribute_name) @attribute
+				(attribute_value) @string
+				(comment) @comment
+
+				[
+					"'"
+					"\\""
+				] @string
+
+				[
+					"="
+				] @operator
+				
+				[
+				  "<"
+				  ">"
+				  "</"
+				  "/>"
+				] @punctuation.bracket @parenthesis
+
+				((script_element
+				  (raw_text) @injection.content)
+				 (#set! injection.language "javascript"))
+				
+				((style_element
+				  (raw_text) @injection.content)
+				 (#set! injection.language "css"))
+				
+				'''
+			)
+
+		elif lang_type == "js":
 			self.keywords = ['abstract', 'arguments', 'await', 'boolean', 'break', 'byte', 'catch',
 				'char', 'const', 'continue', 'debugger', 'default', 'delete', 'double', 'else',
 				'export', 'final', 'finally', 'float', 'function',
@@ -659,7 +1026,7 @@ class LEXER(EMPTY_LEXER):
 				'this', 'void', 'volatile', 'yield', 'new', 'private', 'protected', 'public', 'class', 'extends'
 			]
 
-		elif type == "lb":
+		elif lang_type == "lb":
 			self.keywords = [
 				'let', 'fn', 'progn', 'type', 'len', 'nth', 'list', 'use', 'load', 'help', 'exit', 'print', 'xor', 'random-num', 'map-get', 'map-add', 'car', 'cdr',
 				'input', 'obj-name', 'eq'
@@ -672,12 +1039,138 @@ class LEXER(EMPTY_LEXER):
 			self.numerical_keywords = [
 				'true', 'false', 'NIL', 'PI', 
 			]
+			
+			self.language = tree_sitter.Language(tslisp.language(), 'Common Lisp')
+			self.query = self.language.query("""
+			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Function Definitions ;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun_header
+  function_name: (sym_lit) @name) @definition.function
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Function Calls ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;
+;;; Basically, we consider every list literal with symbol as the
+;;; first element to be a call to a function named by that element.
+;;; But we must exclude some cases. Note, tree-sitter @ignore
+;;; cases only work if they are declared before the cases
+;;; we want to include.
+
+;; Exclude lambda lists for function definitions
+;; For example:
+;;
+;;    (defun my-func (arg1 arg2) ...)
+;;
+;; do not treat (arg1 arg2) as a call of function arg1
+;;
+(defun_header
+  lambda_list: (list_lit . [(sym_lit) (package_lit)] @ignore))
+
+;; Similar to the above, but for
+;;
+;;     (defmethod m ((type1 param1) (type2 param2)) ...)
+;;
+;; where list literals having symbol as their first element
+;; are nested inside the lambda list.
+(defun_header
+  lambda_list: (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore)))
+
+;;
+;;      (let ((var ...) (var2 ...)) ...)
+;;
+;; - exclude var, var2
+;; - the same for let*, flet, labels, macrolet, symbol-macrolet
+(list_lit . [(sym_lit) (package_lit)] @name
+          . (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore))
+          (#match? @name
+                   "(?i)^(cl:)?(let|let\\*|flet|labels|macrolet|symbol-macrolet)$")
+  )
+
+;; TODO:
+;;     - exclude also:
+;;       - (defclass name (parent parent2)
+;;           ((slot1 ...)
+;;            (slot2 ...))
+;;              exclude the parent, slot1, slot2
+;;       - (flet ((func-1 (param1 param2))) ...)
+;;           - we already exclude func-1, but param1 is still recognized
+;;             as a function call - exclude it too
+;;           - the same for labels
+;;           - the same macrolet
+;;       - what else?
+;;         (that's a non-goal to completely support all macros
+;;          and special operators, but every one we support
+;;          makes the solution a little bit better)
+;;     - (flet ((func-1 (param1 param2))) ...)
+;;       - instead of simply excluding it, as we do today,
+;;         tag func-1 as @local.definition.function (I suppose)
+;;       - the same for labels, macrolet
+;;     - @local.scope for let, let*, flet, labels, macrolet
+;;       - I guess the whole span of the scope text,
+;;         till the closing paren, should be tagged as @local.scope;
+;;         Hopefully, combined with @local.definition.function
+;;         withing the scope, the usual  @reference.call within
+;;         that scope will refer to the local definition,
+;;         and there will be no need to use @local.reference.call
+;;         (which is more difficult to implement).
+;;       - When implementing, remeber the scope rules differences
+;;         of let vs let*, flet vs labels.
+
+
+;; Inlclude all other cases - list literal with symbol as the
+;; first element
+(list_lit . [(sym_lit) (package_lit)] @name) @reference.call
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; classes
+
+(list_lit . [(sym_lit) (package_lit)] @ignore
+          . [(sym_lit) (package_lit)] @name
+  (#match? @ignore "(?i)^(cl:)?defclass$")
+          ) @definition.class
+
+(list_lit . [(sym_lit) (package_lit)] @ignore
+          . (quoting_lit [(sym_lit) (package_lit)] @name)
+  (#match? @ignore "(?i)^(cl:)?make-instance$")
+          ) @reference.class
+
+;;; TODO:
+;;  - @reference.class for base classes
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; TODO:
+;; - Symbols referenced in defpackage
+;;
+;;       (defpackage ...
+;;         (:export (symbol-a :symbol-b #:symbol-c "SYMBOL-D")))
+;;
+;;   The goal is to allow quick navigation from the API
+;;   overview in the form of defpackage, to the definition
+;;   where user can read parameters, docstring, ect.
+;;   - The @name must not include the colon, or sharpsign colon, quotes,
+;;     just symbol-a, symbol-b, symbol-c, sybmol-d
+;;   - Downcase the names specified as stirng literals?
+;;     ("SYMBOL-D" -> symbol-d)
+;;   - We don't know if the exported symbol is a function, variable,
+;;     class or something else. The oficial doc
+;;     (https://tree-sitter.github.io/tree-sitter/code-navigation-systems)
+;;     does not even suggest a tag for variable reference.
+;;     (Although in practice, the `tree-sitter tags` command
+;;     allows any @reference.* and @definition.* tags)
+;;     Probably it's better to just use @reference.call for all
+;;     the symbols in the :export clause.
+;;
+;; - The same for the export function call:
+;; 
+;;       (export '(symbol-a :symbol-b #:symbol-c "SYMBOL-D"))
+			""")
 
 			self.comment_sign = ";;"
 			self.multiline_comment_sign = ""
 			self.multiline_comment_sign_end = ""
 
-		elif (type in ["py", "pyw"]):
+		elif (lang_type in ["py", "pyw"]):
 
 			self.build_argv = ["python3", self.buffer.name]
 			self.run_argv = self.build_argv
@@ -840,7 +1333,7 @@ class LEXER(EMPTY_LEXER):
 			self.multiline_comment_sign = ""
 			self.multiline_comment_sign_end = ""
 
-		# elif type == "tex" or type == "bbl":
+		# elif lang_type == "tex" or type == "bbl":
 			# self.keywords = [
 				# 'chap', 'par', 'begtt', 'endtt', 'hisyntax', 
 			# ]
@@ -862,13 +1355,17 @@ class LEXER(EMPTY_LEXER):
 
 
 
-		self.text_type = type
+		self.text_type = lang_type
 		# self.index_extern = False
 		self.index_extern = True
+
+		print("set highlighter to: ", lang_type)
 
 		if (self.language):
 			self.parser = tree_sitter.Parser(self.language)
 			self.parser.set_language(self.language)
+
+		self.lex()
 
 
 	def lex(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
@@ -987,6 +1484,10 @@ class LEXER(EMPTY_LEXER):
 
 			elif (catch_type == "numerical_keywords"):
 				self.buffer.tag_add("numbers", start, end)
+
+			## TODO: handle multiple languages in one file php/html/css/js and fuckall web
+			# elif (catch_type == "injection.content"):
+				# print("injection content")
 
 			# elif (node.type == "identifier"):
 				# if (node.text.decode() in self.keywords):

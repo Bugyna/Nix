@@ -112,6 +112,7 @@ class PARSER:
 			'sel_count' : [self.selection_count_get, 'get the length of selected text'],
 			'save_bin' : [self.save_binary_file, 'force saving of binary file if possible'],
 			'lex_line_test': [self.lex_line_test, 'test lexer'],
+			'hi(gh)?li(ght)?(er)?' : [self.highlighter_set, 'set language highlighting']
 			# 'stdin' : [self.write_to_stdin, 'communicate with last opened process'],
 		}
 
@@ -408,9 +409,9 @@ class PARSER:
 		self.parent.buffer.replace_x_with_y("\t", " "*self.parent.conf["tab_size"])
 
 	def initialize_file(self, arg=None):
-		for init in list(self.parent.buffer.highlighter.language_init.keys()):
-			if (re.match(init, self.parent.buffer.highlighter.lang)):
-				self.parent.buffer.insert("1.0", self.parent.buffer.highlighter.language_init[init])
+		for init in list(self.parent.buffer.lexer.language_init.keys()):
+			if (re.match(init, self.parent.buffer.lexer.lang)):
+				self.parent.buffer.insert("1.0", self.parent.buffer.lexer.language_init[init])
 				break
 
 		self.parent.highlight_chunk()
@@ -514,15 +515,15 @@ class PARSER:
 		self.parent.buffer.insert("insert", arg)
 
 	def write_hack(self, arg=None):
-		self.write(self.parent.buffer.highlighter.comment_sign+" HACK: ")
+		self.write(self.parent.buffer.lexer.comment_sign+" HACK: ")
 		if (arg[1:]): self.write(" ".join(arg[1:]))
 
 	def write_todo(self, arg=None):
-		self.write(self.parent.buffer.highlighter.comment_sign+" TODO: ")
+		self.write(self.parent.buffer.lexer.comment_sign+" TODO: ")
 		if (arg[1:]): self.write(" ".join(arg[1:]))
 
 	def write_note(self, arg=None):
-		self.write(self.parent.buffer.highlighter.comment_sign+" NOTE: ")
+		self.write(self.parent.buffer.lexer.comment_sign+" NOTE: ")
 		if (arg[1:]): self.write(" ".join(arg[1:]))
 
 	def todo_set(self, arg=None):
@@ -537,6 +538,19 @@ class PARSER:
 		for proc in self.parent.subprocesses:
 			s += f"proc: {proc.args} id: {proc.pid}\n"
 		self.parent.command_out_set(arg=s)
+
+	def highlighter_set(self, arg=None):
+		if (arg[1:]):
+			self.parent.buffer.lexer.set_language(type=arg[1])
+			self.parent.buffer.lexer.lex()
+			print("set highlighter to: ", arg[1])
+		else:
+			self.parent.command_out.change_ex(self.parent.buffer.lexer.set_language)
+			result = ""
+			for key in self.parent.buffer.lexer.available_languages:
+				result += key+"\n"
+			self.parent.command_out_set(result, [["1.0", "end"]])
+		
 
 	def create_temp_buffer(self, arg=None):
 		if (not arg[1:]): arg = f"{time.time()}"
