@@ -153,6 +153,9 @@
 
 	"COMMAND_OUT":
 	{
+		"<Up>" : "move_forced",
+		"<Down>" : "move_forced",
+		"<KeyRelease>": "move_forced",
 		"<KeyPress>" : "add_input",
 		"<Shift-Prior>" : "scroll_to_start",
 		"<Shift-Next>" : "scroll_to_end",

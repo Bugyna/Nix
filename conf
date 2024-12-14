@@ -1,4 +1,4 @@
-theme="byte"
+theme="elf"
 tab_size=3
 # CRLF or LF
 line_end=LF
@@ -10,9 +10,10 @@ show_buffer_tab = 1
 start_width = 80
 start_height = 32
 
-change_line_no = change_line_no_text
+change_line_no = change_line_no_number
 # line_no_pos = "down"
 # time_pos = "down"
+show_buffer_name=0
 
 # font="Fira Code"
 # font="Mx437 VTech BIOS"
@@ -32,9 +33,12 @@ font="Terminus (TTF)"
 
 # font="Mx437 VTech BIOS"
 
-font = "Fira Code"
+# font = "Fira Code"
+
+font="fixedsys"
+
 font_size=17
-smaller_font_size=14
+smaller_font_size=12
 
 # font_size=14
 # smaller_font_size=11
@@ -57,21 +61,24 @@ command_out_font_size = 14
 show_info = 1
 
 # buffer_border_style="ridge"
-# command_entry_border_style="ridge"
+command_entry_border_style="ridge"
 # command_out_border_style="ridge"
 # find_border_style="ridge"
 # suggest_widget_border_style="ridge"
+buffer_tab_border_style="ridge"
 
 buffer_border_style="solid"
-command_entry_border_style="solid"
+# command_entry_border_style="solid"
 command_out_border_style="solid"
 find_border_style="solid"
 suggest_widget_border_style="solid"
+# buffer_tab_border_style="solid"
 
 # buffer_border_style="flat"
 # command_entry_border_style="flat"
 # command_out_border_style="flat"
 # find_border_style="flat"
 # suggest_widget_border_style="flat"
+# buffer_tab_border_style="flat"
 
 reaction_gif_path="/home/bugy/Pictures/reaction_gifs/"

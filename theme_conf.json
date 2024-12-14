@@ -177,6 +177,12 @@
 		"window": {"bg": "#080808", "fg": "#FFFFFF", "insertbg": "#3055BB", "selectbg": "#242020", "selectfg": "#EBDBB2", "widget_fg": "#EBDBB2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
 		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#FF1205", "logical_keywords": "#CC241D", "functions": "#FF9900", "upcase": {"background": "#220000", "foreground" : "#FF1205", "bold" : true, "underline":true, "relief":"sunken"}, "numbers": "#FF1205", "operators": "#FF1205", "special_chars": "#D5C4A1", "quotes": "#68FF6A", "comments": {"background" : "#1A0000", "foreground": "#3A5A2A"}, "command_keywords": {"background": "#220000", "foreground": "#52242D", "bold": true}, "pair": {"background" : "#FB4934"}, "found": {"background" : "#145226"}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
 	},
+
+	"elf":
+	{
+		"window": {"bg": "#000", "fg": "#40FFF8", "insertbg": "#00FFFF", "selectbg": "#242020", "selectfg": "#EBDBB2", "widget_fg": "#EBDBB2", "select_widget": "#FFFFAA", "select_widget_fg": "#1D2021"},
+		"highlighter": {"whitespace": {"background" : "#FFFFFF"}, "keywords": "#F37CF0", "logical_keywords": "#FFF", "functions": "#40FFF8", "upcase": {"foreground" : "#F900F9", "bold" : true, "relief":"sunken"}, "numbers": "#F900F9", "operators": "#FF0000", "special_chars": "#D90000", "quotes": "#F900F9", "comments": {"background" : "#1A0000", "foreground": "#3A5A2A"}, "command_keywords": {"foreground": "#5BFE5F", "bold": true}, "pair": {"background" : "#00BBBB", "foreground": "#000000", "bold":true}, "found": {"background" : "#FFFF00", "foreground": "#000000", "bold":true}, "command_out_select": {"background" : "#555555"}, "error": {"background" : "#FF0000"}}
+	},
 	
 
 	"custom":

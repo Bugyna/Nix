@@ -19,6 +19,7 @@ import threading
 import sys
 import pytz
 import magic
+import signal
 from importlib import reload as importlib_reload
 
 try: import psutil # usually don't get imported when running as root
@@ -65,6 +66,7 @@ class WIN(tkinter.Tk):
 			"show_temperature": True,
 			"show_time": True,
 			"show_line_no": True,
+			"show_fps": True,
 			"show_keypress": True,
 			"show_code_location": True,
 			"show_buffer_name": True,
@@ -79,6 +81,8 @@ class WIN(tkinter.Tk):
 			"command_out_border_style": "ridge",
 			"find_border_style": "ridge",
 			"suggest_widget_border_style" : "ridge",
+			"buffer_tab_border_style": "ridge",
+			"buffer_frame_border_style": "ridge",
 			"supress_keybind_warning": 1,
 			"find_on_key": 1,
 			"timezone": "GMT-8",
@@ -195,8 +199,8 @@ class WIN(tkinter.Tk):
 		self.canvas.configure(bd=0, highlightthickness=0)
 		
 		self.info_frame.configure(relief="flat", borderwidth=0, highlightthickness=0)
-		self.buffer_tab_frame.configure(relief="ridge", borderwidth=0, highlightthickness=0)
-		self.buffer_frame.configure(relief="flat", borderwidth=0, highlightthickness=0)
+		self.buffer_tab_frame.configure(relief="ridge", borderwidth=2, highlightthickness=0)
+		self.buffer_frame.configure(relief="flat", borderwidth=2, highlightthickness=0)
 		
 
 		self.time_label.configure(fill=None, anchor="w", justify="left")
@@ -409,7 +413,7 @@ class WIN(tkinter.Tk):
 		self.canvas.configure(bg=self.theme["window"]["bg"])
 		
 		self.info_frame.configure(bg=self.theme["window"]["bg"])
-		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"])
+		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], relief=self.conf["buffer_tab_border_style"], borderwidth=2, highlightthickness=0)
 		self.buffer_frame.configure(bg=self.theme["window"]["bg"])
 
 		self.time_label.configure(font=self.widget_font, textvariable=self.time_label_value, bg = self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
@@ -527,34 +531,47 @@ class WIN(tkinter.Tk):
 			return
 		# print("arg: ", arg, dir(arg), arg.widget)
 
-		btf_bd = self.buffer_tab_frame["bd"]+1 # border width
+		buffer_tab_frame_border = self.buffer_tab_frame["borderwidth"] # border width
 		fs = self.widget_font.metrics("linespace") # font height
 		buffer_tab_y = fs//1.5+4
 		txt_y = fs*2
 		win_width = self.winfo_width()
 		win_height = self.winfo_height()
 
-		self.info_frame.place(x=0, y=0, relwidth=1, height=fs)
-		print("y: ", buffer_tab_y+btf_bd)
+		self.info_frame.place(x=0, y=0, relwidth=1, height=fs, anchor="nw")
+		buffer_frame_width = self.buffer_frame.winfo_width()
+		# print("y: ", buffer_tab_y+buffer_tab_frame_border)
+
+		buffer_tabs_overflow = self.file_handler.buffer_tab_list[-1].winfo_x() >= self.buffer_frame.winfo_width()
 
 		if (self.conf["show_buffer_tab"] and len(self.file_handler.buffer_list) > 0): # checks if we can show the buffer tabs in the config and if there are any buffers opened except the scratch buffer
-			self.buffer_tab_frame.place(x=0, y=buffer_tab_y+btf_bd, width=self.buffer_frame.winfo_width(), height=fs+btf_bd+4, anchor="nw")
 			x = self.file_handler.buffer_tab.winfo_x()
 			w = self.file_handler.buffer_tab.winfo_width()
-			for buffer_tab in self.file_handler.buffer_tab_list:
-				if (x >= win_width or x + w >= win_width):
-					if (buffer_tab.buffer_index >= self.buffer.buffer_index):
-						buffer_tab.reposition()
-					else:
-						buffer_tab.unplace()
-				else:
-					buffer_tab.reposition()
-				
-			self.buffer_frame.place(x=0, y=txt_y+btf_bd, relwidth=1, height=win_height-txt_y-btf_bd, anchor="nw")
 
 			
-		else:
-			self.buffer_frame.place(x=0, y=buffer_tab_y, relwidth=1, height=win_height-buffer_tab_y, anchor="nw")	
+			if (x+w >= buffer_frame_width):
+				# self.buffer_tab_frame.place(x=-x//2-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, width=x+buffer_frame_width*2, height=fs+buffer_tab_frame_border*2, anchor="nw")
+				self.buffer_tab_frame.place(x=-x-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
+				# print(self.buffer_tab_frame.winfo_x(), self.buffer_tab_frame.winfo_width())
+			# else: self.buffer_tab_frame.place(x=0-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, width=buffer_frame_width+buffer_tab_frame_border*2, height=fs+buffer_tab_frame_border*2, anchor="nw")
+			else: self.buffer_tab_frame.place(x=0-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
+
+			
+			for buffer_tab in self.file_handler.buffer_tab_list:
+				buffer_tab.reposition()
+				# if (x >= win_width or x + w >= win_width):
+					# if (buffer_tab.buffer_index >= self.buffer.buffer_index):
+						# buffer_tab.reposition()
+					# else:
+						# buffer_tab.unplace()
+				# else:
+					# buffer_tab.reposition()
+				
+			self.buffer_frame.place(x=0, y=(fs)*2, relwidth=1, height=win_height-txt_y-buffer_tab_frame_border, anchor="nw")
+
+			
+		# else:
+			# self.buffer_frame.place(x=0, y=buffer_tab_y, relwidth=1, height=win_height-buffer_tab_y, anchor="nw")	
 
 		if (self.conf["show_info"]):
 			
@@ -569,20 +586,31 @@ class WIN(tkinter.Tk):
 				# if (self.conf["line_no_pos"] == "up"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=buffer_tab_y, anchor="nw")
 				# elif (self.conf["line_no_pos"] == "down"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="nw")
 
-			# self.fps_label.pack(side="left", padx=10)
-			self.key_label.pack(side="left")
-			self.code_location_label.pack(side="left", padx=10)
+			if (self.conf["show_keypress"]): self.key_label.pack(side="left")
+			if (self.conf["show_code_location"]): self.code_location_label.pack(side="left", padx=10)
 
 			
-			self.line_no.pack(side="right")
-			self.temperature_label.pack(side="right")
-			self.time_label.pack(side="right")
+			if (self.conf["show_line_no"]):
+				if (self.conf["line_no_pos"] == "up"): self.line_no.pack(side="right", padx=20)
+				# elif (self.conf["line_no_pos"] == "down"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="nw")
+
+			
+			if (self.conf["show_temperature"]):
+				if (self.conf["temperature_pos"] == "up"): self.temperature_label.pack(side="right")
+				# elif (self.conf["temperature_pos"] == "down"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=win_height-buffer_tab_y,height=buffer_tab_y, anchor="ne")
+
+
+			if (self.conf["show_time"]):
+				if (self.conf["time_pos"] == "up"): self.time_label.pack(side="right")
+				# elif (self.conf["time_pos"] == "down"): self.time_label.place(x=self.temperature_label.winfo_x(), y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
 
 			# self.buffer_name_label.pack(side="top", expand=1, anchor="center")
 			# if (self.conf["show_speed"]): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=buffer_tab_y, anchor="ne")
 			# if (self.conf["show_keypress"]): self.key_label.place(x=0, y=0, height=buffer_tab_y, anchor="nw")
 			# if (self.conf["show_code_location"]): self.code_location_label.place(x=self.key_label.winfo_x(), y=0, height=buffer_tab_y, anchor="nw")
 			if (self.conf["show_buffer_name"]): self.buffer_name_label.place(x=self.info_frame.winfo_width()//2+self.buffer_name_label.winfo_width()//2, y=0, anchor="ne")
+
+			self.fps_label.pack(side="right", padx=10)
 
 		else:
 			self.buffer_frame.place(x=0, y=0, relwidth=1, height=win_height, anchor="nw")	
@@ -591,7 +619,7 @@ class WIN(tkinter.Tk):
 		# if (self.command_out.winfo_viewable()): self.command_out_set(resize=True)
 		if (self.command_out.winfo_viewable()): self.command_out.place_self()
 		if (self.find_entry.winfo_viewable()): self.find_place(resize=True)
-		if (self.suggest_widget.winfo_viewable()): self.suggest(resize=True)
+		# if (self.suggest_widget.winfo_viewable()): self.suggest(resize=True)
 		if (self.prompt.winfo_viewable()): self.prompt.place_self()
 
 
@@ -811,7 +839,7 @@ class WIN(tkinter.Tk):
 			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
 
 		if (len(self.subprocesses) >= 1):
-			self.subprocesses[arg].kill()
+			self.subprocesses[arg].kill(signal.SIGKILL)
 			self.subprocesses.pop(arg)
 
 		return "break"
@@ -959,7 +987,7 @@ class WIN(tkinter.Tk):
 		elif (month > 8 and month <= 11):
 			temperature = random.randint(3, 20)
 
-		return f"{temperature}°C"
+		return f"({temperature}°C)"
 
 
 	def get_temperature(self):
@@ -981,6 +1009,11 @@ class WIN(tkinter.Tk):
 
 		# d_time = datetime.datetime.now().time()
 		# curr_time = time.localtime()
+
+		if (self.conf["show_fps"]):
+			# self.fps_label.configure(text=f"{random.randbytes()%random.randint(1, 1800)}##")
+			self.fps_label.configure(text=f"<{random.getrandbits(10)}.{random.getrandbits(6)}KHz>")
+
 		time = datetime.datetime.now(self.conf["timezone"])
 		d_time = time.strftime("%H:%M:%S")
 		if (self.time_label_value.get().split(":")[2] == time.second): return # checks if it's still the same second as the last time the function was executed, not very efficient, but still more efficient than running a bunch of string formatting every few miliseconds
@@ -1003,9 +1036,10 @@ class WIN(tkinter.Tk):
 	def change_line_no_number(self):
 		if (self.buffer.tag_ranges("sel")):
 		# if (self.buffer.sel_start): # show selection index on the top of the window if a selection is active
-			self.line_no.configure(text=f"[{self.buffer.index('sel.first')}][{self.buffer.index('sel.last')}] {self.conf['percentage_pos_func']()}%")
+			# self.line_no.configure(text=f"[{self.buffer.index('sel.first')}][{self.buffer.index('sel.last')}] {self.conf['percentage_pos_func']()}%")
+			self.line_no.configure(text=f"[{self.buffer.index('sel.first')}][{self.buffer.index('sel.last')}]")
 		else:
-			self.line_no.configure(text=f"[{self.buffer.index('insert')}] {self.conf['percentage_pos_func']()}%") #updates the line&column widget to show current cursor index/position
+			self.line_no.configure(text=f"[{self.buffer.index('insert')}]") #updates the line&column widget to show current cursor index/position
 
 	def change_line_no_text(self):
 		if (self.buffer.tag_ranges("sel")):

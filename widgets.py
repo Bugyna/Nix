@@ -73,7 +73,7 @@ class BUFFER_TAB(tkinter.Label):
 
 	def reposition(self, last_buffer_tab=None):
 		if (self.render):
-			self.pack(fill="both", side="left")
+			self.pack(fill="both", side="left", anchor="sw")
 			self.tkraise()
 
 	def unplace(self):
@@ -89,6 +89,9 @@ class BUFFER_TAB(tkinter.Label):
 	def focus_highlight(self):
 		self.configure(bg=self.parent.theme["window"]["fg"], fg=self.parent.theme["window"]["bg"])
 
+
+# BUFFER_TAB_FILL_LEFT_OVERFLOW = tkinter.Label(text="<<-$$")
+# BUFFER_TAB_FILL_RIGHT_OVERFLOW = tkinter.Label(text="$$->>")
 
 class BUFFER(tkinter.Frame):
 	def __init__(self, parent, name):
@@ -1368,7 +1371,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		else: self["bd"] = 2
 		
 		self.input_label.configure(font=font.Font(family=self.parent.font_family[0], size=self.font_size,
-		 weight=self.font_weight), bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
+		 weight=self.font_weight), bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["select_widget"],
 		 cursor="left_ptr", relief="flat", borderwidth=0, highlightthickness=0)
 
 
@@ -1412,6 +1415,39 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.out = ""
 		self.parent.buffer.focus_set()
 		self.place_forget()
+
+
+	def move_forced(self, arg=None):
+		key = arg.keysym
+		
+		self.configure(state="normal")
+		if (arg.type.value == "3"):
+			self.tag_remove("found", "1.0", "end")
+			self.tag_add("found", "insert linestart", "insert lineend")
+			self.configure(state="disabled")
+			return "break"
+		
+		if (key == "Up"):
+			self.mark_set("insert", "insert linestart-1c")
+			self.see("insert")
+
+		elif (key == "Down"):
+			self.mark_set("insert", "insert lineend+1c")
+			self.see("insert")
+
+		elif (key == "Prior"):
+			self.mark_set("insert", "1.0")
+			self.see("insert")
+
+		elif (key == "Next"):
+			self.mark_set("insert", "end linestart")
+			self.see("insert")
+
+		self.tag_remove("found", "1.0", "end")
+		self.tag_add("found", "insert linestart", "insert lineend")
+		self.configure(state="disabled")
+
+		return "break"
 
 
 	def scroll_to_start(self, arg=None):
@@ -1586,24 +1622,24 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		if (len(p) == 1 and len(p[0]) == 2):
 			if p[0][0] != p[0][1]:
-				print("deleting: ", p)
+				# print("deleting: ", p)
 				self.delete(p[0][0], p[0][1])
 				self.edits_since_last_input[-1] += 1
 
 		elif (p):
 			for i in p[:0:-1]:
 				if (i[0] != i[1]):
-					print("deleting: ", i)
+					# print("deleting: ", i)
 					self.delete(i[0], i[1])
 					self.edits_since_last_input[-1] += 1
 
-			print("deleting: ", "1.0", p[0][1])
+			# print("deleting: ", "1.0", p[0][1])
 			self.delete("1.0", p[0][1])
 			self.edits_since_last_input[-1] += 1
 		
 		# print("edits: ", self.edits_since_last_input[-1])
 
-		print("\n\n")
+		# print("\n\n")
 		self.mark_unset("match_end")
 		
 		# self.modify_stdout("\n".join(self.modified_arg), tags=tags)
@@ -1619,7 +1655,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			# else: arg = self.out
 			# tags = self.tags
 		elif (arg and append_history):
-			print("appending to history", arg)
+			# print("appending to history", arg)
 			self.history_append(arg, tags)
 		
 		self.input = ""
@@ -1627,7 +1663,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		del self.tags[:]
 		
-		self.out = arg
+		self.out = arg.strip()
 		self.delete("1.0", "end")
 		self.insert("1.0", self.out)
 		self.mark_set("insert", "1.0 lineend")
@@ -1638,6 +1674,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			self.highlight_tags()
 
 		self.save_current_state()
+		self["state"] = "disabled"
 
 
 	def save_current_state(self):

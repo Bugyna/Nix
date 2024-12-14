@@ -112,7 +112,8 @@ class PARSER:
 			'sel_count' : [self.selection_count_get, 'get the length of selected text'],
 			'save_bin' : [self.save_binary_file, 'force saving of binary file if possible'],
 			'lex_line_test': [self.lex_line_test, 'test lexer'],
-			'hi(gh)?li(ght)?(er)?' : [self.highlighter_set, 'set language highlighting']
+			'hi(gh)?li(ght)?(er)?' : [self.highlighter_set, 'set language highlighting'],
+			'lex_debug': [self.lex_debug, 'debug lexer'],
 			# 'stdin' : [self.write_to_stdin, 'communicate with last opened process'],
 		}
 
@@ -579,6 +580,9 @@ class PARSER:
 
 	def lex_line_test(self, arg=None):
 		self.parent.buffer.lexer.lex_line()
+
+	def lex_debug(self, arg=None):
+		self.parent.buffer.lexer.debug(*arg)
 
 	def command_not_found(self, arg=None):
 		res = ""

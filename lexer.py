@@ -56,7 +56,7 @@ class EMPTY_LEXER:
 		self.current_scope_location = []
 
 
-		self.comment_sign = "//"
+		self.comment_sign = "#"
 		self.multiline_sign = ""
 		self.multiline_sign_end = ""
 		# self.multiline_sign = "/*"
@@ -166,9 +166,9 @@ class LEXER(EMPTY_LEXER):
 			self.keywords = [
 				'auto', 'char', 'default', 'double',
 			 	'float', 'int', 'long', 'return', 'short', 'sizeof',
-			  	'struct', 'union', 'void',
+					'struct', 'union', 'void',
 				"size_t", "u8", "u16", "u32", "u64", "bool",
-	   		]
+		 		]
 	
 			self.numerical_keywords = [
 				"false", "true", "enum", "NULL", 'signed', 'unsigned'
@@ -283,17 +283,17 @@ class LEXER(EMPTY_LEXER):
 			(sized_type_specifier) @type
 			
 			(call_expression
-			  function: (identifier) @function)
+				function: (identifier) @function)
 			(call_expression
-			  function: (field_expression
-			    field: (field_identifier) @function))
+				function: (field_expression
+				field: (field_identifier) @function))
 
 			
 			
 			(function_declarator
-			  declarator: (identifier) @function)
+				declarator: (identifier) @function)
 			(preproc_function_def
-			  name: (identifier) @function.special)
+				name: (identifier) @function.special)
 			
 			(comment) @comment
 
@@ -384,53 +384,53 @@ class LEXER(EMPTY_LEXER):
 					
 					; Assume that uppercase names in paths are types
 					((scoped_identifier
-					  path: (identifier) @type)
+						path: (identifier) @type)
 					 (#match? @type "^[A-Z]"))
 					((scoped_identifier
-					  path: (scoped_identifier
-					    name: (identifier) @type))
+						path: (scoped_identifier
+						name: (identifier) @type))
 					 (#match? @type "^[A-Z]"))
 					((scoped_type_identifier
-					  path: (identifier) @type)
+						path: (identifier) @type)
 					 (#match? @type "^[A-Z]"))
 					((scoped_type_identifier
-					  path: (scoped_identifier
-					    name: (identifier) @type))
+						path: (scoped_identifier
+						name: (identifier) @type))
 					 (#match? @type "^[A-Z]"))
 					
 					; Assume all qualified names in struct patterns are enum constructors. (They're
 					; either that, or struct names; highlighting both as constructors seems to be
 					; the less glaring choice of error, visually.)
 					(struct_pattern
-					  type: (scoped_type_identifier
-					    name: (type_identifier) @constructor))
+						type: (scoped_type_identifier
+						name: (type_identifier) @constructor))
 					
 					; Function calls
 					
 					(call_expression
-					  function: (identifier) @function)
+						function: (identifier) @function)
 					
 					(call_expression
-					  function: (field_expression
-					    field: (field_identifier) @function.method))
+						function: (field_expression
+						field: (field_identifier) @function.method))
 					
 					(call_expression
-					  function: (scoped_identifier
-					    "::"
-					    name: (identifier) @function))
+						function: (scoped_identifier
+						"::"
+						name: (identifier) @function))
 					
 					(generic_function
-					  function: (identifier) @function)
+						function: (identifier) @function)
 					(generic_function
-					  function: (scoped_identifier
-					    name: (identifier) @function))
+						function: (scoped_identifier
+						name: (identifier) @function))
 					(generic_function
-					  function: (field_expression
-					    field: (field_identifier) @function.method))
+						function: (field_expression
+						field: (field_identifier) @function.method))
 					
 					(macro_invocation
-					  macro: (identifier) @function.macro
-					  "!" @function.macro)
+						macro: (identifier) @function.macro
+						"!" @function.macro)
 					
 					; Function definitions
 					
@@ -444,11 +444,11 @@ class LEXER(EMPTY_LEXER):
 					(block_comment (doc_comment)) @comment.documentation
 					
 					(type_arguments
-					  "<" @punctuation.bracket
-					  ">" @punctuation.bracket)
+						"<" @punctuation.bracket
+						">" @punctuation.bracket)
 					(type_parameters
-					  "<" @punctuation.bracket
-					  ">" @punctuation.bracket)
+						"<" @punctuation.bracket
+						">" @punctuation.bracket)
 					
 					"," @punctuation.delimiter
 					";" @punctuation.delimiter
@@ -543,33 +543,33 @@ class LEXER(EMPTY_LEXER):
 					(inner_attribute_item) @attribute
 					
 					[
-					  "-"
-					  "-="
-					  "!="
-					  "*"
-					  "*="
-					  "/"
-					  "/="
-					  "&"
-					  "&="
-					  "%"
-					  "%="
-					  "^"
-					  "^="
-					  "+"
-					  "->"
-					  "+="
-					  "<"
-					  "<<"
-					  "<<="
-					  "<="
-					  "="
-					  "=="
-					  ">"
-					  ">="
-					  ">>"
-					  ">>="
-					  "|"
+						"-"
+						"-="
+						"!="
+						"*"
+						"*="
+						"/"
+						"/="
+						"&"
+						"&="
+						"%"
+						"%="
+						"^"
+						"^="
+						"+"
+						"->"
+						"+="
+						"<"
+						"<<"
+						"<<="
+						"<="
+						"="
+						"=="
+						">"
+						">="
+						">>"
+						">>="
+						"|"
 						"|="
 						"&&"
 						"||"
@@ -582,59 +582,59 @@ class LEXER(EMPTY_LEXER):
 					; ADT definitions
 					
 					(struct_item
-					    name: (type_identifier) @name) @definition.class
+						name: (type_identifier) @name) @definition.class
 					
 					(enum_item
-					    name: (type_identifier) @name) @definition.class
+						name: (type_identifier) @name) @definition.class
 					
 					(union_item
-					    name: (type_identifier) @name) @definition.class
+						name: (type_identifier) @name) @definition.class
 					
 					; type aliases
 					
 					(type_item
-					    name: (type_identifier) @name) @definition.class
+						name: (type_identifier) @name) @definition.class
 					
 					; method definitions
 					
 					(declaration_list
-					    (function_item
-					        name: (identifier) @name)) @definition.method
+						(function_item
+							name: (identifier) @name)) @definition.method
 					
 					; function definitions
 					
 					(function_item
-					    name: (identifier) @name) @definition.function
+						name: (identifier) @name) @definition.function
 					
 					; trait definitions
 					(trait_item
-					    name: (type_identifier) @name) @definition.interface
+						name: (type_identifier) @name) @definition.interface
 					
 					; module definitions
 					(mod_item
-					    name: (identifier) @name) @definition.module
+						name: (identifier) @name) @definition.module
 					
 					; macro definitions
 					
 					(macro_definition
-					    name: (identifier) @name) @definition.macro
+						name: (identifier) @name) @definition.macro
 					
 					; references
 					
 					(call_expression
-					    function: (identifier) @name) @reference.call
+						function: (identifier) @name) @reference.call
 					
 					(macro_invocation
-					    macro: (identifier) @name) @reference.call @function.method
+						macro: (identifier) @name) @reference.call @function.method
 					
 					; implementations
 					
 					(impl_item
-					    trait: (type_identifier) @name) @reference.implementation
+						trait: (type_identifier) @name) @reference.implementation
 					
 					(impl_item
-					    type: (type_identifier) @name
-					    !trait) @reference.implementation
+						type: (type_identifier) @name
+						!trait) @reference.implementation
 					'''
 					)
 			
@@ -669,72 +669,88 @@ class LEXER(EMPTY_LEXER):
 			self.language = PHP_LANGUAGE
 			self.query = self.language.query('''
 					[
-					  "?>"
+						"?>"
 					] @tag
 					
 					; Keywords
 					
 					[
-					  "and"
-					  "as"
-					  "break"
-					  "case"
-					  "catch"
-					  "class"
-					  "clone"
-					  "const"
-					  "continue"
-					  "declare"
-					  "default"
-					  "do"
-					  "echo"
-					  "else"
-					  "elseif"
-					  "enddeclare"
-					  "endfor"
-					  "endforeach"
-					  "endif"
-					  "endswitch"
-					  "endwhile"
-					  "enum"
-					  "exit"
-					  "extends"
-					  "finally"
-					  "fn"
-					  "for"
-					  "foreach"
-					  "function"
-					  "global"
-					  "goto"
-					  "if"
-					  "implements"
-					  "include"
-					  "include_once"
-					  "instanceof"
-					  "insteadof"
-					  "interface"
-					  "match"
-					  "namespace"
-					  "new"
-					  "or"
-					  "print"
-					  "require"
-					  "require_once"
-					  "return"
-					  "switch"
-					  "throw"
-					  "trait"
-					  "try"
-					  "use"
-					  "while"
-					  "xor"
-					  "yield"
-					  (abstract_modifier)
-					  (final_modifier)
-					  (readonly_modifier)
-					  (static_modifier)
-					  (visibility_modifier)
+						"as"
+						"catch"
+						"clone"
+						"const"
+						"declare"
+						"default"
+						"do"
+						"echo"
+						"finally"
+						"fn"
+						"function"
+						"instanceof"
+						"insteadof"
+						"interface"
+						"match"
+						"new"
+						"print"
+						"use"
+						"yield"
+						(abstract_modifier)
+						(final_modifier)
+						(readonly_modifier)
+						(static_modifier)
+						(visibility_modifier)
 					] @keyword
+
+					[
+						"while"
+						"if"
+						"foreach"
+						"for"
+						"else"
+						"elseif"
+						"enddeclare"
+						"endfor"
+						"endforeach"
+						"endif"
+						"endswitch"
+						"endwhile"
+					] @logical_keywords
+
+					[
+						"global"
+						"require"
+						"require_once"
+						"include"
+						"include_once"
+						"trait"
+						"namespace"
+						"interface"
+						"implements"
+						"extends"
+						"class"
+						(null)
+					] @command_keywords
+
+					[
+						"enum"
+						"and"
+						"xor"
+					] @numbers
+
+					[
+						"exit"
+						"break"
+						"case"
+						"return"
+						"try"
+						"throw"
+					] @special_chars
+
+					[
+						"continue"
+						"goto"
+						"switch"
+					] @proc_keywords
 
 					[
 						"("
@@ -755,37 +771,37 @@ class LEXER(EMPTY_LEXER):
 					; Namespace
 					
 					(namespace_definition
-					  name: (namespace_name
-					    (name) @module))
+						name: (namespace_name
+						(name) @module))
 					
 					(namespace_name
-					  (name) @module)
+						(name) @module)
 					
 					(namespace_use_clause
-					  [
-					    (name) @type
-					    (qualified_name
-					      (name) @type)
-					    alias: (name) @type
-					  ])
+						[
+						(name) @type
+						(qualified_name
+							(name) @type)
+						alias: (name) @type
+						])
 					
 					(namespace_use_clause
-					  type: "function"
-					  [
-					    (name) @function
-					    (qualified_name
-					      (name) @function)
-					    alias: (name) @function
-					  ])
+						type: "function"
+						[
+						(name) @function
+						(qualified_name
+							(name) @function)
+						alias: (name) @function
+						])
 					
 					(namespace_use_clause
-					  type: "const"
-					  [
-					    (name) @constant
-					    (qualified_name
-					      (name) @constant)
-					    alias: (name) @constant
-					  ])
+						type: "const"
+						[
+						(name) @constant
+						(qualified_name
+							(name) @constant)
+						alias: (name) @constant
+						])
 					
 					; Variables
 					
@@ -794,15 +810,20 @@ class LEXER(EMPTY_LEXER):
 					(variable_name) @variable
 					
 					(method_declaration name: (name) @constructor
-					  (#eq? @constructor "__construct"))
+						(#eq? @constructor "__construct"))
 					
 					(object_creation_expression [
-					  (name) @constructor
-					  (qualified_name (name) @constructor)
+						(name) @constructor
+						(qualified_name (name) @constructor)
 					])
+
 					
 					((name) @constant
 					 (#match? @constant "^_?[A-Z][A-Z\\d_]+$"))
+
+					((name) @upcase
+			 			(#match? @upcase "^[A-Z_][A-Z_1-9]+$"))
+
 					((name) @constant.builtin
 					 (#match? @constant.builtin "^__[A-Z][A-Z\d_]+__$"))
 					(const_declaration (const_element (name) @constant))
@@ -812,11 +833,11 @@ class LEXER(EMPTY_LEXER):
 					(primitive_type) @type.builtin
 					(cast_type) @type.builtin
 					(named_type [
-					  (name) @type
-					  (qualified_name (name) @type)
+						(name) @type
+						(qualified_name (name) @type)
 					]) @type
 					(named_type (name) @type.builtin
-					  (#any-of? @type.builtin "static" "self"))
+						(#any-of? @type.builtin "static" "self"))
 					
 					; Functions
 					
@@ -825,41 +846,40 @@ class LEXER(EMPTY_LEXER):
 					(exit_statement "exit" @function.builtin "(")
 					
 					(method_declaration
-					  name: (name) @function.method)
+						name: (name) @function.method)
 					
 					(function_call_expression
-					  function: [(qualified_name (name)) (name)] @function)
+						function: [(qualified_name (name)) (name)] @function)
 					
 					(scoped_call_expression
-					  name: (name) @function)
+						name: (name) @function)
 					
 					(member_call_expression
-					  name: (name) @function.method)
+						name: (name) @function.method)
 					
 					(function_definition
-					  name: (name) @function)
+						name: (name) @function)
 					
 					; Member
 					
 					(property_element
-					  (variable_name) @property)
+						(variable_name) @property)
 					
 					(member_access_expression
-					  name: (variable_name (name)) @property)
+						name: (variable_name (name)) @property)
 					(member_access_expression
-					  name: (name) @property)
+						name: (name) @property)
 					
 					; Basic tokens
 					[
-					  (string)
-					  (string_content)
-					  (encapsed_string)
-					  (heredoc)
-					  (heredoc_body)
-					  (nowdoc_body)
+						(string)
+						(string_content)
+						(encapsed_string)
+						(heredoc)
+						(heredoc_body)
+						(nowdoc_body)
 					] @string
-					(boolean) @constant.builtin
-					(null) @constant.builtin
+					(boolean) @number
 					(integer) @number
 					(float) @number
 					(comment) @comment
@@ -870,33 +890,33 @@ class LEXER(EMPTY_LEXER):
 					"$" @operator
 					
 					[
-					  "-"
-					  "-="
-					  "!="
-					  "*"
-					  "*="
-					  "/"
-					  "/="
-					  "&"
-					  "&="
-					  "%"
-					  "%="
-					  "^"
-					  "^="
-					  "+"
-					  "->"
-					  "+="
-					  "<"
-					  "<<"
-					  "<<="
-					  "<="
-					  "="
-					  "=="
-					  ">"
-					  ">="
-					  ">>"
-					  ">>="
-					  "|"
+						"-"
+						"-="
+						"!="
+						"*"
+						"*="
+						"/"
+						"/="
+						"&"
+						"&="
+						"%"
+						"%="
+						"^"
+						"^="
+						"+"
+						"->"
+						"+="
+						"<"
+						"<<"
+						"<<="
+						"<="
+						"="
+						"=="
+						">"
+						">="
+						">>"
+						">>="
+						"|"
 						"|="
 						"&&"
 						"||"
@@ -911,56 +931,57 @@ class LEXER(EMPTY_LEXER):
 					 (#set! injection.combined))
 
 					((comment) @injection.content
-					  (#set! injection.language "phpdoc"))
+						(#set! injection.language "phpdoc"))
 					
 					(heredoc
-					  (heredoc_body) @injection.content
-					  (heredoc_end) @injection.language)
+						(heredoc_body) @injection.content
+						(heredoc_end) @injection.language)
 					
 					(nowdoc
-					  (nowdoc_body) @injection.content
-					  (heredoc_end) @injection.language)
+						(nowdoc_body) @injection.content
+						(heredoc_end) @injection.language)
 
 					(namespace_definition
-					  name: (namespace_name) @name) @module
+						name: (namespace_name) @name) @module
 					
 					(interface_declaration
-					  name: (name) @name) @definition.interface
+						name: (name) @name) @definition.interface
 					
 					(trait_declaration
-					  name: (name) @name) @definition.interface
+						name: (name) @name) @definition.interface
 					
 					(class_declaration
-					  name: (name) @name) @definition.class
+						name: (name) @name) @definition.class
 					
 					(class_interface_clause [(name) (qualified_name)] @name) @impl
 					
 					(property_declaration
-					  (property_element (variable_name (name) @name))) @definition.field
+						(property_element (variable_name (name) @name))) @definition.field
 					
 					(function_definition
-					  name: (name) @name) @definition.function
+						name: (name) @name) @definition.function
 					
 					(method_declaration
-					  name: (name) @name) @definition.function
+						name: (name) @name) @definition.function
 					
 					(object_creation_expression
-					  [
-					    (qualified_name (name) @name)
-					    (variable_name (name) @name)
-					  ]) @reference.class
+						[
+						(qualified_name (name) @name)
+						(variable_name (name) @name)
+						]) @reference.class
 					
 					(function_call_expression
-					  function: [
-					    (qualified_name (name) @name)
-					    (variable_name (name)) @name
-					  ]) @reference.call
+						function: [
+						(qualified_name (name) @name)
+						(variable_name (name)) @name
+						]) @reference.call
 					
 					(scoped_call_expression
-					  name: (name) @name) @reference.call
+						name: (name) @name) @reference.call
 					
 					(member_call_expression
-					  name: (name) @name) @reference.call
+						name: (name) @name) @reference.call
+
 					'''
 			)
 
@@ -986,18 +1007,18 @@ class LEXER(EMPTY_LEXER):
 				] @operator
 				
 				[
-				  "<"
-				  ">"
-				  "</"
-				  "/>"
+					"<"
+					">"
+					"</"
+					"/>"
 				] @punctuation.bracket @parenthesis
 
 				((script_element
-				  (raw_text) @injection.content)
+					(raw_text) @injection.content)
 				 (#set! injection.language "javascript"))
 				
 				((style_element
-				  (raw_text) @injection.content)
+					(raw_text) @injection.content)
 				 (#set! injection.language "css"))
 				
 				'''
@@ -1046,7 +1067,7 @@ class LEXER(EMPTY_LEXER):
 ;;; Function Definitions ;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun_header
-  function_name: (sym_lit) @name) @definition.function
+	function_name: (sym_lit) @name) @definition.function
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Function Calls ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1060,62 +1081,62 @@ class LEXER(EMPTY_LEXER):
 ;; Exclude lambda lists for function definitions
 ;; For example:
 ;;
-;;    (defun my-func (arg1 arg2) ...)
+;;	(defun my-func (arg1 arg2) ...)
 ;;
 ;; do not treat (arg1 arg2) as a call of function arg1
 ;;
 (defun_header
-  lambda_list: (list_lit . [(sym_lit) (package_lit)] @ignore))
+	lambda_list: (list_lit . [(sym_lit) (package_lit)] @ignore))
 
 ;; Similar to the above, but for
 ;;
-;;     (defmethod m ((type1 param1) (type2 param2)) ...)
+;;	 (defmethod m ((type1 param1) (type2 param2)) ...)
 ;;
 ;; where list literals having symbol as their first element
 ;; are nested inside the lambda list.
 (defun_header
-  lambda_list: (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore)))
+	lambda_list: (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore)))
 
 ;;
-;;      (let ((var ...) (var2 ...)) ...)
+;;		(let ((var ...) (var2 ...)) ...)
 ;;
 ;; - exclude var, var2
 ;; - the same for let*, flet, labels, macrolet, symbol-macrolet
 (list_lit . [(sym_lit) (package_lit)] @name
-          . (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore))
-          (#match? @name
-                   "(?i)^(cl:)?(let|let\\*|flet|labels|macrolet|symbol-macrolet)$")
-  )
+			. (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore))
+			(#match? @name
+					 "(?i)^(cl:)?(let|let\\*|flet|labels|macrolet|symbol-macrolet)$")
+	)
 
 ;; TODO:
-;;     - exclude also:
-;;       - (defclass name (parent parent2)
-;;           ((slot1 ...)
-;;            (slot2 ...))
-;;              exclude the parent, slot1, slot2
-;;       - (flet ((func-1 (param1 param2))) ...)
-;;           - we already exclude func-1, but param1 is still recognized
-;;             as a function call - exclude it too
-;;           - the same for labels
-;;           - the same macrolet
-;;       - what else?
-;;         (that's a non-goal to completely support all macros
-;;          and special operators, but every one we support
-;;          makes the solution a little bit better)
-;;     - (flet ((func-1 (param1 param2))) ...)
-;;       - instead of simply excluding it, as we do today,
-;;         tag func-1 as @local.definition.function (I suppose)
-;;       - the same for labels, macrolet
-;;     - @local.scope for let, let*, flet, labels, macrolet
-;;       - I guess the whole span of the scope text,
-;;         till the closing paren, should be tagged as @local.scope;
-;;         Hopefully, combined with @local.definition.function
-;;         withing the scope, the usual  @reference.call within
-;;         that scope will refer to the local definition,
-;;         and there will be no need to use @local.reference.call
-;;         (which is more difficult to implement).
-;;       - When implementing, remeber the scope rules differences
-;;         of let vs let*, flet vs labels.
+;;	 - exclude also:
+;;		 - (defclass name (parent parent2)
+;;			 ((slot1 ...)
+;;			(slot2 ...))
+;;				exclude the parent, slot1, slot2
+;;		 - (flet ((func-1 (param1 param2))) ...)
+;;			 - we already exclude func-1, but param1 is still recognized
+;;			 as a function call - exclude it too
+;;			 - the same for labels
+;;			 - the same macrolet
+;;		 - what else?
+;;		 (that's a non-goal to completely support all macros
+;;			and special operators, but every one we support
+;;			makes the solution a little bit better)
+;;	 - (flet ((func-1 (param1 param2))) ...)
+;;		 - instead of simply excluding it, as we do today,
+;;		 tag func-1 as @local.definition.function (I suppose)
+;;		 - the same for labels, macrolet
+;;	 - @local.scope for let, let*, flet, labels, macrolet
+;;		 - I guess the whole span of the scope text,
+;;		 till the closing paren, should be tagged as @local.scope;
+;;		 Hopefully, combined with @local.definition.function
+;;		 withing the scope, the usual	@reference.call within
+;;		 that scope will refer to the local definition,
+;;		 and there will be no need to use @local.reference.call
+;;		 (which is more difficult to implement).
+;;		 - When implementing, remeber the scope rules differences
+;;		 of let vs let*, flet vs labels.
 
 
 ;; Inlclude all other cases - list literal with symbol as the
@@ -1126,44 +1147,44 @@ class LEXER(EMPTY_LEXER):
 ;;; classes
 
 (list_lit . [(sym_lit) (package_lit)] @ignore
-          . [(sym_lit) (package_lit)] @name
-  (#match? @ignore "(?i)^(cl:)?defclass$")
-          ) @definition.class
+			. [(sym_lit) (package_lit)] @name
+	(#match? @ignore "(?i)^(cl:)?defclass$")
+			) @definition.class
 
 (list_lit . [(sym_lit) (package_lit)] @ignore
-          . (quoting_lit [(sym_lit) (package_lit)] @name)
-  (#match? @ignore "(?i)^(cl:)?make-instance$")
-          ) @reference.class
+			. (quoting_lit [(sym_lit) (package_lit)] @name)
+	(#match? @ignore "(?i)^(cl:)?make-instance$")
+			) @reference.class
 
 ;;; TODO:
-;;  - @reference.class for base classes
+;;	- @reference.class for base classes
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; TODO:
 ;; - Symbols referenced in defpackage
 ;;
-;;       (defpackage ...
-;;         (:export (symbol-a :symbol-b #:symbol-c "SYMBOL-D")))
+;;		 (defpackage ...
+;;		 (:export (symbol-a :symbol-b #:symbol-c "SYMBOL-D")))
 ;;
-;;   The goal is to allow quick navigation from the API
-;;   overview in the form of defpackage, to the definition
-;;   where user can read parameters, docstring, ect.
-;;   - The @name must not include the colon, or sharpsign colon, quotes,
-;;     just symbol-a, symbol-b, symbol-c, sybmol-d
-;;   - Downcase the names specified as stirng literals?
-;;     ("SYMBOL-D" -> symbol-d)
-;;   - We don't know if the exported symbol is a function, variable,
-;;     class or something else. The oficial doc
-;;     (https://tree-sitter.github.io/tree-sitter/code-navigation-systems)
-;;     does not even suggest a tag for variable reference.
-;;     (Although in practice, the `tree-sitter tags` command
-;;     allows any @reference.* and @definition.* tags)
-;;     Probably it's better to just use @reference.call for all
-;;     the symbols in the :export clause.
+;;	 The goal is to allow quick navigation from the API
+;;	 overview in the form of defpackage, to the definition
+;;	 where user can read parameters, docstring, ect.
+;;	 - The @name must not include the colon, or sharpsign colon, quotes,
+;;	 just symbol-a, symbol-b, symbol-c, sybmol-d
+;;	 - Downcase the names specified as stirng literals?
+;;	 ("SYMBOL-D" -> symbol-d)
+;;	 - We don't know if the exported symbol is a function, variable,
+;;	 class or something else. The oficial doc
+;;	 (https://tree-sitter.github.io/tree-sitter/code-navigation-systems)
+;;	 does not even suggest a tag for variable reference.
+;;	 (Although in practice, the `tree-sitter tags` command
+;;	 allows any @reference.* and @definition.* tags)
+;;	 Probably it's better to just use @reference.call for all
+;;	 the symbols in the :export clause.
 ;;
 ;; - The same for the export function call:
 ;; 
-;;       (export '(symbol-a :symbol-b #:symbol-c "SYMBOL-D"))
+;;		 (export '(symbol-a :symbol-b #:symbol-c "SYMBOL-D"))
 			""")
 
 			self.comment_sign = ";;"
@@ -1196,22 +1217,22 @@ class LEXER(EMPTY_LEXER):
 			(decorator) @function
 			
 			(call
-			  function: (attribute attribute: (identifier) @function.method))
+				function: (attribute attribute: (identifier) @function.method))
 			(call
-			  function: (identifier) @function)
+				function: (identifier) @function)
 			
 			; Builtin functions
 			
 			((call
-			  function: (identifier) @function.builtin)
+				function: (identifier) @function.builtin)
 			 (#match?
-			   @function.builtin
-			   "^(abs|all|any|ascii|bin|bool|breakpoint|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dict|dir|divmod|enumerate|eval|exec|filter|float|format|frozenset|getattr|globals|hasattr|hash|help|hex|id|input|int|isinstance|issubclass|iter|len|list|locals|map|max|memoryview|min|next|object|oct|open|ord|pow|print|property|range|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|vars|zip|__import__)$"))
+				 @function.builtin
+				 "^(abs|all|any|ascii|bin|bool|breakpoint|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dict|dir|divmod|enumerate|eval|exec|filter|float|format|frozenset|getattr|globals|hasattr|hash|help|hex|id|input|int|isinstance|issubclass|iter|len|list|locals|map|max|memoryview|min|next|object|oct|open|ord|pow|print|property|range|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|vars|zip|__import__)$"))
 			
 			; Function definitions
 			
 			(function_definition
-			  name: (identifier) @function)
+				name: (identifier) @function)
 			
 			(attribute attribute: (identifier) @property)
 			(type (identifier) @type)
@@ -1219,14 +1240,14 @@ class LEXER(EMPTY_LEXER):
 			; Literals
 			
 			[
-			  (none)
-			  (true)
-			  (false)
+				(none)
+				(true)
+				(false)
 			] @constant.builtin
 			
 			[
-			  (integer)
-			  (float)
+				(integer)
+				(float)
 			] @number
 			
 			(comment) @comment
@@ -1234,51 +1255,51 @@ class LEXER(EMPTY_LEXER):
 			(escape_sequence) @escape
 			
 			(interpolation
-			  "{" @punctuation.special
-			  "}" @punctuation.special) @embedded
+				"{" @punctuation.special
+				"}" @punctuation.special) @embedded
 			
 			[
-			  "-"
-			  "-="
-			  "!="
-			  "*"
-			  "**"
-			  "**="
-			  "*="
-			  "/"
-			  "//"
-			  "//="
-			  "/="
-			  "&"
-			  "&="
-			  "%"
-			  "%="
-			  "^"
-			  "^="
-			  "+"
-			  "->"
-			  "+="
-			  "<"
-			  "<<"
-			  "<<="
-			  "<="
-			  "<>"
-			  "="
-			  ":="
-			  "=="
-			  ">"
-			  ">="
-			  ">>"
-			  ">>="
-			  "|"
-			  "|="
-			  "~"
-			  "@="
-			  "and"
-			  "in"
-			  "is"
-			  "not"
-			  "or"
+				"-"
+				"-="
+				"!="
+				"*"
+				"**"
+				"**="
+				"*="
+				"/"
+				"//"
+				"//="
+				"/="
+				"&"
+				"&="
+				"%"
+				"%="
+				"^"
+				"^="
+				"+"
+				"->"
+				"+="
+				"<"
+				"<<"
+				"<<="
+				"<="
+				"<>"
+				"="
+				":="
+				"=="
+				">"
+				">="
+				">>"
+				">>="
+				"|"
+				"|="
+				"~"
+				"@="
+				"and"
+				"in"
+				"is"
+				"not"
+				"or"
 			] @operator
 			
 			[
@@ -1293,37 +1314,37 @@ class LEXER(EMPTY_LEXER):
 			] @parenthesis
 			
 			[
-			  "as"
-			  "assert"
-			  "async"
-			  "await"
-			  "break"
-			  "class"
-			  "continue"
-			  "def"
-			  "del"
-			  "elif"
-			  "else"
-			  "except"
-			  "exec"
-			  "finally"
-			  "for"
-			  "from"
-			  "global"
-			  "if"
-			  "import"
-			  "lambda"
-			  "nonlocal"
-			  "pass"
-			  "print"
-			  "raise"
-			  "return"
-			  "try"
-			  "while"
-			  "with"
-			  "yield"
-			  "match"
-			  "case"
+				"as"
+				"assert"
+				"async"
+				"await"
+				"break"
+				"class"
+				"continue"
+				"def"
+				"del"
+				"elif"
+				"else"
+				"except"
+				"exec"
+				"finally"
+				"for"
+				"from"
+				"global"
+				"if"
+				"import"
+				"lambda"
+				"nonlocal"
+				"pass"
+				"print"
+				"raise"
+				"return"
+				"try"
+				"while"
+				"with"
+				"yield"
+				"match"
+				"case"
 			] @keyword
 			
 			'''
@@ -1367,6 +1388,45 @@ class LEXER(EMPTY_LEXER):
 
 		self.lex()
 
+	def debug(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
+		if (not self.language): return
+
+		# self.text_index = self.buffer.index("insert-1c")
+
+		offset_pos = 1
+		# self.curr_file = start_file
+		if (text):
+			# self.text = text
+			offset_pos = int(index[0].split(".")[0])
+
+		else:
+			# index = ["1.0", "end"]
+			# self.text = self.buffer.get(*index) + " "
+			# self.indexed_files.append(self.buffer.full_name)
+
+			if (index == ["1.0", "end"]): pass
+			else:
+				offset_pos = int(index[0].split(".")[0])
+
+		# self.current_scope = self.scopes["global"]
+		# self.tree = self.parser.parse(bytes(self.text, 'utf-8'))
+		last = ["1.0" ,"1.0"]
+		last_type = []
+
+		# r = tree_sitter.Range((4, 0), (6, 0))
+		# self.results = self.query.captures(self.tree.root_node)
+		if (index == ["1.0", "end"]): self.full_results = self.results
+		scope_list = []
+
+		s = ""
+		for index, (node, catch_type) in enumerate(self.results):
+			start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
+			end = f"{node.end_point[0]+offset_pos}.{node.end_point[1]}"
+			print(node, catch_type, node.text)
+			s += f"{node} {catch_type} {node.text}\n"
+
+		self.parent.command_out_set(s)
+
 
 	def lex(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
 		if (not self.language): return
@@ -1402,7 +1462,7 @@ class LEXER(EMPTY_LEXER):
 		self.blocks = {}
 		self.scopes = {"global" : {}}
 		self.current_scope = self.scopes["global"]
-		print(dir(self.parser))
+		# print(dir(self.parser))
 
 		# tree = self.tree
 		self.tree = self.parser.parse(bytes(self.text, 'utf-8'))
@@ -1428,7 +1488,7 @@ class LEXER(EMPTY_LEXER):
 
 			start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
 			end = f"{node.end_point[0]+offset_pos}.{node.end_point[1]}"
-			print(node, catch_type, node.text)
+			# print(node, catch_type, node.text)
 			inside = False
 
 			# if (self.buffer.compare(self.text_index, ">=", start) and self.buffer.compare(self.text_index, "<=", end)):
@@ -1455,9 +1515,6 @@ class LEXER(EMPTY_LEXER):
 			elif (catch_type == "string"):
 				self.buffer.tag_add("quotes", start, end)
 
-			elif (catch_type == "constant.builtin"):
-				self.buffer.tag_add("keywords", start, end)
-
 			elif (catch_type == "function.method"):
 				self.buffer.tag_add("functions", start, end)
 
@@ -1476,14 +1533,20 @@ class LEXER(EMPTY_LEXER):
 			elif (catch_type == "type" or node.type == "type_parameters"):
 				self.buffer.tag_add("special_chars", start, end)
 
-			elif (catch_type == "special_keywords" or catch_type == "attribute"):
+			elif (catch_type == "special_keywords" or catch_type == "command_keywords" or catch_type == "attribute"):
 				self.buffer.tag_add("command_keywords", start, end)
+
+			elif (catch_type == "proc_keywords"):
+				self.buffer.tag_add("found", start, end)
 
 			elif (catch_type == "logical_keywords"):
 				self.buffer.tag_add(catch_type, start, end)
 
 			elif (catch_type == "numerical_keywords"):
 				self.buffer.tag_add("numbers", start, end)
+
+			elif (catch_type == "constant.builtin"):
+				self.buffer.tag_add("keywords", start, end)
 
 			## TODO: handle multiple languages in one file php/html/css/js and fuckall web
 			# elif (catch_type == "injection.content"):
@@ -1494,7 +1557,7 @@ class LEXER(EMPTY_LEXER):
 					# self.buffer.tag_add("keywords", start, end)
 
 			if ((catch_type == "property" or catch_type == "delimeter")):
-				print("proprety: ", node, catch_type)
+				# print("proprety: ", node, catch_type)
 				self.current_scope[node.text.decode()] = node.parent.text.decode()
 				if ("parenthesis" not in last_type and node.type != "field_identifier"):
 					self.buffer.tag_add("command_keywords", *last)
@@ -1606,7 +1669,9 @@ class LEXER(EMPTY_LEXER):
 			starting_point_offset = self.last_node_cursor_was_inside_of[1]
 			# print("start: ", starting_point_offset, text_index)
 
-			if (row == self.last_node_cursor_was_inside_of[0].start_point[0] or row == self.last_node_cursor_was_inside_of[0].end_point[0]): print("early return"); return
+			if (row == self.last_node_cursor_was_inside_of[0].start_point[0] or row == self.last_node_cursor_was_inside_of[0].end_point[0]):
+				# print("early return")
+				return
 
 			elif (row > self.last_node_cursor_was_inside_of[0].start_point[0]):
 				query = query[starting_point_offset:]
@@ -1623,11 +1688,11 @@ class LEXER(EMPTY_LEXER):
 		last_was_less = True
 		last_node = None
 
-		for index, (node, other)  in enumerate(query, starting_point_offset):
+		for index, (node, other)	in enumerate(query, starting_point_offset):
 			start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
 			end = f"{node.end_point[0]+offset_pos}.{node.end_point[1]}"
 			# TODO: iterate sibling(left) -> goto parent and start over
-			#       ^-------------------------------------------^
+			#		 ^-------------------------------------------^
 			# start from last node cursor was inside
 
 			# print("ttrying: ", start, end, index, node, text_index)
