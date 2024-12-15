@@ -836,7 +836,7 @@ class WIN(tkinter.Tk):
 				ret = ""
 
 				for m in list(self.buffer.lexer.vars.keys()):
-					if (re.match(token, m)):
+					if (re.search(token, m)):
 						self.suggest_widget.insert("insert", m+"\n")
 						if (len(m) > longest_line): longest_line = len(m)
 						
@@ -894,6 +894,12 @@ class WIN(tkinter.Tk):
 		self.buffer.focus_set()
 		return "break"
 
+	def helper(self, arg=None):
+		if (not self.helper_widget.winfo_viewable()):
+			self.helper_widget.place(relx=0.9, rely=0.1, relwidth=0.2, anchor="ne")
+			self.helper_widget.tkraise()
+		else:
+			self.helper_widget.place_forget()
 
 	def execute_command(self, arg, command):
 		self.cmmand(command=command.split())

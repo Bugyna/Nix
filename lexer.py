@@ -13,8 +13,13 @@ import tree_sitter_commonlisp as tslisp
 import tree_sitter_html as tshtml
 import tree_sitter_php as tsphp
 
+from util import *
+
+C_LANGUAGE = tree_sitter.Language(tsc.language(), 'C')
 PHP_LANGUAGE = tree_sitter.Language(tsphp.language_php(), 'php')
 HTML_LANGUAGE = tree_sitter.Language(tshtml.language(), 'html')
+RUST_LANGUAGE = tree_sitter.Language(tsrust.language(), 'rust')
+PYTHON_LANGUAGE = tree_sitter.Language(tspython.language(), 'Python')
 
 class EMPTY_LEXER:
 	def __init__(self, parent, buffer_widget, type="c"):
@@ -42,6 +47,11 @@ class EMPTY_LEXER:
 		self.tree = None
 		self.results = []
 		self.full_results = []
+
+		self.force_multiline_comment = False
+
+		self.injection_lexers = {}
+		self.active_lexers = {}
 
 
 		self.last_node_cursor_was_inside_of = None
@@ -156,6 +166,52 @@ class LEXER(EMPTY_LEXER):
 				# print(self.objs, self.functions)
 				f.close()
 
+
+	def construct_lang_and_query(self, lang_type):
+		if (type(lang_type) == list): lang_type = lang_type[0]
+		query, language = None, None
+
+		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh"]):
+			lang_type = "c"
+			language = C_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/c.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type == "py"):
+			language = PYTHON_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/python.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type == "php"):
+			language = PHP_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/php.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type == "html"):
+			language = HTML_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/html.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type == "rs"):
+			language = RUST_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/rust.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type == "lb"):
+			language = tree_sitter.Language(tslisp.language(), 'Common Lisp')
+			with open(f"{SOURCE_PATH}/ts_queries/lisp.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type == "(cpp|hpp|cc|hh)$"):
+			language = C_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/c.scm", "r") as file:
+				query = language.query(file.read())
+
+
+		return language, query
+
+
+
 	def set_language(self, lang_type):
 		if (type(lang_type) == list): lang_type = lang_type[0]
 
@@ -163,6 +219,7 @@ class LEXER(EMPTY_LEXER):
 		self.language = None
 
 		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh"]):
+			lang_type = "c"
 			self.keywords = [
 				'auto', 'char', 'default', 'double',
 			 	'float', 'int', 'long', 'return', 'short', 'sizeof',
@@ -185,129 +242,6 @@ class LEXER(EMPTY_LEXER):
 
 			self.build_argv = ["make"]
 			self.run_argv = ["./main"]
-
-			self.language = tree_sitter.Language(tsc.language(), 'C')
-			self.query = self.language.query(
-			'''
-			(identifier) @variable
-			
-			((identifier) @constant
-			 (#match? @constant "^[A-Z][A-Z\\d_]*$"))
-
-			((identifier) @upcase
-			 (#match? @upcase "^[A-Z_][A-Z_1-9]+$"))
-
-			[
-				"switch"
-				"case"
-				"if"
-				"else"
-				"goto"
-				"for"
-				"while"
-				"continue"
-				"break"
-				"do"
-			] @logical_keywords
-
-			[
-				"enum"
-				"NULL"
-				"signed"
-				"unsigned"
-			] @numerical_keywords
-
-			[
-				"asm"
-				"__attribute__"
-				"const"
-				"extern"
-				"volatile"
-				"typedef"
-				"static"
-				"register"
-			] @special_keywords
-			
-			"#define" @keyword
-			"#elif" @keyword
-			"#else" @keyword
-			"#endif" @keyword
-			"#if" @keyword
-			"#ifdef" @keyword
-			"#ifndef" @keyword
-			"#include" @keyword
-			(preproc_directive) @keyword
-			
-			"--" @operator
-			"-" @operator
-			"-=" @operator
-			"->" @operator
-			"=" @operator
-			"!=" @operator
-			"*" @operator
-			"&" @operator
-			"&&" @operator
-			"+" @operator
-			"++" @operator
-			"+=" @operator
-			"<" @operator
-			"==" @operator
-			">" @operator
-			"||" @operator
-			
-			"." @delimeter
-			"->" @delimeter
-			";" @delimiter
-
-			[
-				"("
-				")"
-				"["
-				"]"
-				"{"
-				"}"
-				"~"
-			] @parenthesis
-			
-			(string_literal) @string
-			(system_lib_string) @string
-			
-			(null) @constant
-			(number_literal) @number
-			(char_literal) @number
-			
-			(field_identifier) @property
-			(statement_identifier) @label
-			(type_identifier) @type
-			(primitive_type) @type
-			(sized_type_specifier) @type
-			
-			(call_expression
-				function: (identifier) @function)
-			(call_expression
-				function: (field_expression
-				field: (field_identifier) @function))
-
-			
-			
-			(function_declarator
-				declarator: (identifier) @function)
-			(preproc_function_def
-				name: (identifier) @function.special)
-			
-			(comment) @comment
-
-			(struct_specifier name: (type_identifier) @name body:(_)) @definition.class
-
-			(declaration type: (union_specifier name: (type_identifier) @name)) @definition.class
-			
-			(function_declarator declarator: (identifier) @name) @definition.function
-			
-			(type_definition declarator: (type_identifier) @name) @definition.type
-			
-			(enum_specifier name: (type_identifier) @name) @definition.type
-			'''
-			)
 
 
 		elif (lang_type == "(cpp|hpp|cc|hh)$"):
@@ -335,7 +269,7 @@ class LEXER(EMPTY_LEXER):
 				"asm", "__attribute__", "const", "extern", "volatile", "internal", "private", "public"
 			]
 
-			self.query = c_query
+
 
 		elif (lang_type == "rs"):
 			self.keywords = [
@@ -359,285 +293,8 @@ class LEXER(EMPTY_LEXER):
 
 			self.build_argv = ["cargo", "build"]
 			self.run_argv = ["cargo", "run"]
-
-			self.language = tree_sitter.Language(tsrust.language(), 'rust')
-			self.query = self.language.query('''
-
-					(identifier) @variable
-		
-					((identifier) @upcase
-					 (#match? @upcase "^[A-Z_][A-Z_]+$"))
 			
-					(type_identifier) @type
-					(primitive_type) @type.builtin
-					(field_identifier) @property
-					
-					; Identifier conventions
-					
-					; Assume all-caps names are constants
-					((identifier) @constant
-					 (#match? @constant "^[A-Z][A-Z\\d_]+$'"))
-					
-					; Assume uppercase names are enum constructors
-					((identifier) @constructor
-					 (#match? @constructor "^[A-Z]"))
-					
-					; Assume that uppercase names in paths are types
-					((scoped_identifier
-						path: (identifier) @type)
-					 (#match? @type "^[A-Z]"))
-					((scoped_identifier
-						path: (scoped_identifier
-						name: (identifier) @type))
-					 (#match? @type "^[A-Z]"))
-					((scoped_type_identifier
-						path: (identifier) @type)
-					 (#match? @type "^[A-Z]"))
-					((scoped_type_identifier
-						path: (scoped_identifier
-						name: (identifier) @type))
-					 (#match? @type "^[A-Z]"))
-					
-					; Assume all qualified names in struct patterns are enum constructors. (They're
-					; either that, or struct names; highlighting both as constructors seems to be
-					; the less glaring choice of error, visually.)
-					(struct_pattern
-						type: (scoped_type_identifier
-						name: (type_identifier) @constructor))
-					
-					; Function calls
-					
-					(call_expression
-						function: (identifier) @function)
-					
-					(call_expression
-						function: (field_expression
-						field: (field_identifier) @function.method))
-					
-					(call_expression
-						function: (scoped_identifier
-						"::"
-						name: (identifier) @function))
-					
-					(generic_function
-						function: (identifier) @function)
-					(generic_function
-						function: (scoped_identifier
-						name: (identifier) @function))
-					(generic_function
-						function: (field_expression
-						field: (field_identifier) @function.method))
-					
-					(macro_invocation
-						macro: (identifier) @function.macro
-						"!" @function.macro)
-					
-					; Function definitions
-					
-					(function_item (identifier) @function)
-					(function_signature_item (identifier) @function)
-					
-					(line_comment) @comment
-					(block_comment) @comment
-					
-					(line_comment (doc_comment)) @comment.documentation
-					(block_comment (doc_comment)) @comment.documentation
-					
-					(type_arguments
-						"<" @punctuation.bracket
-						">" @punctuation.bracket)
-					(type_parameters
-						"<" @punctuation.bracket
-						">" @punctuation.bracket)
-					
-					"," @punctuation.delimiter
-					";" @punctuation.delimiter
 
-					;;":" @delimeter
-					"::" @delimeter
-					"." @delimeter
-
-
-					[
-						"("
-						")"
-						"["
-						"]"
-						"{"
-						"}"
-					] @parenthesis
-					
-					(parameter (identifier) @variable.parameter)
-					
-					(lifetime (identifier) @label)
-					
-					[
-						"impl"
-						"struct"
-						"fn"
-						"mod"
-						"move"
-						"ref"
-						"trait"
-						"type"
-						"yield"
-						"union"
-						"dyn"
-						"let"
-					] @keyword
-					(crate) @keyword
-					(mutable_specifier) @keyword
-					(use_list (self) @keyword)
-					(scoped_use_list (self) @keyword)
-					(scoped_identifier (self) @keyword)
-					(super) @keyword
-
-					(self) @special_keywords
-
-					[
-						"false"
-						"true"
-						"enum"
-					] @numerical_keywords
-
-					((identifier) @numerical_keywords
-					 (#match? @numerical_keywords "usize"))
-
-					[
-						"if"
-						"else"
-						"loop"
-						"for"
-						"while"
-						"continue"
-						"break"
-						"match"
-						"return"
-					] @logical_keywords
-
-					[
-						"use"
-						"in"
-						"as"
-						"unsafe"
-						"extern"
-						"pub"
-						"const"
-						"where"
-					] @special_keywords
-
-					
-					(self) @variable.builtin
-					
-					(char_literal) @string
-					(string_literal) @string
-					(raw_string_literal) @string
-					
-					(boolean_literal) @constant.builtin
-					(integer_literal) @constant.builtin
-					(float_literal) @constant.builtin
-					
-					(escape_sequence) @escape
-					
-					(attribute_item) @attribute
-					(inner_attribute_item) @attribute
-					
-					[
-						"-"
-						"-="
-						"!="
-						"*"
-						"*="
-						"/"
-						"/="
-						"&"
-						"&="
-						"%"
-						"%="
-						"^"
-						"^="
-						"+"
-						"->"
-						"+="
-						"<"
-						"<<"
-						"<<="
-						"<="
-						"="
-						"=="
-						">"
-						">="
-						">>"
-						">>="
-						"|"
-						"|="
-						"&&"
-						"||"
-						"!"
-						"^"
-						"'"
-						":"
-					] @operator
-
-					; ADT definitions
-					
-					(struct_item
-						name: (type_identifier) @name) @definition.class
-					
-					(enum_item
-						name: (type_identifier) @name) @definition.class
-					
-					(union_item
-						name: (type_identifier) @name) @definition.class
-					
-					; type aliases
-					
-					(type_item
-						name: (type_identifier) @name) @definition.class
-					
-					; method definitions
-					
-					(declaration_list
-						(function_item
-							name: (identifier) @name)) @definition.method
-					
-					; function definitions
-					
-					(function_item
-						name: (identifier) @name) @definition.function
-					
-					; trait definitions
-					(trait_item
-						name: (type_identifier) @name) @definition.interface
-					
-					; module definitions
-					(mod_item
-						name: (identifier) @name) @definition.module
-					
-					; macro definitions
-					
-					(macro_definition
-						name: (identifier) @name) @definition.macro
-					
-					; references
-					
-					(call_expression
-						function: (identifier) @name) @reference.call
-					
-					(macro_invocation
-						macro: (identifier) @name) @reference.call @function.method
-					
-					; implementations
-					
-					(impl_item
-						trait: (type_identifier) @name) @reference.implementation
-					
-					(impl_item
-						type: (type_identifier) @name
-						!trait) @reference.implementation
-					'''
-					)
-			
 
 		elif (lang_type == "hs"):
 			self.keywords = [
@@ -655,374 +312,31 @@ class LEXER(EMPTY_LEXER):
 				
 			]
 
+
+
 		elif (lang_type == "php"):
+			l, q = self.construct_lang_and_query('html')
+			p = tree_sitter.Parser(l)
+			p.set_language(l)
+			self.active_lexers['html'] = [p, q, l]
+			
 			# self.keywords = [
 				 # '__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
 				 # 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach',
 				 # 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print',
 				 # 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'
 			# ]
-
 			self.build_argv = []
 			self.run_argv = []
 
-			self.language = PHP_LANGUAGE
-			self.query = self.language.query('''
-					[
-						"?>"
-					] @tag
-					
-					; Keywords
-					
-					[
-						"as"
-						"catch"
-						"clone"
-						"const"
-						"declare"
-						"default"
-						"do"
-						"echo"
-						"finally"
-						"fn"
-						"function"
-						"instanceof"
-						"insteadof"
-						"interface"
-						"match"
-						"new"
-						"print"
-						"use"
-						"yield"
-						(abstract_modifier)
-						(final_modifier)
-						(readonly_modifier)
-						(static_modifier)
-						(visibility_modifier)
-					] @keyword
-
-					[
-						"while"
-						"if"
-						"foreach"
-						"for"
-						"else"
-						"elseif"
-						"enddeclare"
-						"endfor"
-						"endforeach"
-						"endif"
-						"endswitch"
-						"endwhile"
-					] @logical_keywords
-
-					[
-						"global"
-						"require"
-						"require_once"
-						"include"
-						"include_once"
-						"trait"
-						"namespace"
-						"interface"
-						"implements"
-						"extends"
-						"class"
-						(null)
-					] @command_keywords
-
-					[
-						"enum"
-						"and"
-						"xor"
-					] @numbers
-
-					[
-						"exit"
-						"break"
-						"case"
-						"return"
-						"try"
-						"throw"
-					] @special_chars
-
-					[
-						"continue"
-						"goto"
-						"switch"
-					] @proc_keywords
-
-					[
-						"("
-						")"
-						"["
-						"]"
-						"{"
-						"}"
-					] @parenthesis
-
-					"." @delimeter
-					"->" @delimeter
-					";" @delimiter
-					
-					(yield_expression "from" @keyword)
-					(function_static_declaration "static" @keyword)
-					
-					; Namespace
-					
-					(namespace_definition
-						name: (namespace_name
-						(name) @module))
-					
-					(namespace_name
-						(name) @module)
-					
-					(namespace_use_clause
-						[
-						(name) @type
-						(qualified_name
-							(name) @type)
-						alias: (name) @type
-						])
-					
-					(namespace_use_clause
-						type: "function"
-						[
-						(name) @function
-						(qualified_name
-							(name) @function)
-						alias: (name) @function
-						])
-					
-					(namespace_use_clause
-						type: "const"
-						[
-						(name) @constant
-						(qualified_name
-							(name) @constant)
-						alias: (name) @constant
-						])
-					
-					; Variables
-					
-					(relative_scope) @variable.builtin
-					
-					(variable_name) @variable
-					
-					(method_declaration name: (name) @constructor
-						(#eq? @constructor "__construct"))
-					
-					(object_creation_expression [
-						(name) @constructor
-						(qualified_name (name) @constructor)
-					])
-
-					
-					((name) @constant
-					 (#match? @constant "^_?[A-Z][A-Z\\d_]+$"))
-
-					((name) @upcase
-			 			(#match? @upcase "^[A-Z_][A-Z_1-9]+$"))
-
-					((name) @constant.builtin
-					 (#match? @constant.builtin "^__[A-Z][A-Z\d_]+__$"))
-					(const_declaration (const_element (name) @constant))
-					
-					; Types
-					
-					(primitive_type) @type.builtin
-					(cast_type) @type.builtin
-					(named_type [
-						(name) @type
-						(qualified_name (name) @type)
-					]) @type
-					(named_type (name) @type.builtin
-						(#any-of? @type.builtin "static" "self"))
-					
-					; Functions
-					
-					(array_creation_expression "array" @function.builtin)
-					(list_literal "list" @function.builtin)
-					(exit_statement "exit" @function.builtin "(")
-					
-					(method_declaration
-						name: (name) @function.method)
-					
-					(function_call_expression
-						function: [(qualified_name (name)) (name)] @function)
-					
-					(scoped_call_expression
-						name: (name) @function)
-					
-					(member_call_expression
-						name: (name) @function.method)
-					
-					(function_definition
-						name: (name) @function)
-					
-					; Member
-					
-					(property_element
-						(variable_name) @property)
-					
-					(member_access_expression
-						name: (variable_name (name)) @property)
-					(member_access_expression
-						name: (name) @property)
-					
-					; Basic tokens
-					[
-						(string)
-						(string_content)
-						(encapsed_string)
-						(heredoc)
-						(heredoc_body)
-						(nowdoc_body)
-					] @string
-					(boolean) @number
-					(integer) @number
-					(float) @number
-					(comment) @comment
-					
-					((name) @variable.builtin
-					 (#eq? @variable.builtin "this"))
-					
-					"$" @operator
-					
-					[
-						"-"
-						"-="
-						"!="
-						"*"
-						"*="
-						"/"
-						"/="
-						"&"
-						"&="
-						"%"
-						"%="
-						"^"
-						"^="
-						"+"
-						"->"
-						"+="
-						"<"
-						"<<"
-						"<<="
-						"<="
-						"="
-						"=="
-						">"
-						">="
-						">>"
-						">>="
-						"|"
-						"|="
-						"&&"
-						"||"
-						"!"
-						"^"
-						"'"
-						":"
-					] @operator
-
-					((text) @injection.content
-					 (#set! injection.language "html")
-					 (#set! injection.combined))
-
-					((comment) @injection.content
-						(#set! injection.language "phpdoc"))
-					
-					(heredoc
-						(heredoc_body) @injection.content
-						(heredoc_end) @injection.language)
-					
-					(nowdoc
-						(nowdoc_body) @injection.content
-						(heredoc_end) @injection.language)
-
-					(namespace_definition
-						name: (namespace_name) @name) @module
-					
-					(interface_declaration
-						name: (name) @name) @definition.interface
-					
-					(trait_declaration
-						name: (name) @name) @definition.interface
-					
-					(class_declaration
-						name: (name) @name) @definition.class
-					
-					(class_interface_clause [(name) (qualified_name)] @name) @impl
-					
-					(property_declaration
-						(property_element (variable_name (name) @name))) @definition.field
-					
-					(function_definition
-						name: (name) @name) @definition.function
-					
-					(method_declaration
-						name: (name) @name) @definition.function
-					
-					(object_creation_expression
-						[
-						(qualified_name (name) @name)
-						(variable_name (name) @name)
-						]) @reference.class
-					
-					(function_call_expression
-						function: [
-						(qualified_name (name) @name)
-						(variable_name (name)) @name
-						]) @reference.call
-					
-					(scoped_call_expression
-						name: (name) @name) @reference.call
-					
-					(member_call_expression
-						name: (name) @name) @reference.call
-
-					'''
-			)
 
 
 		elif (lang_type == "html"):
-			self.language = HTML_LANGUAGE
-			self.query = self.language.query(
-				'''
-				(tag_name) @tag @keyword
-				(erroneous_end_tag_name) @tag.error
-				(doctype) @constant @logical_keywords
-				(attribute_name) @attribute
-				(attribute_value) @string
-				(comment) @comment
+			self.force_multiline_comment = True
+			self.multiline_comment_sign = "<!--"
+			self.multiline_comment_sign_end = "-->"
 
-				[
-					"'"
-					"\\""
-				] @string
 
-				[
-					"="
-				] @operator
-				
-				[
-					"<"
-					">"
-					"</"
-					"/>"
-				] @punctuation.bracket @parenthesis
-
-				((script_element
-					(raw_text) @injection.content)
-				 (#set! injection.language "javascript"))
-				
-				((style_element
-					(raw_text) @injection.content)
-				 (#set! injection.language "css"))
-				
-				'''
-			)
 
 		elif lang_type == "js":
 			self.keywords = ['abstract', 'arguments', 'await', 'boolean', 'break', 'byte', 'catch',
@@ -1047,6 +361,8 @@ class LEXER(EMPTY_LEXER):
 				'this', 'void', 'volatile', 'yield', 'new', 'private', 'protected', 'public', 'class', 'extends'
 			]
 
+
+
 		elif lang_type == "lb":
 			self.keywords = [
 				'let', 'fn', 'progn', 'type', 'len', 'nth', 'list', 'use', 'load', 'help', 'exit', 'print', 'xor', 'random-num', 'map-get', 'map-add', 'car', 'cdr',
@@ -1061,306 +377,18 @@ class LEXER(EMPTY_LEXER):
 				'true', 'false', 'NIL', 'PI', 
 			]
 			
-			self.language = tree_sitter.Language(tslisp.language(), 'Common Lisp')
-			self.query = self.language.query("""
-			;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Function Definitions ;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun_header
-	function_name: (sym_lit) @name) @definition.function
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; Function Calls ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;
-;;; Basically, we consider every list literal with symbol as the
-;;; first element to be a call to a function named by that element.
-;;; But we must exclude some cases. Note, tree-sitter @ignore
-;;; cases only work if they are declared before the cases
-;;; we want to include.
-
-;; Exclude lambda lists for function definitions
-;; For example:
-;;
-;;	(defun my-func (arg1 arg2) ...)
-;;
-;; do not treat (arg1 arg2) as a call of function arg1
-;;
-(defun_header
-	lambda_list: (list_lit . [(sym_lit) (package_lit)] @ignore))
-
-;; Similar to the above, but for
-;;
-;;	 (defmethod m ((type1 param1) (type2 param2)) ...)
-;;
-;; where list literals having symbol as their first element
-;; are nested inside the lambda list.
-(defun_header
-	lambda_list: (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore)))
-
-;;
-;;		(let ((var ...) (var2 ...)) ...)
-;;
-;; - exclude var, var2
-;; - the same for let*, flet, labels, macrolet, symbol-macrolet
-(list_lit . [(sym_lit) (package_lit)] @name
-			. (list_lit (list_lit . [(sym_lit) (package_lit)] @ignore))
-			(#match? @name
-					 "(?i)^(cl:)?(let|let\\*|flet|labels|macrolet|symbol-macrolet)$")
-	)
-
-;; TODO:
-;;	 - exclude also:
-;;		 - (defclass name (parent parent2)
-;;			 ((slot1 ...)
-;;			(slot2 ...))
-;;				exclude the parent, slot1, slot2
-;;		 - (flet ((func-1 (param1 param2))) ...)
-;;			 - we already exclude func-1, but param1 is still recognized
-;;			 as a function call - exclude it too
-;;			 - the same for labels
-;;			 - the same macrolet
-;;		 - what else?
-;;		 (that's a non-goal to completely support all macros
-;;			and special operators, but every one we support
-;;			makes the solution a little bit better)
-;;	 - (flet ((func-1 (param1 param2))) ...)
-;;		 - instead of simply excluding it, as we do today,
-;;		 tag func-1 as @local.definition.function (I suppose)
-;;		 - the same for labels, macrolet
-;;	 - @local.scope for let, let*, flet, labels, macrolet
-;;		 - I guess the whole span of the scope text,
-;;		 till the closing paren, should be tagged as @local.scope;
-;;		 Hopefully, combined with @local.definition.function
-;;		 withing the scope, the usual	@reference.call within
-;;		 that scope will refer to the local definition,
-;;		 and there will be no need to use @local.reference.call
-;;		 (which is more difficult to implement).
-;;		 - When implementing, remeber the scope rules differences
-;;		 of let vs let*, flet vs labels.
-
-
-;; Inlclude all other cases - list literal with symbol as the
-;; first element
-(list_lit . [(sym_lit) (package_lit)] @name) @reference.call
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; classes
-
-(list_lit . [(sym_lit) (package_lit)] @ignore
-			. [(sym_lit) (package_lit)] @name
-	(#match? @ignore "(?i)^(cl:)?defclass$")
-			) @definition.class
-
-(list_lit . [(sym_lit) (package_lit)] @ignore
-			. (quoting_lit [(sym_lit) (package_lit)] @name)
-	(#match? @ignore "(?i)^(cl:)?make-instance$")
-			) @reference.class
-
-;;; TODO:
-;;	- @reference.class for base classes
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;; TODO:
-;; - Symbols referenced in defpackage
-;;
-;;		 (defpackage ...
-;;		 (:export (symbol-a :symbol-b #:symbol-c "SYMBOL-D")))
-;;
-;;	 The goal is to allow quick navigation from the API
-;;	 overview in the form of defpackage, to the definition
-;;	 where user can read parameters, docstring, ect.
-;;	 - The @name must not include the colon, or sharpsign colon, quotes,
-;;	 just symbol-a, symbol-b, symbol-c, sybmol-d
-;;	 - Downcase the names specified as stirng literals?
-;;	 ("SYMBOL-D" -> symbol-d)
-;;	 - We don't know if the exported symbol is a function, variable,
-;;	 class or something else. The oficial doc
-;;	 (https://tree-sitter.github.io/tree-sitter/code-navigation-systems)
-;;	 does not even suggest a tag for variable reference.
-;;	 (Although in practice, the `tree-sitter tags` command
-;;	 allows any @reference.* and @definition.* tags)
-;;	 Probably it's better to just use @reference.call for all
-;;	 the symbols in the :export clause.
-;;
-;; - The same for the export function call:
-;; 
-;;		 (export '(symbol-a :symbol-b #:symbol-c "SYMBOL-D"))
-			""")
 
 			self.comment_sign = ";;"
 			self.multiline_comment_sign = ""
 			self.multiline_comment_sign_end = ""
 
-		elif (lang_type in ["py", "pyw"]):
 
+
+		elif (lang_type in ["py", "pyw"]):
+			lang_type = "py"
 			self.build_argv = ["python3", self.buffer.name]
 			self.run_argv = self.build_argv
 
-			self.language = tree_sitter.Language(tspython.language(), 'Python')
-			self.query = self.language.query(
-				'''
-				; Identifier naming conventions
-			
-			(identifier) @variable
-			
-			((identifier) @constructor
-			 (#match? @constructor "^[A-Z]"))
-
-			((identifier) @upcase
-			 (#match? @upcase "^[A-Z_][A-Z_]+$"))
-			
-			((identifier) @constant
-			 (#match? @constant "^[A-Z][A-Z_]*$"))
-			
-			; Function calls
-			
-			(decorator) @special_keywords
-			
-			(call
-				function: (attribute attribute: (identifier) @function.method))
-			(call
-				function: (identifier) @function)
-			
-			; Builtin functions
-			
-			((call
-				function: (identifier) @function.builtin)
-			 (#match?
-				 @function.builtin
-				 "^(abs|all|any|ascii|bin|bool|breakpoint|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dict|dir|divmod|enumerate|eval|exec|filter|float|format|frozenset|getattr|globals|hasattr|hash|help|hex|id|input|int|isinstance|issubclass|iter|len|list|locals|map|max|memoryview|min|next|object|oct|open|ord|pow|print|property|range|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|vars|zip|__import__)$"))
-			
-			; Function definitions
-			
-			(function_definition
-				name: (identifier) @function)
-			
-			(attribute attribute: (identifier) @property)
-			(type (identifier) @type)
-			
-			; Literals
-			
-			[
-				(none)
-				(true)
-				(false)
-			] @constant.builtin
-			
-			[
-				(integer)
-				(float)
-			] @number
-			
-			(comment) @comment
-			(string) @string
-			(escape_sequence) @escape
-			
-			(interpolation
-				"{" @punctuation.special
-				"}" @punctuation.special) @embedded
-
-			(interpolation
-				"{" @punctuation.special
-				"}" @punctuation.special) @special_keywords
-			
-			[
-				"-"
-				"-="
-				"!="
-				"*"
-				"**"
-				"**="
-				"*="
-				"/"
-				"//"
-				"//="
-				"/="
-				"&"
-				"&="
-				"%"
-				"%="
-				"^"
-				"^="
-				"+"
-				"->"
-				"+="
-				"<"
-				"<<"
-				"<<="
-				"<="
-				"<>"
-				"="
-				":="
-				"=="
-				">"
-				">="
-				">>"
-				">>="
-				"|"
-				"|="
-				"~"
-				"@="
-			] @operator
-
-			[
-				"and"
-				"in"
-				"is"
-				"not"
-				"or"
-				"while"
-				"with"
-				"import"
-				"elif"
-				"else"
-				"for"
-				"from"
-				"if"
-			] @logical_keywords
-			
-			[
-				"("
-				")"
-				"["
-				"]"
-				"{"
-				"}"
-				"~"
-				"@"
-			] @parenthesis
-
-			
-			[
-				"as"
-				"assert"
-				"async"
-				"await"
-				"break"
-				"def"
-				"del"
-				"except"
-				"finally"
-				"nonlocal"
-				"pass"
-				"print"
-				"raise"
-				"try"
-				"match"
-				"case"
-			] @keyword
-
-			[
-				"continue"
-				"class"
-				"exec"
-				"global"
-				"lambda"
-				"yield"
-				"return"
-			] @special_keywords
-			
-			'''
-			)
-			
 			self.comment_sign = "#"
 			self.multiline_comment_sign = ""
 			self.multiline_comment_sign_end = ""
@@ -1384,6 +412,7 @@ class LEXER(EMPTY_LEXER):
 
 
 		self.comment_regex = re.compile(fr"{self.comment_sign}")
+		self.language, self.query = self.construct_lang_and_query(lang_type)
 
 
 
@@ -1396,6 +425,9 @@ class LEXER(EMPTY_LEXER):
 		if (self.language):
 			self.parser = tree_sitter.Parser(self.language)
 			self.parser.set_language(self.language)
+
+		if (self.parser not in self.active_lexers):
+			self.active_lexers[self.text_type] = [self.parser, self.query, self.language]
 
 		self.lex()
 
@@ -1437,6 +469,101 @@ class LEXER(EMPTY_LEXER):
 			s += f"{node} {catch_type} {node.text}\n"
 
 		self.parent.command_out_set(s)
+
+
+	def highlight(self, text, index, lexer):
+		if (not lexer): return
+
+		text_index = self.buffer.index("insert-1c")
+
+		offset_pos = 1
+		offset_pos = int(index[0].split(".")[0])
+
+		# if (start_file or not should_highlight):
+			# self.parse_quotes = self.parse_quotes_simple
+			# self.handle_word_end = self.handle_word_end_without_highlight
+
+		# else:
+			# self.parse_quotes = self.parse_quotes_complex
+			# self.handle_word_end = self.handle_word_end_with_highlight
+
+		if (type(text) == str):
+			text = bytes(text, 'utf-8')
+		tree = lexer[0].parse(text)
+		# if (self.tree == None):
+			# self.tree = self.parser.parse(bytes(self.text, 'utf-8'))
+		# else:
+			# self.tree.edit(start_point=(1, 0))
+		# if (tree != None):
+			# print("CHNAGED: ", tree.changed_ranges(self.tree))
+		last = ["1.0" ,"1.0"]
+		last_type = []
+
+		# r = tree_sitter.Range((4, 0), (6, 0))
+		results = lexer[1].captures(tree.root_node)
+		scope_list = []
+		# print("_--------START--------_")
+		for index, (node, catch_type) in enumerate(results):
+			# parent = node.parent
+			# if (parent and parent != tree.root_node):
+				# print("parent: ", parent, parent.text, node.text)
+			# print(i, node.parent)
+
+			start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
+			end = f"{node.end_point[0]+offset_pos}.{node.end_point[1]}"
+			# print(node, catch_type, node.text)
+			inside = False
+
+			# if (self.buffer.compare(self.text_index, ">=", start) and self.buffer.compare(self.text_index, "<=", end)):
+				# # print("inside: True, ", start, end, node)
+				# inside = True
+				# self.parent.notify(self.walk_scopes(node))
+				# self.parent.code_location_label["text"] = self.walk_scopes(node)
+
+			if (catch_type == "keyword"):
+				self.buffer.tag_add("keywords", start, end)
+
+			elif (catch_type == "function"):
+				self.buffer.tag_add("functions", start, end)
+
+			elif (catch_type == "operator"):
+				self.buffer.tag_add("operators", start, end)
+
+			elif (catch_type == "string"):
+				self.buffer.tag_add("quotes", start, end)
+
+			elif (catch_type == "function.method"):
+				self.buffer.tag_add("functions", start, end)
+
+			elif (catch_type == "number"):
+				self.buffer.tag_add("numbers", start, end)
+
+			elif (catch_type == "comment"):
+				self.buffer.tag_add("comments", start, end)
+
+			elif (catch_type == "parenthesis" or catch_type == "special_chars" or catch_type == "delimeter" or catch_type == "tag"):
+				self.buffer.tag_add("special_chars", start, end)
+
+			elif (catch_type == "upcase"):
+				self.buffer.tag_add("upcase", start, end)
+
+			elif (catch_type == "type" or node.type == "type_parameters"):
+				self.buffer.tag_add("special_chars", start, end)
+
+			elif (catch_type == "special_keywords" or catch_type == "command_keywords" or catch_type == "attribute"):
+				self.buffer.tag_add("command_keywords", start, end)
+
+			elif (catch_type == "proc_keywords"):
+				self.buffer.tag_add("found", start, end)
+
+			elif (catch_type == "logical_keywords"):
+				self.buffer.tag_add(catch_type, start, end)
+
+			elif (catch_type == "numerical_keywords"):
+				self.buffer.tag_add("numbers", start, end)
+
+			elif (catch_type == "constant.builtin"):
+				self.buffer.tag_add("keywords", start, end)
 
 
 	def lex(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
@@ -1535,7 +662,7 @@ class LEXER(EMPTY_LEXER):
 			elif (catch_type == "comment"):
 				self.buffer.tag_add("comments", start, end)
 
-			elif (catch_type == "parenthesis" or catch_type == "special_chars" or catch_type == "delimeter"):
+			elif (catch_type == "parenthesis" or catch_type == "special_chars" or catch_type == "delimeter" or catch_type == "tag"):
 				self.buffer.tag_add("special_chars", start, end)
 
 			elif (catch_type == "upcase"):
@@ -1559,13 +686,20 @@ class LEXER(EMPTY_LEXER):
 			elif (catch_type == "constant.builtin"):
 				self.buffer.tag_add("keywords", start, end)
 
-			## TODO: handle multiple languages in one file php/html/css/js and fuckall web
-			# elif (catch_type == "injection.content"):
-				# print("injection content")
+
+			elif (catch_type in self.active_lexers and node.type == "text"):
+				self.highlight(node.text, [start, end], self.active_lexers[catch_type])
+				# print(dir(node))
+				# print(node.grammar_name)
 
 			# elif (node.type == "identifier"):
 				# if (node.text.decode() in self.keywords):
 					# self.buffer.tag_add("keywords", start, end)
+
+			if (catch_type == "variable"):
+				self.add_var(node.text.decode())
+				self.add_define(node.text.decode(), ["", node.text.decode(), ""])
+				
 
 			if ((catch_type == "property" or catch_type == "delimeter")):
 				# print("proprety: ", node, catch_type)
@@ -1611,6 +745,16 @@ class LEXER(EMPTY_LEXER):
 		# print("_----------------_")
 		# print(self.scopes)
 		# print(dir(self.tree), self.tree.included_ranges)
+
+	def print_res(self):
+		s = "VARS:"
+		for var in self.vars.items():
+			s += "\t{var}"
+		print(self.vars)
+		print(self.functions)
+		print(self.scopes)
+
+		self.parent.command_out_set(s)
 
 	
 	def walk_scopes(self, node):
@@ -1682,7 +826,8 @@ class LEXER(EMPTY_LEXER):
 
 			if (row == self.last_node_cursor_was_inside_of[0].start_point[0] or row == self.last_node_cursor_was_inside_of[0].end_point[0]):
 				# print("early return")
-				return
+				# return
+				pass
 
 			elif (row > self.last_node_cursor_was_inside_of[0].start_point[0]):
 				query = query[starting_point_offset:]

@@ -1840,7 +1840,9 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 
 	def write(self, arg=None):
 		complete = self.get("insert linestart", "insert lineend")
-		self.parent.buffer.insert("insert", complete[len(self.parent.buffer.current_token):])
+		self.parent.buffer.delete("insert -1c wordstart ", "insert")
+		# self.parent.buffer.insert("insert wordstart", complete[len(self.parent.buffer.current_token):])
+		self.parent.buffer.insert("insert wordstart", complete)
 		if (complete in self.parent.buffer.lexer.defines[complete]):
 			m = self.parent.buffer.lexer.defines[complete]
 			self.parent.helper_widget.stdout(f'{m}\n')

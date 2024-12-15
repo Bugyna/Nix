@@ -224,6 +224,8 @@
 
 		"<Alt-W>" : "parent.suggest",
 		"<Alt-w>" : "parent.suggest",
+		"<Alt-E>" : "parent.helper",
+		"<Alt-e>" : "parent.helper",
 		"<Shift-space>" : "parent.suggest",
 
 		"<Control-T>" : "todo_set",
