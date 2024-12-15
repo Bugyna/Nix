@@ -11,6 +11,7 @@ from gr import *
 from widgets import *
 from handlers import *
 from highlighter import *
+from util import *
 
 def wrap(func):
 	def wrapped_func(*args, **kwargs):
@@ -95,6 +96,7 @@ class PARSER:
 			'conf|conf_file|config|config_file' : [self.open_conf_file, 'open file with config'],
 			'keybindings|keybinds' : [self.open_keybindings_file, 'open file with keybindings'],
 			'reload_conf(ig)*(_file)*' : [self.reload_conf, 'reloads the conf file'],
+			'reload_theme(_file|_conf)?' : [self.reload_theme_conf, 'reloads the conf file'],
 			'reload_keybinds' : [self.reload_keybinds, 'reloads keybindings'],
 			'reload_modules' : [self.reload_modules, 'reloads external modules'],
 			'load_modules_from' : [self.load_modules_from, 'loads external modules from directory | usage: load_modules_from [directory]'],
@@ -479,6 +481,10 @@ class PARSER:
 	def reload_conf(self, arg=None):
 		self.parent.load_conf()
 
+	def reload_theme_conf(self, arg=None):
+		self.parent.theme_options = load_themes(f'{SOURCE_PATH}/{self.parent.conf["themes_file"]}')
+		self.parent.theme_set(self.parent.theme_name)
+
 	def reload_keybinds(self, arg=None):
 		for w in self.parent.winfo_children():
 			if (w.winfo_children()):
@@ -489,8 +495,8 @@ class PARSER:
 	def reload_modules(self, arg=None):
 		self.parent.reload_modules()
 
-	def reload_themes(self, arg=None):
-		self.parent.theme_options = laod_themes()
+	# def reload_themes(self, arg=None):
+		# self.parent.theme_options = load_themes()
 
 	def load_modules_from(self, arg=None):
 		if (not arg[1:]): self.parent.error(f"{self.get_docs(arg[0:])}"); return

@@ -70,19 +70,24 @@ class WIN(tkinter.Tk):
 			"show_keypress": True,
 			"show_code_location": True,
 			"show_buffer_name": True,
+			"show_line_numbers": True,
 			"highlight_line": False,
 			"cursor_style": 2,
+			"cursor_blink_time": 0,
+			"cursor_border_width": 0,
+			"selection_border_width": 0,
 			"allow_external_modules": 1,
 			"allow_notifications": 1,
 			"alpha": 100,
 			"percentage_pos_func": self.get_abs_percentage_pos,
+			"line_numbers_expand": 0,
 			"buffer_border_style": "ridge",
 			"command_entry_border_style": "ridge",
 			"command_out_border_style": "ridge",
 			"find_border_style": "ridge",
 			"suggest_widget_border_style" : "ridge",
 			"buffer_tab_border_style": "ridge",
-			"buffer_frame_border_style": "ridge",
+			"line_numbers_border_style": "ridge",
 			"supress_keybind_warning": 1,
 			"find_on_key": 1,
 			"timezone": "GMT-8",
@@ -105,6 +110,7 @@ class WIN(tkinter.Tk):
 		}
 
 		self.theme_options = load_themes(f'{SOURCE_PATH}/{self.conf["themes_file"]}')
+		self.theme_name = self.conf["theme"]
 
 		self.load_conf()
 
@@ -142,7 +148,10 @@ class WIN(tkinter.Tk):
 		self.canvas = tkinter.Canvas()
 		self.info_frame = tkinter.Frame(self)
 		self.buffer_tab_frame = tkinter.Frame(self)
-		self.buffer_frame = tkinter.Canvas(self)
+		# self.buffer_frame = tkinter.Canvas(self)
+		self.buffer_frame = tkinter.LabelFrame(self)
+		self.line_numbers = tkinter.Label(self.buffer_frame, text="\n".join("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"))
+		
 		self.buffer_render_list = []
 		self.buffer_render_index = 0
 
@@ -171,11 +180,13 @@ class WIN(tkinter.Tk):
 		self.key_label = tkinter.Label(self.info_frame)
 		self.code_location_label = tkinter.Label(self.info_frame)
 		self.buffer_name_label = tkinter.Label(self.info_frame)
+		# self.line_numbers = tkinter.Label(self.buffer_frame, text="1\n2\n3")
 
 
 		self.buffer = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
 		self.load_modules()
 		self.file_handler.init(".scratch") #see handlers.py/FILE_HANDLER
+
 		# self.curs = tkinter.Label(self.buffer, bg=self.theme["window"]["fg"])
 		# self.buffer is only meant to be a pointer to the focused text buffer
 		# this pointer points to buffer_render_list which is a list of pointers pointing to
@@ -190,7 +201,6 @@ class WIN(tkinter.Tk):
 		self.command_entry = COMMAND_ENTRY(self)
 		self.command_out = COMMAND_OUT(self)
 		self.suggest_widget = SUGGEST_WIDGET(self)
-		self.suggest_widget.configure_self()
 		self.alert = PROMPT(self)
 		self.prompt = PROMPT(self)
 		# self.helper_widget = tkinter.Label(self, text="aa")
@@ -201,7 +211,6 @@ class WIN(tkinter.Tk):
 		self.info_frame.configure(relief="flat", borderwidth=0, highlightthickness=0)
 		self.buffer_tab_frame.configure(relief="ridge", borderwidth=2, highlightthickness=0)
 		self.buffer_frame.configure(relief="flat", borderwidth=2, highlightthickness=0)
-		
 
 		self.time_label.configure(fill=None, anchor="w", justify="left")
 		self.temperature_label.configure(fill=None, anchor="w")
@@ -213,6 +222,7 @@ class WIN(tkinter.Tk):
 
 		# self.helper_widget.configure(fill=None, anchor="ne", justify="left")
 
+		self.suggest_widget.configure_self()
 		self.command_entry.configure_self()
 		self.find_entry.configure_self()
 		self.command_out.configure_self()
@@ -225,6 +235,9 @@ class WIN(tkinter.Tk):
 		self.theme_load()
 		self.update_buffer()
 		self.update_win()
+
+		self.buffer.tkraise()
+		
 		
 		# self.command_out.unplace() # weird fucking bug making the output widget appear for basically no reason
 
@@ -394,11 +407,13 @@ class WIN(tkinter.Tk):
 		try:
 			self.buffer.tag_raise("keywords")
 			self.buffer.tag_lower("cursor")
+			self.buffer.tag_raise("sel")
 		except Exception as e:
 			print(e)
 
 	def theme_set(self, theme=None):
 		if (type(theme) == list): theme = theme[-1] #failsave switch when selecting multiple themes through the command_out widget
+		self.theme_name = theme
 		self.theme = self.theme_options[theme]
 		self.theme_load() # load the theme
 		# self.highlight_chunk() # highlight with new theme
@@ -413,8 +428,18 @@ class WIN(tkinter.Tk):
 		self.canvas.configure(bg=self.theme["window"]["bg"])
 		
 		self.info_frame.configure(bg=self.theme["window"]["bg"])
-		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], relief=self.conf["buffer_tab_border_style"], borderwidth=2, highlightthickness=0)
-		self.buffer_frame.configure(bg=self.theme["window"]["bg"])
+		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], relief=self.conf["buffer_tab_border_style"], borderwidth=2 if self.conf["buffer_tab_border_style"] != "flat" else 0, highlightthickness=0)
+		self.buffer_frame.configure(bg=self.theme["window"]["bg"], borderwidth=0, highlightthickness=0)
+		# self.buffer_frame.configure(bg=self.theme["window"]["bg"], labelanchor="s", labelwidget=self.info_frame)
+		# self.buffer_frame.configure(bg=self.theme["window"]["bg"], labelanchor="n", labelwidget=self.buffer_tab_frame)
+		# self.line_numbers.configure_self()
+		# self.line_numbers.configure(bg=self.theme["window"]["fg"], fg=self.theme["window"]["bg"], font=self.buffer.font, insertbackground="#FFF")
+		self.line_numbers.configure(
+			fg=self.theme["window"]["line_numbers"], bg=self.theme["window"]["bg"],
+			justify="right", borderwidth=2 if self.conf["line_numbers_border_style"] != "flat" else 0, relief=self.conf["line_numbers_border_style"], padx=3, anchor="n"
+		)
+		
+		# self.line_numbers["state"] = "disabled"
 
 		self.time_label.configure(font=self.widget_font, textvariable=self.time_label_value, bg = self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
 		self.temperature_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
@@ -487,10 +512,12 @@ class WIN(tkinter.Tk):
 		
 		for b in self.file_handler.buffer_list:
 			b[1].font = self.widget_font
-			
+
 			b[0].font_size = size
 			b[0].smaller_font_size = size - 2
 			b[0].font_size_set()
+
+		self.line_numbers.font = self.buffer.font
 
 		for b in self.file_handler.buffer_tab_list:
 			b.font = self.widget_font
@@ -527,8 +554,11 @@ class WIN(tkinter.Tk):
 		self.wm_attributes("-alpha", arg/100)
 
 	def reposition_widgets(self, arg=None):
-		if (arg and arg.widget != self):
+		if (arg and (arg.widget != self)):
 			return
+
+		self.update()
+		self.update_idletasks()
 		# print("arg: ", arg, dir(arg), arg.widget)
 
 		buffer_tab_frame_border = self.buffer_tab_frame["borderwidth"] # border width
@@ -551,10 +581,10 @@ class WIN(tkinter.Tk):
 			
 			if (x+w >= buffer_frame_width):
 				# self.buffer_tab_frame.place(x=-x//2-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, width=x+buffer_frame_width*2, height=fs+buffer_tab_frame_border*2, anchor="nw")
-				self.buffer_tab_frame.place(x=-x-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
+				self.buffer_tab_frame.place(x=-x-buffer_tab_frame_border, y=fs+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
 				# print(self.buffer_tab_frame.winfo_x(), self.buffer_tab_frame.winfo_width())
 			# else: self.buffer_tab_frame.place(x=0-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, width=buffer_frame_width+buffer_tab_frame_border*2, height=fs+buffer_tab_frame_border*2, anchor="nw")
-			else: self.buffer_tab_frame.place(x=0-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
+			else: self.buffer_tab_frame.place(x=0-buffer_tab_frame_border, y=fs+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
 
 			
 			for buffer_tab in self.file_handler.buffer_tab_list:
@@ -567,14 +597,25 @@ class WIN(tkinter.Tk):
 				# else:
 					# buffer_tab.reposition()
 				
-			self.buffer_frame.place(x=0, y=(fs)*2, relwidth=1, height=win_height-txt_y-buffer_tab_frame_border, anchor="nw")
+			# self.buffer_frame.pack(side="left", expand=1, fill="x")
+			hhh = self.winfo_height() - (fs)*2
+			hhh = hhh-(hhh%self.buffer.font.metrics("linespace"))
+			# print(self.winfo_height() - (fs)*2, hhh, hhh%self.buffer.font.metrics("linespace"))
+			self.buffer_frame.place(x=0, y=(fs)*2, width=self.winfo_width(), height=hhh, anchor="nw")
 
+			self.update()
+			self.update_idletasks()
+
+		if (self.conf["show_line_numbers"]):
+			self.line_numbers.place(x=0, y=0, width=self.get_line_numbers_width(), height=hhh-(hhh%self.font.metrics("linespace")), anchor="nw")
+			self.line_numbers.tkraise()
+			# self.line_numbers.pack(side="left", fill="y")
+			# self.line_numbers.tkraise()
 			
 		# else:
 			# self.buffer_frame.place(x=0, y=buffer_tab_y, relwidth=1, height=win_height-buffer_tab_y, anchor="nw")	
 
 		if (self.conf["show_info"]):
-			
 			# if (self.conf["show_time"]):
 				# if (self.conf["time_pos"] == "up"): self.time_label.place(x=self.temperature_label.winfo_x(), y=0, height=buffer_tab_y, anchor="ne")
 				# elif (self.conf["time_pos"] == "down"): self.time_label.place(x=self.temperature_label.winfo_x(), y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
@@ -612,8 +653,9 @@ class WIN(tkinter.Tk):
 
 			self.fps_label.pack(side="right", padx=10)
 
-		else:
-			self.buffer_frame.place(x=0, y=0, relwidth=1, height=win_height, anchor="nw")	
+		# else:
+			# self.buffer_frame.place(x=0, y=0, relwidth=1, height=win_height, anchor="nw")	
+			# self.buffer_frame.pack(side="left", expand=1, fill="x")
 	
 		if (self.command_entry.winfo_viewable()): self.command_entry_place()
 		# if (self.command_out.winfo_viewable()): self.command_out_set(resize=True)
@@ -628,8 +670,8 @@ class WIN(tkinter.Tk):
 
 		self.split_mode_options[self.split_mode]()
 
-		self.helper_widget.tkraise(self.buffer)
-		self.helper_widget.place(relx=1, y=40, width=200, height=200, anchor="ne")
+		# self.helper_widget.tkraise(self.buffer)
+		# self.helper_widget.place(relx=1, y=40, width=200, height=200, anchor="ne")
 		# self.helper_widget.stdout("aaaaaa")
 
 	def ring_bell(self, arg=None):
@@ -645,17 +687,52 @@ class WIN(tkinter.Tk):
 		self.reposition_widgets()
 
 	def nosplit(self, arg=None):
-		self.buffer_render_list[self.buffer_render_index].place(x=0, y=0, relwidth=1, relheight=1)
+		hhh = self.buffer_frame.winfo_height()
+		if (hhh == 1):
+			hhh = self.winfo_height() - (self.widget_font.metrics("linespace"))*2 - self.buffer["bd"] - self.buffer_tab_frame["bd"]
+			hhh = hhh-(hhh%self.buffer.font.metrics("linespace"))+self.buffer.font.metrics("linespace")
+			
+		# self.buffer.place(x=self.get_line_numbers_width(), y=0, width=self.winfo_width()-self.get_line_numbers_width(), height=hhh, anchor="nw")
+		self.buffer_render_list[self.buffer_render_index].place(x=self.get_line_numbers_width(), y=0, width=self.winfo_width()-self.get_line_numbers_width(), height=hhh, anchor="nw")
+		# self.buffer.pack(expand=1, fill="both", side="left")
+		# self.buffer.tkraise()
 
 	def split_vertical(self, arg=None):
 		w = round(1/len(self.buffer_render_list), 3)
 		for i, buffer in enumerate(self.buffer_render_list, 0):
 			buffer.place(relx=w*i, y=0, relwidth=w, relheight=1)
+			# buffer.pack(expand=1, fill="y", side="left")
+			# buffer.tkraise()
 
 	def split_horizontal(self, arg=None):
 		h = round(1/len(self.buffer_render_list), 3)
 		for i, buffer in enumerate(self.buffer_render_list, 0):
-			buffer.place(x=0, rely=h*i, relwidth=1, relheight=h)
+			buffer.place(x=self.get_line_numbers_width(), rely=h*i, relwidth=1, relheight=h)
+			# buffer.pack(expand=1, fill="both", side="top")
+			# buffer.tkraise()
+
+	def get_line_numbers_width(self):
+		return int(math.log10(self.buffer.total_lines)+2)*self.buffer.get_character_width()
+
+	# def get_line_numbers_y_offset(self):
+		# c = self.buffer.dlineinfo(self.buffer.index('@0,0 linestart'))
+		# d = self.buffer.dlineinfo(self.buffer.index('@0,0 +1l linestart'))
+		# return d[1]+c[1] if d and c[1] < 0 else -2
+		# if d: return d[1]-d[4]
+		# if d:
+			# return d[1]-d[4]-4 if d and c[1] < 0 else d[4]-d[1]-2
+		# else: return -2
+
+		# return 0
+		# return c[1]
+		# if d:
+			# x = c[1]+d[1]
+			# print("d: ", x, d[4], d[4]+x, x + (d[4] + x))
+			# if (d[4]+x > d[4]):
+				# return d[4] - x
+			# return x + (d[4] + x)
+		# else: return c[1]
+		# return d-2 if d < 0 else 2
 
 	def win_destroy(self, arg=None) -> str:
 		# self.file_handler.closing_sequence()
@@ -1050,6 +1127,38 @@ class WIN(tkinter.Tk):
 			self.line_no.configure(text=f"line: {tmp[0]}+{tmp1[0]} column: {tmp[1]}+{tmp1[1]}") #updates the line&column widget to show current cursor index/position
 		else:
 			self.line_no.configure(text=f"line: {self.buffer.cursor_index[0]} column: {self.buffer.cursor_index[1]}") #updates the line&column widget to show current cursor index/position
+
+
+	def update_line_numbers(self, arg=None):
+		self.update()
+		self.buffer.update()
+		self.update_idletasks()
+		self.buffer.update_idletasks()
+
+		
+		t = ""
+		y = 0
+		h = self.buffer_frame.winfo_height() - (self.buffer_frame.winfo_height() % self.buffer.font.metrics("linespace"))
+		index = self.buffer.index("@0,0 linestart")
+		# print(self.buffer.dlineinfo(self.buffer.index('@0,0 linestart')), self.buffer.dlineinfo(self.buffer.index('@0,0 +1l linestart')), self.line_numbers.winfo_y(), self.buffer.font_size, self.buffer.font.metrics("linespace"))
+		while y < h:
+			line_start, line_end = self.buffer.dlineinfo(self.buffer.index(index + ' linestart')), self.buffer.dlineinfo(self.buffer.index(index + ' lineend'))
+			if (not line_start or not line_end):
+				y += self.buffer.font_size
+				t += ";;\n"
+				continue
+			if (line_start != line_end):
+				t += index[:-2]+"\n"*math.ceil((line_end[1]-line_start[1]) / line_start[4])
+				
+			else:
+				t += index[:-2]+"\n"
+			# print(line_start, line_end)
+
+			y = line_end[1] + self.font.metrics("linespace")
+			index = self.buffer.index(index + " +1l")
+
+		self.line_numbers["text"] = t[:-1]
+		self.line_numbers.place(x=0, y=0, height=h, width=self.get_line_numbers_width())
 		
 
 	def update_index(self, arg=None):
@@ -1077,6 +1186,8 @@ class WIN(tkinter.Tk):
 			# self.buffer.current_token = self.buffer.get("insert wordstart +1c", "insert wordend")
 
 		self.buffer.see("insert")
+		if (self.conf["show_line_numbers"]): self.update_line_numbers()
+
 
 		# mark_name = self.buffer.mark_names()[-1]
 		# if (mark_name[:2] == "tk"):
@@ -1096,6 +1207,7 @@ class WIN(tkinter.Tk):
 	def update_buffer(self, arg=None):
 		""" updates some of the widgets when a key is released """
 		self.buffer.lexer.update_code_location()
+		
 		# called upon every keyrelease
 		if (arg): # shows the characters that were released (eg. Control: D), but it can't handle more than one character (eg. Control: b-w)
 			if (re.match("Control|Alt|Shift", arg.keysym)): return # ignore keyrelease of Control Alt Shift etc.
@@ -1156,6 +1268,7 @@ class WIN(tkinter.Tk):
 	def main(self):
 		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
 		pass
+		
 		
 		# self.buffer.focus_set()
 		# t0 = time.time(); self.c = 0
@@ -1271,8 +1384,8 @@ if __name__ == "__main__":
 	if (platform == "Windows"):
 		import ctypes
 		ctypes.windll.shcore.SetProcessDpiAwareness(True)
-	elif (platform == "Linux"):
-		win.tk.call('tk', 'scaling', 4.0)
+	# elif (platform == "Linux"):
+		# win.tk.call('tk', 'scaling', 4.0)
 		# WINDOW_MARGIN = 24 # weird GTK fuckery
 	
 	win.after(0, win.main)

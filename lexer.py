@@ -1214,7 +1214,7 @@ class LEXER(EMPTY_LEXER):
 			
 			; Function calls
 			
-			(decorator) @function
+			(decorator) @special_keywords
 			
 			(call
 				function: (attribute attribute: (identifier) @function.method))
@@ -1257,6 +1257,10 @@ class LEXER(EMPTY_LEXER):
 			(interpolation
 				"{" @punctuation.special
 				"}" @punctuation.special) @embedded
+
+			(interpolation
+				"{" @punctuation.special
+				"}" @punctuation.special) @special_keywords
 			
 			[
 				"-"
@@ -1295,12 +1299,23 @@ class LEXER(EMPTY_LEXER):
 				"|="
 				"~"
 				"@="
+			] @operator
+
+			[
 				"and"
 				"in"
 				"is"
 				"not"
 				"or"
-			] @operator
+				"while"
+				"with"
+				"import"
+				"elif"
+				"else"
+				"for"
+				"from"
+				"if"
+			] @logical_keywords
 			
 			[
 				"("
@@ -1312,6 +1327,7 @@ class LEXER(EMPTY_LEXER):
 				"~"
 				"@"
 			] @parenthesis
+
 			
 			[
 				"as"
@@ -1319,33 +1335,28 @@ class LEXER(EMPTY_LEXER):
 				"async"
 				"await"
 				"break"
-				"class"
-				"continue"
 				"def"
 				"del"
-				"elif"
-				"else"
 				"except"
-				"exec"
 				"finally"
-				"for"
-				"from"
-				"global"
-				"if"
-				"import"
-				"lambda"
 				"nonlocal"
 				"pass"
 				"print"
 				"raise"
-				"return"
 				"try"
-				"while"
-				"with"
-				"yield"
 				"match"
 				"case"
 			] @keyword
+
+			[
+				"continue"
+				"class"
+				"exec"
+				"global"
+				"lambda"
+				"yield"
+				"return"
+			] @special_keywords
 			
 			'''
 			)

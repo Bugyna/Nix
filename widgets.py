@@ -65,7 +65,8 @@ class BUFFER_TAB(tkinter.Label):
 		self.font = self.parent.widget_font
 		self.configure(text=f"{self['text']}", font=self.font,
 		 bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["widget_fg"],
-		 highlightcolor=self.parent.theme["window"]["widget_fg"])
+		 highlightcolor=self.parent.theme["window"]["widget_fg"],
+		)
 		
 		self.menu.configure(font=self.font, tearoff=False,fg="#FFFFFF",
 		 bg=self.parent.theme["window"]["bg"], bd=0)
@@ -592,9 +593,9 @@ class PROMPT_OPTION(tkinter.Label):
 
 
 class DEFAULT_TEXT_BUFFER(tkinter.Text):
-	def __init__(self, parent, name, type="normal"):
+	def __init__(self, parent, name, type="normal", render_parent=None):
 		# types: normal, readonly, temp
-		super().__init__(parent.buffer_frame)
+		super().__init__(parent.buffer_frame if not render_parent else render_parent)
 		# if (type == "readonly"): self["state"] = "disabled"
 
 		self.parent = parent
@@ -685,8 +686,11 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.font_bold = font.Font(family=self.parent.font_family[0], size=self.font_size, weight="bold")
 
 		self.configure(font=self.font, tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"))
+		self.parent.line_numbers.configure(font=self.font)
 		self.see("insert")
-		self.parent.theme_make()
+		if (self.parent.buffer == self):
+			self.parent.theme_make()
+			self.parent.reposition_widgets()
 		return "break"
 
 	def cursor_highlight(self):
@@ -754,6 +758,9 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.cursor_highlight()
 		# self.tag_add("cursor", "insert linestart", "insert lineend +1c")
 		return "break"
+
+	def get_character_width(self, arg="M"):
+		return self.font.measure(arg)
 
 	def cursor_xy_get(self, arg=None):
 		return self.parent.buffer.bbox('insert')[:2]
@@ -1365,7 +1372,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"),
 		 selectborderwidth=0, exportselection=True, blockcursor=self.block_cursor,
-		 spacing3=5, cursor="left_ptr", relief=self.parent.conf["command_out_border_style"], borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
+		 spacing3=0, cursor="left_ptr", relief=self.parent.conf["command_out_border_style"], borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
 
 		if (self["relief"] == "flat"): self["bd"] = 0
 		else: self["bd"] = 2
@@ -1424,7 +1431,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		if (arg.type.value == "3"):
 			self.tag_remove("found", "1.0", "end")
 			self.tag_add("found", "insert linestart", "insert lineend")
-			self.configure(state="disabled")
+			# self.configure(state="disabled")
 			return "break"
 		
 		if (key == "Up"):
@@ -1445,7 +1452,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		self.tag_remove("found", "1.0", "end")
 		self.tag_add("found", "insert linestart", "insert lineend")
-		self.configure(state="disabled")
+		# self.configure(state="disabled")
 
 		return "break"
 
@@ -1674,7 +1681,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			self.highlight_tags()
 
 		self.save_current_state()
-		self["state"] = "disabled"
+		# self["state"] = "disabled"
 
 
 	def save_current_state(self):
@@ -1857,8 +1864,8 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 
 
 class TEXT(DEFAULT_TEXT_BUFFER):
-	def __init__(self, parent, name, type="normal", is_binary=False):
-		super().__init__(parent, name, type)
+	def __init__(self, parent, name, type="normal", is_binary=False, render_parent=None):
+		super().__init__(parent, name, type, render_parent=render_parent)
 
 		self.is_binary = is_binary
 		# self.make_argv = [""]
@@ -1885,6 +1892,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.current_line = ""
 		self.current_token = ""
 		self.total_lines = 1
+		self.bind("<<Modified>>", self.on_modified)
 
 		self.state = []
 
@@ -1906,14 +1914,16 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def configure_self(self, arg=None) -> None:
 		self.font_size_set()
 		self.configure(font=self.font, bg = self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"], undo=True, maxundo=0,
-		 spacing1=-1, insertborderwidth=2, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="hollow",
+		 spacing1=0, insertborderwidth=self.parent.conf["cursor_border_width"], insertontime=1000-self.parent.conf["cursor_blink_time"], insertofftime=self.parent.conf["cursor_blink_time"], insertunfocussed="hollow",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
-		 selectborderwidth=1, borderwidth=16, relief=self.parent.conf["buffer_border_style"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap=self["wrap"], exportselection=True,
-		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
+		 selectborderwidth=self.parent.conf["selection_border_width"], borderwidth=2, relief=self.parent.conf["buffer_border_style"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap=self["wrap"], exportselection=True,
+		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm"
+		)
 
 		if (self["relief"] == "flat"): self["bd"] = 0
 		else: self["bd"] = 2
+		
 
 	def toggle_line_wrap(self, arg=None) -> None:
 		if (self["wrap"] == "none"):
@@ -1922,6 +1932,10 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			self["wrap"] = "none"
 
 		self.see("insert")
+
+	def on_modified(self, arg=None):
+		self.total_lines = int(self.index("end")[:-2])
+		# print("<<MODIFIED>>")
 
 	def convert_to_lf(self):
 		self.replace_x_with_y("\r", "", True)
@@ -2414,11 +2428,11 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		""" scrolls through the text widget MouseWheel && Shift-MouseWheel for speedy scrolling """
 		if (arg.num == 5 or arg.delta < 0):
 			self.mark_set("insert", f"insert +{3*multiplier}l")
-			self.see("insert +3l")
+			self.see("insert +4l")
 	
 		elif (arg.num == 4 or arg.delta > 0):
 			self.mark_set("insert", f"insert -{3*multiplier}l")
-			self.see("insert -3l")
+			self.see("insert -4l")
 		
 		# hides widgets that could be in the way
 		self.focus_set()
@@ -2487,14 +2501,17 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			offset = tab_offset # if this line gets removed it fucks up
 			self.insert("insert", offset)
 
-		self.total_lines += len(re.findall("\n", offset))
+		# self.total_lines += len(re.findall("\n", offset))
 		self.after(1, self.lexer.lex) # lex text for variables, functions, structures and class etc.
 		
 		return "break"
 
 	def get_line_count(self, arg=None):
 		""" returns total amount of lines in opened text """
-		return sum(1 for line in self.get("1.0", "end").split("\n"))
+		# return sum(1 for line in self.get("1.0", "end").split("\n"))
+		# print(int(self.index("end")[:-2]))
+		self.total_lines = int(self.index("end")[:-2])
+		return self.total_lines
 
 	def get_word_count(self, arg=None):
 		t = self.get("1.0", "end-1c")

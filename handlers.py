@@ -56,6 +56,7 @@ class FILE_HANDLER(object):
 		
 		self.parent.buffer.tag_add("center", "1.0", "end")
 
+
 	def renew_scratch(self):
 		buffer_name = self.scratch_buffer.name
 		self.buffer_list.append([self.scratch_buffer, BUFFER_TAB(buffer_name, self.parent, render=False)])
@@ -177,12 +178,13 @@ class FILE_HANDLER(object):
 		
 		if (self.parent.conf["show_buffer_tab"]): self.buffer_tab.focus_highlight()
 		
-		self.parent.reposition_widgets()
 		# self.parent.notify(arg=f"buffer [{self.parent.buffer.name}] was loaded", tags=[["1.7", "1.8", "logical_keywords"], ["1.8", f"1.{8+len(self.parent.buffer.name)}"], [f"1.{8+len(self.parent.buffer.name)}", f"1.{9+len(self.parent.buffer.name)}", "logical_keywords"]])
 		if (self.parent.focus_get() == p or self.parent.focus_get() == self.parent.command_out): self.parent.buffer.focus_set()
 		elif (self.parent.focus_get() == self.parent.find_entry): self.parent.find_entry.focus_set()
 		p.unplace() # weird (seemingly) optimalization trick
 		os.chdir(self.current_dir)
+
+		self.parent.reposition_widgets()
 		
 		if (arg): return "break"
 
@@ -362,7 +364,7 @@ class FILE_HANDLER(object):
 		# buffer.delete("1.0", "end") # deletes the buffer so there's not any extra text
 		buffer.insert("1.0", file_content) # puts all of the file's text in the text widget
 		buffer.total_chars = len(file_content)+1
-		buffer.total_lines = self.parent.buffer.get_line_count()
+		buffer.get_line_count()
 		# if (platform == "Windows"): self.parent.convert_to_crlf()
 		# else: self.parent.convert_to_lf()
 		buffer.mark_set("insert", "1.0") #puts the cursor at the start of the file
@@ -382,6 +384,9 @@ class FILE_HANDLER(object):
 
 		buffer.lexer.lex()
 		buffer.edit_modified(False)
+		self.parent.buffer = buffer
+
+		self.parent.reposition_widgets()
 
 		if (arg): return "break"
 

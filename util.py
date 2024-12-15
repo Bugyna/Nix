@@ -91,8 +91,9 @@ def bind_keys_from_conf(widget, filename=f"{SOURCE_PATH}/keybinds_conf.json", re
 
 
 def load_themes(filename):
-	return json.load(open(filename, "r"))
-
+	with open(filename, "r") as file:
+		d = json.load(file)
+	return d
 
 
 def add_command_to_history(func):

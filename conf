@@ -44,6 +44,10 @@ smaller_font_size=12
 # smaller_font_size=11
 suggest=0
 
+selection_border_width=0
+cursor_blink_time=0
+cursor_border_width=0
+
 default_find_mode="/"
 highlight_line=0
 username="bugyna"
@@ -59,6 +63,7 @@ command_entry_font_size= 13
 find_entry_font_size = 12
 command_out_font_size = 14
 show_info = 1
+show_line_numbers=1
 
 # buffer_border_style="ridge"
 command_entry_border_style="ridge"
@@ -66,19 +71,22 @@ command_entry_border_style="ridge"
 # find_border_style="ridge"
 # suggest_widget_border_style="ridge"
 buffer_tab_border_style="ridge"
+# line_numbers_border_style="ridge"
 
-buffer_border_style="solid"
+# buffer_border_style="solid"
 # command_entry_border_style="solid"
 command_out_border_style="solid"
 find_border_style="solid"
 suggest_widget_border_style="solid"
 # buffer_tab_border_style="solid"
+# line_numbers_border_style="solid"
 
-# buffer_border_style="flat"
+buffer_border_style="flat"
 # command_entry_border_style="flat"
 # command_out_border_style="flat"
 # find_border_style="flat"
 # suggest_widget_border_style="flat"
 # buffer_tab_border_style="flat"
+line_numbers_border_style="flat"
 
 reaction_gif_path="/home/bugy/Pictures/reaction_gifs/"
