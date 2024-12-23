@@ -1803,6 +1803,37 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.unplace()
 
 
+	def save_as_buffer(self, arg=None):
+		"""Save current output in a temporary read-only buffer"""
+		b = self.parent.file_handler.new_buffer(buffer_name=f"{time.time()}", buffer_type="temp", load=False)
+		b.insert("1.0", self.get("1.0", "end"))
+		b.see("insert")
+		for n in self.tag_names():
+			for t in self.tag_ranges(n):
+				# print(n, t)
+				b.tag_add(n, t, f"{t} lineend")
+
+		self.parent.split(arg, buffer=b)
+		return "break"
+
+	def save_as_compilation_buffer(self, arg=None):
+		"""Save current output in a temporary read-only buffer"""
+		b = self.parent.file_handler.new_buffer(buffer_name="*compiled*", buffer_type="temp", load=False)
+		b.delete("1.0", "end")
+		b.insert("1.0", self.get("1.0", "end"))
+		b.mark_set("insert", "1.0")
+		b.see("insert")
+		for n in self.tag_names():
+			for t in self.tag_ranges(n):
+				# print(n, t)
+				b.tag_add(n, t, f"{t} lineend")
+
+		self.parent.split(arg, buffer=b)
+		self.parent.buffer_render_index-=1
+		self.parent.file_handler.load_buffer(buffer_name=self.parent.buffer_render_list[-2].full_name)
+		return "break"
+
+
 
 
 class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
@@ -2820,9 +2851,11 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			# print("end")
 			# print(argv, pexpect.split_command_line(argv))
 			self.parent.command_out.add_stdout("\n")
+			self.parent.kill_last_subproc()
+			if (self.parent.file_handler.buffer_exists("*compiled*")):
+				self.parent.command_out.save_as_compilation_buffer()
 			self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])
 			self.parent.command_out.save_current_state()
-			self.parent.kill_last_subproc()
 			print("\n\n")
 	
 

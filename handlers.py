@@ -81,11 +81,7 @@ class FILE_HANDLER(object):
 		# if (arg): return "break"
 
 	def buffer_exists(self, buffer_name):
-		try:
-			self.buffer_dict[buffer_name]
-			return 1
-			
-		except KeyError: return 0
+		return buffer_name in self.buffer_dict
 
 	def rename_buffer(self, buffer_name: str, new_buffer_name: str):
 		old = self.buffer_dict.pop(buffer_name)
@@ -104,7 +100,9 @@ class FILE_HANDLER(object):
 		self.current_file_name = self.current_buffer = new_buffer_name
 
 	def new_buffer(self, buffer_name, buffer_type="normal", load=True, is_binary=False):
-		if (self.buffer_exists(buffer_name)): self.load_buffer(buffer_name=buffer_name); return
+		if (self.buffer_exists(buffer_name)):
+			if load: self.load_buffer(buffer_name=buffer_name)
+			return self.buffer_dict[buffer_name][0]
 
 		if (buffer_type == "GRAPHICAL"): self.buffer_list.append([GRAPHICAL_BUFFER(self.parent, buffer_name), BUFFER_TAB(buffer_name, self.parent)])
 		else: self.buffer_list.append([TEXT(self.parent, buffer_name, buffer_type, is_binary=is_binary), BUFFER_TAB(buffer_name, self.parent)])
@@ -161,8 +159,12 @@ class FILE_HANDLER(object):
 		if (self.parent.buffer.full_name == buffer_name): return
 		
 		p = self.parent.buffer
-		if (len(self.parent.buffer_render_list)-1 < self.parent.buffer_render_index): self.parent.buffer_render_list.insert(self.parent.buffer_render_index, self.buffer_dict[buffer_name][0])
-		else: self.parent.buffer_render_list[self.parent.buffer_render_index] = self.buffer_dict[buffer_name][0]
+		
+		if (len(self.parent.buffer_render_list)-1 < self.parent.buffer_render_index):
+			self.parent.buffer_render_list.insert(self.parent.buffer_render_index, self.buffer_dict[buffer_name][0])
+		else:
+			self.parent.buffer_render_list[self.parent.buffer_render_index] = self.buffer_dict[buffer_name][0]
+		
 		self.parent.buffer = self.parent.buffer_render_list[self.parent.buffer_render_index]
 			
 		self.buffer_tab = self.buffer_dict[buffer_name][1]

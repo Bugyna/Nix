@@ -187,7 +187,10 @@
 
 		"<Control_L>" : "add_selection",
 		"<Return>" : "use_selection",
-		"<KP_Enter>" : "use_selection"
+		"<KP_Enter>" : "use_selection",
+
+		"<Control-bar>" : "save_as_buffer",
+		"<Control-backslash>" : "save_as_compilation_buffer"
 		
 	},
 

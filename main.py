@@ -677,14 +677,27 @@ class WIN(tkinter.Tk):
 	def ring_bell(self, arg=None):
 		self.bell()
 
-	def split(self, arg=None):
+	def split(self, arg=None, buffer=None):
 		self.split_mode = self.conf["default_split_mode"]
-
+		print(self.buffer_render_index)
+		if (self.buffer_render_index+1 >= len(self.file_handler.buffer_list)):
+			return
+		
 		try:
 			self.buffer_render_index += 1
-			self.file_handler.load_buffer(buffer_index=self.buffer.buffer_index+1)
-		except IndexError: pass
-		self.reposition_widgets()
+			if (not buffer):
+				self.file_handler.load_buffer(buffer_index=self.buffer.buffer_index+1)
+			else:
+				self.file_handler.load_buffer(buffer_name=buffer.full_name)
+			self.reposition_widgets()
+
+		except IndexError as e:
+			print(e)
+			self.buffer_render_index -= 1
+			self.reposition_widgets()
+
+
+		return "break"
 
 	def nosplit(self, arg=None):
 		hhh = self.buffer_frame.winfo_height()
@@ -698,9 +711,14 @@ class WIN(tkinter.Tk):
 		# self.buffer.tkraise()
 
 	def split_vertical(self, arg=None):
-		w = round(1/len(self.buffer_render_list), 3)
+		# w = round(1/len(self.buffer_render_list), 3)
+		x = self.get_line_numbers_width()
+		w = self.buffer_frame.winfo_width()-x
+		w /= len(self.buffer_render_list)
 		for i, buffer in enumerate(self.buffer_render_list, 0):
-			buffer.place(relx=w*i, y=0, relwidth=w, relheight=1)
+			# buffer.place(relx=w*i, y=0, relwidth=w, relheight=1)
+			buffer.place(x=x, y=0, width=w, relheight=1)
+			x += w
 			# buffer.pack(expand=1, fill="y", side="left")
 			# buffer.tkraise()
 
@@ -712,7 +730,7 @@ class WIN(tkinter.Tk):
 			# buffer.tkraise()
 
 	def get_line_numbers_width(self):
-		return int(math.log10(self.buffer.total_lines)+2)*self.buffer.get_character_width()
+		return int(math.log10(self.buffer.total_lines)+3)*self.buffer.get_character_width()
 
 	# def get_line_numbers_y_offset(self):
 		# c = self.buffer.dlineinfo(self.buffer.index('@0,0 linestart'))
