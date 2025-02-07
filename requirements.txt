@@ -1,11 +1,12 @@
+# tkinter
 python-magic
 pytz
 requests
 bs4
 pexpect
-tree-sitter==0.21.3
-tree-sitter-python==0.21
-tree-sitter-c==0.21
-tree-sitter-html==0.20.4
-tree-sitter-php==0.22.4
-
+tree-sitter=0.23.0
+tree-sitter-python=0.23.2
+tree-sitter-c=0.23.4
+tree-sitter-html=0.20.3
+tree-sitter-php=0.23.11
+tree-sitter-rust=0.21.2
