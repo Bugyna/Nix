@@ -201,7 +201,7 @@ class LEXER(EMPTY_LEXER):
 			with open(f"{SOURCE_PATH}/ts_queries/lisp.scm", "r") as file:
 				query = language.query(file.read())
 
-		elif (lang_type == "(cpp|hpp|cc|hh)$"):
+		elif (lang_type in ["cpp", "hpp", "cc", "hh"]):
 			language = C_LANGUAGE
 			with open(f"{SOURCE_PATH}/ts_queries/c.scm", "r") as file:
 				query = language.query(file.read())
@@ -429,6 +429,7 @@ class LEXER(EMPTY_LEXER):
 			self.active_lexers[self.text_type] = [self.parser, self.query, self.language]
 
 		self.lex()
+
 
 	def debug(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
 		if (not self.language): return

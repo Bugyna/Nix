@@ -14,7 +14,14 @@ It's configurable, you can set your own keybinds and configure some parts of how
 If you dare you can create your own themes by editing [the theme config](src/theme_conf.json)
 
 
+## ONLY WORKS ON LINUX
+- because of `python-magic`, which can on windows be patched with `python-magic-bin`
+- because of pexpect
+
 ## Usage
+
+requires >=python3.10 (because of tree-sitter, they like breaking backwards compatibility)
+if you have an older version of python <python3.10, check out [switching to the older lexer](docs/old_lexer.md)
 
 python3 main.py [filename(s)]
 

@@ -3,10 +3,10 @@ python-magic
 pytz
 requests
 bs4
-pexpect
-tree-sitter=0.23.0
-tree-sitter-python=0.23.2
-tree-sitter-c=0.23.4
-tree-sitter-html=0.20.3
-tree-sitter-php=0.23.11
-tree-sitter-rust=0.21.2
+pexpect; sys_platform=='linux'
+tree-sitter==0.23.0; python_version>="3.10"
+tree-sitter-python==0.23.2
+tree-sitter-c==0.23.4
+tree-sitter-html==0.20.3
+tree-sitter-php==0.23.11
+tree-sitter-rust==0.21.2

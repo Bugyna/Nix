@@ -35,38 +35,256 @@ hashtag = "#"
 
 # lock = threading.Lock()
 
-class LEXER:
-	def __init__(self, parent, txt):
+class __LEXER:
+	def __init__(self, parent, buffer_widget, lang_type="c"):
 		self.parent = parent
-		self.buffer = txt
+		self.buffer = buffer_widget
 		self.defines = {}
 		self.function_regex = re.compile(r"(([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]+)*([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*[\[\]\*]*[\ \t]+))([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*)(\((.*\n*)*\))")
 
-		# unsigned int eq(int a, int b) 
-		# {
-		#	return (unsigned int)(a == b);
-		# }	
+		self.text = ""
+		self.indexed_files = []
+		self.row = 0
+		self.column = 1
+		self.file_queue = set()
+		self.to_index = []
 
-		# = type: unsigned int
-		# name: eq
-		# parameters: int a int b
-		# local: None
+		self.functions = {}
+		self.vars = {}
+		self.objs = {}
+		self.defines = {}
+
+		self.curr_file = ""
+		self.keywords = []
+		self.logical_keywords = []
+		self.numerical_keywords = []
+		self.special_keywords = []
+
+		self.force_multiline_comment = False
+
+		self.scopes = {
+			"global": {
+				
+			}
+		}
+		self.current_scope = self.scopes["global"]
+
+		self.current_scope_location = []
+
+
+		self.comment_sign = "#"
+		self.multiline_comment_sign = ""
+		self.multiline_comment_sign_end = ""
+		# self.multiline_sign = "/*"
+		# self.multiline_sign_end = "*/"
+
+		self.build_argv = ["make"]
+		self.run_argv = ["./main"]
+		
+		# self.available_languages = ["c", "cpp", "php", "py", "html", "rs", "hs"]
+
+		# self.index_extern = False
+		self.index_extern = True
 
 		self.index = 0
 
 		self.types = []
 		self.modifiers = []
-		self.keywords = ["if", "else", "while", "switch", "case"]
-		self.vars = []
-		self.functions = []
-		self.objs  = []
-		self.scopes  = {}
 
 		self.identifier = r"\b[a-zA-Z_]+[a-zA-Z_0-9_]*\b"
 		self.statement = {
 			"keywords" : r"\b(for|while|if|else|case|switch|do|elif)",
 			"rule" : "newline",
 		}
+
+		self.set_language(lang_type)
+
+
+
+	def set_language(self, lang_type):
+		print("LEXER,, setting language:", lang_type)
+		if (type(lang_type) == list): lang_type = lang_type[0]
+
+		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh"]):
+			lang_type = "c"
+			self.keywords = [
+				'auto', 'char', 'default', 'double',
+			 	'float', 'int', 'long', 'return', 'short', 'sizeof',
+					'struct', 'union', 'void',
+				"size_t", "u8", "u16", "u32", "u64", "bool",
+		 		]
+	
+			self.numerical_keywords = [
+				"false", "true", "enum", "NULL", 'signed', 'unsigned'
+			]
+	
+			self.logical_keywords = [
+				"switch", "case", "if", "else", "goto", "for", "while", 'continue', 'break', 'do'
+			]
+
+			self.special_keywords = [
+				"asm", "__attribute__", "const", "extern", "volatile",
+				'typedef', 'static', 'register'
+			]
+
+			self.build_argv = ["make"]
+			self.run_argv = ["./main"]
+
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
+
+		elif (lang_type in ["cpp", "hpp", "cc", "hh"]):
+			self.keywords = [
+				"alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case",
+				 "catch", "char", "char8_t", "char16_t", "char32_t", "class", "compl", "concept", "const", "const_cast",
+				 "consteval", "constexpr", "constint", "continue", "co_await", "co_return", "co_yield", "decltype",
+				 "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern",
+				 "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new",
+				 "noexcept", "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register",
+				 "reinterpret_cast", "requires", "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast",
+				 "struct", "switch", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename",
+				 "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
+			]
+
+			self.numerical_keywords = [
+				"false", "true", "enum", "NULL", 
+			]
+	
+			self.logical_keywords = [
+				"switch", "case", "if", "else", "goto", "for", "while"
+			]
+
+			self.special_keywords = [
+				"asm", "__attribute__", "const", "extern", "volatile", "internal", "private", "public"
+			]
+
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
+
+
+		elif (lang_type == "rs"):
+			self.keywords = [
+				"self", "return", "impl", "struct", "fn", "mod", "move", "ref", "super", "trait", "type",
+				'abstract', 'alignof', 'macro', 'offsetof', 'final', 'box', 'override', 'priv', 'pure',
+				'sizeof', 'typeof', 'unsized', 'virtual', 'yield', 'union', 'dyn', 'let', 'var',
+				 'i8', 'i16', 'i32', 'i64', 'f32', 'f64'
+			]
+
+			self.numerical_keywords = [
+				"false", "true", "enum", "NULL", "Self",
+			]
+
+			self.logical_keywords = [
+				"switch", "case", "if", "else", "goto", "loop", "for", 'while', 'continue', 'break', 'do', "match"
+			]
+
+			self.special_keywords = [
+				"use", "mut", "in", "as", "crate", "Self", "unsafe", "extern", "pub", "private", "const", "where"
+			]
+
+		elif (lang_type == "hs"):
+			self.keywords = [
+				'as', 'case', 'of', 'class', 'data', 'data', 'family', 'instance',
+				'default', 'deriving', 'instance', 'do', 'forall', 'foreign', 'hiding',
+				'if, then, else', 'import', 'infix' ,'infixl', 'infixr', 'instance', 'let', 'in',
+				'mdo', 'module', 'newtype', 'proc', 'qualified', 'rec', 'type', 'family', 'where'
+			]
+
+			self.logical_keywords = [
+				'case', 'of'
+			]
+
+			self.special_keywords = [
+				
+			]
+
+		elif (lang_type == "php"):
+			self.keywords = [
+				 '__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
+				 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach',
+				 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print',
+				 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'
+			]
+
+		elif lang_type == "js":
+			self.keywords = ['abstract', 'arguments', 'await', 'boolean', 'break', 'byte', 'catch',
+				'char', 'const', 'continue', 'debugger', 'default', 'delete', 'double', 'else',
+				'export', 'final', 'finally', 'float', 'function',
+				'implements', 'import', 'in', 'instanceof', 'int', 'interface', 'let', 'long',
+				'native', 'package', 'return', 'short', 'static',
+				'super', 'synchronized', 'throw', 'throws', 'transient', 'typeof',
+				'var'
+			]
+			self.numerical_keywords = [
+				"false", "true", "enum", "NULL", 'null',
+			]
+	
+			self.logical_keywords = [
+				"switch", "case", "if", "else", "goto", "for", "while", 'try', 'with', 'do'
+			]
+
+			self.special_keywords = [
+				'this', 'void', 'volatile', 'yield', 'new', 'private', 'protected', 'public', 'class', 'extends'
+			]
+
+
+		elif lang_type == "lb":
+			self.keywords = [
+				'let', 'fn', 'progn', 'type', 'len', 'nth', 'list', 'use', 'load', 'help', 'exit', 'print', 'xor', 'random-num', 'map-get', 'map-add', 'car', 'cdr',
+				'input', 'obj-name', 'eq'
+			]
+
+			self.logical_keywords = [
+				'if', 'loop', '?', 'else'
+			]
+
+			self.numerical_keywords = [
+				'true', 'false', 'NIL', 'PI', 
+			]
+
+			self.comment_sign = ";;"
+			self.multiline_comment_sign = ""
+			self.multiline_comment_sign_end = ""
+
+
+		elif (lang_type in ["py", "pyc", "pyw"]):
+			self.keywords = [
+				'await', 'import', 'pass', 'break', 'in',
+				'raise', 'class', 'is', 'return', 'continue', 'lambda', 'as', 'def', 'from',
+				'nonlocal', 'assert', 'del', 'global', 'async', 'yield'
+			]
+	
+			self.numerical_keywords = ['False', 'True', 'None']
+			self.logical_keywords = [
+				'and', 'or', 'not', 'if', 'elif', 'else', 'for', 'try', 'except', 'finally','while', 'with', 'self'] 
+			
+			self.comment_sign = "#"
+			self.multiline_comment_sign = ""
+			self.multiline_comment_sign_end = ""
+
+
+		elif lang_type == "tex" or type == "bbl":
+			self.keywords = [
+				'chap', 'par', 'begtt', 'endtt', 'hisyntax', 
+			]
+
+			self.logical_keywords = [
+				'sec', 'cite', 'em'
+			]
+
+			self.numerical_keywords = [
+				'secc', 'item', 'bf', 'url'
+			]
+
+			self.comment_sign = "%%"
+			self.multiline_comment_sign = ""
+			self.multiline_comment_sign_end = ""
+
+		self.text_type = type
+		self.comment_regex = re.compile(fr"{self.comment_sign}")
+		
 
 	def lex(self, text=None, file="", index=["1.0", "end"]):
 		# should iterate through characters make a token and then parse the token
@@ -132,14 +350,16 @@ class LEXER:
 		w = self.word
 		# print("making var: ", w)
 		if ((w not in self.vars) and (self.word not in self.keywords)):
-			self.vars.append(w)
+			self.vars[name] = self.curr_file
 
 	def make_function(self):
 		# w = f"{self.word} ({self.prev_word})"
 		w = self.word
 		# print("making func: ", w)
-		if ((w not in self.functions) and (self.word not in self.keywords)):
-			self.functions.append(w)
+		# if ((w not in self.functions) and (self.word not in self.keywords)):
+			# self.functions.append(w)
+		if (name and name not in self.functions and self.word not in self.keywords):
+			self.functions[name] = self.curr_file
 
 	# def check_keyword(self):
 		# return self.word in self.keywords
@@ -159,20 +379,182 @@ class LEXER:
 
 		self.parent.command_out_set(s)
 
-
-
-class EMPTY_LEXER(LEXER):
-	def __init__(self, parent, txt):
-		super().__init__(parent, txt)
-
-	def lex(self, text=None, file="", index=["1.0", "end"]):
+	def update_code_location(self, *args, **kwargs):
 		pass
 
+	def unhighlight(self, line_no = None, line: str=None):
+		if (not line_no):
+			line_no = self.buffer.cursor_index[0]
 
-class PY_LEXER(LEXER):
+		if (not line):
+			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend")
+
+		last_separator_index = 0
+		last_separator = f"{line_no}.{last_separator_index}"
+		line_end_index = f"{line_no}.0 lineend"
+		
+		self.buffer.tag_remove(["quotes"], last_separator, line_end_index)
+		self.buffer.tag_remove(["functions"], last_separator, line_end_index)
+		self.buffer.tag_remove(["keywords"], last_separator, line_end_index)
+		self.buffer.tag_remove(["logical_keywords"], last_separator, line_end_index)
+		self.buffer.tag_remove(["numerical_keywords"], last_separator, line_end_index)
+		self.buffer.tag_remove(["numbers"], last_separator, line_end_index)
+		self.buffer.tag_remove(["special_chars"], last_separator, line_end_index)
+		self.buffer.tag_remove(["comments"], last_separator, line_end_index)
+		self.buffer.tag_remove(["operators"], last_separator, line_end_index)
+		self.buffer.tag_remove(["upcase"], last_separator, line_end_index)
+		self.buffer.tag_remove(["separator"], last_separator, line_end_index)
+		self.buffer.tag_remove(["command_keywords"], last_separator, line_end_index)
+
+	def unhighlight_all(self):
+		self.buffer.tag_remove(["quotes"], "1.0", "end")
+		self.buffer.tag_remove(["functions"], "1.0", "end")
+		self.buffer.tag_remove(["keywords"], "1.0", "end")
+		self.buffer.tag_remove(["logical_keywords"], "1.0", "end")
+		self.buffer.tag_remove(["numerical_keywords"], "1.0", "end")
+		self.buffer.tag_remove(["numbers"], "1.0", "end")
+		self.buffer.tag_remove(["special_chars"], "1.0", "end")
+		self.buffer.tag_remove(["comments"], "1.0", "end")
+		self.buffer.tag_remove(["operators"], "1.0", "end")
+		self.buffer.tag_remove(["upcase"], "1.0", "end")
+		self.buffer.tag_remove(["separator"], "1.0", "end")
+		self.buffer.tag_remove(["command_keywords"], "1.0", "end")
+
+
+
+class EMPTY_LEXER:
+	def __init__(self, parent, buffer_widget, type="c"):
+		self.parent = parent
+		self.buffer = buffer_widget
+		
+		self.text = ""
+		self.indexed_files = []
+		self.row = 0
+		self.column = 1
+		self.file_queue = set()
+		self.to_index = []
+
+		self.functions = {}
+		self.vars = {}
+		self.objs = {}
+		self.defines = {}
+
+		self.curr_file = ""
+		self.keywords = []
+		self.logical_keywords = []
+		self.numerical_keywords = []
+		self.special_keywords = []
+
+		self.tree = None
+		self.results = []
+		self.full_results = []
+
+		self.force_multiline_comment = False
+
+		self.injection_lexers = {}
+		self.active_lexers = {}
+
+
+		self.last_node_cursor_was_inside_of = None
+
+		self.scopes = {
+			"global": {
+				
+			}
+		}
+		self.current_scope = self.scopes["global"]
+
+		self.current_scope_location = []
+
+
+		self.comment_sign = "#"
+		self.multiline_sign = ""
+		self.multiline_sign_end = ""
+		# self.multiline_sign = "/*"
+		# self.multiline_sign_end = "*/"
+
+		self.build_argv = ["make"]
+		self.run_argv = ["./main"]
+		
+		# self.available_languages = ["c", "cpp", "php", "py", "html", "rs", "hs"]
+		self.language = None
+		self.parser = None
+		self.query = None
+
+		self.set_language(type)
+
+		self.text_type = type
+		# self.index_extern = False
+		self.index_extern = True
+
+	def set_language(self, type):
+		return
+
+	def add_object(self, name):
+		if (name and name not in self.objs):
+			# self.objs.append(name)
+			self.objs[name] = self.curr_file
+
+	def add_define(self, key, val):
+		self.defines[key] = val
+
+	def add_function(self, name):
+		if (name and name not in self.functions):
+			self.functions[name] = self.curr_file
+
+	def add_var(self, name):
+		if (name and name not in self.vars):
+			self.vars[name] = self.curr_file
+			# self.vars.append(name)
+			# self.indexed_info["vars"]
+
+
+	def lex(*args, **kwargs):
+		return
+
+	def unhighlight(self, line_no = None, line: str=None):
+		if (not line_no):
+			line_no = self.buffer.cursor_index[0]
+
+		if (not line):
+			line = self.buffer.get(f"{line_no}.0", f"{line_no}.0 lineend")
+
+		last_separator_index = 0
+		last_separator = f"{line_no}.{last_separator_index}"
+		line_end_index = f"{line_no}.0 lineend"
+		
+		self.buffer.tag_remove(["quotes"], last_separator, line_end_index)
+		self.buffer.tag_remove(["functions"], last_separator, line_end_index)
+		self.buffer.tag_remove(["keywords"], last_separator, line_end_index)
+		self.buffer.tag_remove(["logical_keywords"], last_separator, line_end_index)
+		self.buffer.tag_remove(["numerical_keywords"], last_separator, line_end_index)
+		self.buffer.tag_remove(["numbers"], last_separator, line_end_index)
+		self.buffer.tag_remove(["special_chars"], last_separator, line_end_index)
+		self.buffer.tag_remove(["comments"], last_separator, line_end_index)
+		self.buffer.tag_remove(["operators"], last_separator, line_end_index)
+		self.buffer.tag_remove(["upcase"], last_separator, line_end_index)
+		self.buffer.tag_remove(["separator"], last_separator, line_end_index)
+		self.buffer.tag_remove(["command_keywords"], last_separator, line_end_index)
+
+	def unhighlight_all(self):
+		self.buffer.tag_remove(["quotes"], "1.0", "end")
+		self.buffer.tag_remove(["functions"], "1.0", "end")
+		self.buffer.tag_remove(["keywords"], "1.0", "end")
+		self.buffer.tag_remove(["logical_keywords"], "1.0", "end")
+		self.buffer.tag_remove(["numerical_keywords"], "1.0", "end")
+		self.buffer.tag_remove(["numbers"], "1.0", "end")
+		self.buffer.tag_remove(["special_chars"], "1.0", "end")
+		self.buffer.tag_remove(["comments"], "1.0", "end")
+		self.buffer.tag_remove(["operators"], "1.0", "end")
+		self.buffer.tag_remove(["upcase"], "1.0", "end")
+		self.buffer.tag_remove(["separator"], "1.0", "end")
+		self.buffer.tag_remove(["command_keywords"], "1.0", "end")
+
+
+class PY_LEXER(__LEXER):
 	""" basic lexing """
-	def __init__(self, parent, txt):
-		super().__init__(parent, txt)
+	def __init__(self, parent, buffer_widget, lang_type="py"):
+		super().__init__(parent, buffer_widget, lang_type)
 
 	def lex(self, text=None, file="", index=["1.0", "end"]):
 		if (text): self.text = text
@@ -333,13 +715,13 @@ class PY_LEXER(LEXER):
 			m = self.function_regex.match(expr)
 			# m = re.match(r"(([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]+)*([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*[\[\]\*]*[\ \t]+))([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*)(\((.*\n*)*\))", expr)
 			# print(m)
-	
+
 			if (m):
 				x = ('', m.group(4), m.group(5))
 				# print(m.groups())
 				if (m.group(4) not in self.defines):
 					self.defines[m.group(4)] = x
-					self.functions.append(m.group(4))
+					# self.functions.append(m.group(4))
 
 		elif (prev_word == "class" or prev_word == "import"):
 			self.objs.append(word)
@@ -349,9 +731,16 @@ class PY_LEXER(LEXER):
 		# if (self.text[self.index+1] != "="): self.vars.append(word)
 
 
-class C_LEXER(LEXER):
-	def __init__(self, parent, txt, type="(c|h)$"):
-		super().__init__(parent, txt)
+class LEXER(__LEXER):
+	def __init__(self, parent, buffer_widget, lang_type="c"):
+		if (lang_type == "py"):
+			self.lex = self.py_lex
+			self.handle_expression = self.py_handle_expression
+			self.make_func = self.py_make_func
+
+		super().__init__(parent, buffer_widget, lang_type)
+		# QUICK HACK
+		# TODO: FIX
 		self.text = ""
 		self.indexed_files = []
 		self.row = 0
@@ -362,436 +751,8 @@ class C_LEXER(LEXER):
 			"typedef": self.handle_typedef,
 		}
 
-		self.functions = {}
-		self.vars = {}
-		self.objs = {}
-		self.curr_file = ""
-		self.keywords = []
-		self.logical_keywords = []
-		self.numerical_keywords = []
-		self.special_keywords = []
-		self.comment_sign = "//"
-		self.multiline_comment_sign = "/*"
-		self.multiline_comment_sign_end = "*/"
-		self.query = None
-		self.language = None
-
-		if (type == "(c|h)$"):
-			self.keywords = [
-				'auto', 'char', 'default', 'double',
-			 	'float', 'int', 'long', 'return', 'short', 'sizeof',
-			  	'struct', 'union', 'void',
-				"size_t", "u8", "u16", "u32", "u64", "bool",
-	   		]
-	
-			self.numerical_keywords = [
-				"false", "true", "enum", "NULL", 'signed', 'unsigned'
-			]
-	
-			self.logical_keywords = [
-				"switch", "case", "if", "else", "goto", "for", "while", 'continue', 'break', 'do'
-			]
-
-			self.special_keywords = [
-				"asm", "__attribute__", "const", "extern", "volatile",
-				'typedef', 'static', 'register'
-			]
-
-			self.language = tree_sitter.Language(tsc.language(), 'C')
-			self.query = self.language.query(
-			'''
-			(identifier) @variable
-			
-			((identifier) @constant
-			 (#match? @constant "^[A-Z][A-Z\\d_]*$"))
-
-			((identifier) @upcase
-			 (#match? @upcase "^[A-Z_][A-Z_1-9]+$"))
-
-			[
-				"asm"
-				"__attribute__"
-				"const"
-				"extern"
-				"volatile"
-				"typedef"
-				"static"
-				"register"
-			] @special_keywords
-			
-			"#define" @keyword
-			"#elif" @keyword
-			"#else" @keyword
-			"#endif" @keyword
-			"#if" @keyword
-			"#ifdef" @keyword
-			"#ifndef" @keyword
-			"#include" @keyword
-			(preproc_directive) @keyword
-			
-			"--" @operator
-			"-" @operator
-			"-=" @operator
-			"->" @operator
-			"=" @operator
-			"!=" @operator
-			"*" @operator
-			"&" @operator
-			"&&" @operator
-			"+" @operator
-			"++" @operator
-			"+=" @operator
-			"<" @operator
-			"==" @operator
-			">" @operator
-			"||" @operator
-			
-			"." @delimiter
-			"->" @delimeter
-			";" @semicolon
-
-			[
-				"("
-				")"
-				"["
-				"]"
-				"{"
-				"}"
-				"~"
-			] @parenthesis
-			
-			(string_literal) @string
-			(system_lib_string) @string
-			
-			(null) @constant
-			(number_literal) @number
-			(char_literal) @number
-			
-			(field_identifier) @property
-			(statement_identifier) @label
-			(type_identifier) @type
-			(primitive_type) @type
-			(sized_type_specifier) @type
-			
-			(call_expression
-			  function: (identifier) @function)
-			(call_expression
-			  function: (field_expression
-			    field: (field_identifier) @function))
-			(function_declarator
-			  declarator: (identifier) @function)
-			(preproc_function_def
-			  name: (identifier) @function.special)
-			
-			(comment) @comment
-
-			(struct_specifier name: (type_identifier) @name body:(_)) @definition.class
-
-			(declaration type: (union_specifier name: (type_identifier) @name)) @definition.class
-			
-			(function_declarator declarator: (identifier) @name) @definition.function
-			
-			(type_definition declarator: (type_identifier) @name) @definition.type
-			
-			(enum_specifier name: (type_identifier) @name) @definition.type
-			'''
-			)
-
-		elif (type == "(cpp|hpp|cc|hh)$"):
-			self.keywords = [
-				"alignas", "alignof", "and", "and_eq", "asm", "auto", "bitand", "bitor", "bool", "break", "case",
-				 "catch", "char", "char8_t", "char16_t", "char32_t", "class", "compl", "concept", "const", "const_cast",
-				 "consteval", "constexpr", "constint", "continue", "co_await", "co_return", "co_yield", "decltype",
-				 "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern",
-				 "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new",
-				 "noexcept", "not", "not_eq", "nullptr", "operator", "or", "or_eq", "private", "protected", "public", "register",
-				 "reinterpret_cast", "requires", "return", "short", "signed", "sizeof", "static", "static_assert", "static_cast",
-				 "struct", "switch", "template", "this", "thread_local", "throw", "true", "try", "typedef", "typeid", "typename",
-				 "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "xor", "xor_eq"
-			]
-
-			self.numerical_keywords = [
-				"false", "true", "enum", "NULL", 
-			]
-	
-			self.logical_keywords = [
-				"switch", "case", "if", "else", "goto", "for", "while"
-			]
-
-			self.special_keywords = [
-				"asm", "__attribute__", "const", "extern", "volatile", "internal", "private", "public"
-			]
-
-			self.query = c_query
-
-		elif (type == "rs"):
-			self.keywords = [
-				"self", "return", "impl", "struct", "fn", "mod", "move", "ref", "super", "trait", "type",
-				'abstract', 'alignof', 'macro', 'offsetof', 'final', 'box', 'override', 'priv', 'pure',
-				'sizeof', 'typeof', 'unsized', 'virtual', 'yield', 'union', 'dyn', 'let', 'var',
-				 'i8', 'i16', 'i32', 'i64', 'f32', 'f64'
-			]
-
-			self.numerical_keywords = [
-				"false", "true", "enum", "NULL", "Self",
-			]
-
-			self.logical_keywords = [
-				"switch", "case", "if", "else", "goto", "loop", "for", 'while', 'continue', 'break', 'do', "match"
-			]
-
-			self.special_keywords = [
-				"use", "mut", "in", "as", "crate", "Self", "unsafe", "extern", "pub", "private", "const", "where"
-			]
-
-		elif (type == "hs"):
-			self.keywords = [
-				'as', 'case', 'of', 'class', 'data', 'data', 'family', 'instance',
-				'default', 'deriving', 'instance', 'do', 'forall', 'foreign', 'hiding',
-				'if, then, else', 'import', 'infix' ,'infixl', 'infixr', 'instance', 'let', 'in',
-				'mdo', 'module', 'newtype', 'proc', 'qualified', 'rec', 'type', 'family', 'where'
-			]
-
-			self.logical_keywords = [
-				'case', 'of'
-			]
-
-			self.special_keywords = [
-				
-			]
-
-		elif (type == "php"):
-			self.keywords = [
-				 '__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
-				 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach',
-				 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print',
-				 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'
-			]
-
-		elif type == "js":
-			self.keywords = ['abstract', 'arguments', 'await', 'boolean', 'break', 'byte', 'catch',
-				'char', 'const', 'continue', 'debugger', 'default', 'delete', 'double', 'else',
-				'export', 'final', 'finally', 'float', 'function',
-				'implements', 'import', 'in', 'instanceof', 'int', 'interface', 'let', 'long',
-				'native', 'package', 'return', 'short', 'static',
-				'super', 'synchronized', 'throw', 'throws', 'transient', 'typeof',
-				'var'
-			]
-
-
-			self.numerical_keywords = [
-				"false", "true", "enum", "NULL", 'null',
-			]
-	
-			self.logical_keywords = [
-				"switch", "case", "if", "else", "goto", "for", "while", 'try', 'with', 'do'
-			]
-
-			self.special_keywords = [
-				'this', 'void', 'volatile', 'yield', 'new', 'private', 'protected', 'public', 'class', 'extends'
-			]
-
-		elif type == "lb":
-			self.keywords = [
-				'let', 'fn', 'progn', 'type', 'len', 'nth', 'list', 'use', 'load', 'help', 'exit', 'print', 'xor', 'random-num', 'map-get', 'map-add', 'car', 'cdr',
-				'input', 'obj-name', 'eq'
-			]
-
-			self.logical_keywords = [
-				'if', 'loop', '?', 'else'
-			]
-
-			self.numerical_keywords = [
-				'true', 'false', 'NIL', 'PI', 
-			]
-
-			self.comment_sign = ";;"
-			self.multiline_comment_sign = ""
-			self.multiline_comment_sign_end = ""
-
-		elif (type == "(py|pyw)$"):
-			
-			self.language = tree_sitter.Language(tspython.language(), 'Python')
-			self.query = self.language.query(
-				'''
-				; Identifier naming conventions
-			
-			(identifier) @variable
-			
-			((identifier) @constructor
-			 (#match? @constructor "^[A-Z]"))
-
-			((identifier) @upcase
-			 (#match? @upcase "^[A-Z_][A-Z_]+$"))
-			
-			((identifier) @constant
-			 (#match? @constant "^[A-Z][A-Z_]*$"))
-			
-			; Function calls
-			
-			(decorator) @function
-			
-			(call
-			  function: (attribute attribute: (identifier) @function.method))
-			(call
-			  function: (identifier) @function)
-			
-			; Builtin functions
-			
-			((call
-			  function: (identifier) @function.builtin)
-			 (#match?
-			   @function.builtin
-			   "^(abs|all|any|ascii|bin|bool|breakpoint|bytearray|bytes|callable|chr|classmethod|compile|complex|delattr|dict|dir|divmod|enumerate|eval|exec|filter|float|format|frozenset|getattr|globals|hasattr|hash|help|hex|id|input|int|isinstance|issubclass|iter|len|list|locals|map|max|memoryview|min|next|object|oct|open|ord|pow|print|property|range|repr|reversed|round|set|setattr|slice|sorted|staticmethod|str|sum|super|tuple|type|vars|zip|__import__)$"))
-			
-			; Function definitions
-			
-			(function_definition
-			  name: (identifier) @function)
-			
-			(attribute attribute: (identifier) @property)
-			(type (identifier) @type)
-			
-			; Literals
-			
-			[
-			  (none)
-			  (true)
-			  (false)
-			] @constant.builtin
-			
-			[
-			  (integer)
-			  (float)
-			] @number
-			
-			(comment) @comment
-			(string) @string
-			(escape_sequence) @escape
-			
-			(interpolation
-			  "{" @punctuation.special
-			  "}" @punctuation.special) @embedded
-			
-			[
-			  "-"
-			  "-="
-			  "!="
-			  "*"
-			  "**"
-			  "**="
-			  "*="
-			  "/"
-			  "//"
-			  "//="
-			  "/="
-			  "&"
-			  "&="
-			  "%"
-			  "%="
-			  "^"
-			  "^="
-			  "+"
-			  "->"
-			  "+="
-			  "<"
-			  "<<"
-			  "<<="
-			  "<="
-			  "<>"
-			  "="
-			  ":="
-			  "=="
-			  ">"
-			  ">="
-			  ">>"
-			  ">>="
-			  "|"
-			  "|="
-			  "~"
-			  "@="
-			  "and"
-			  "in"
-			  "is"
-			  "not"
-			  "or"
-			] @operator
-			
-			[
-				"("
-				")"
-				"["
-				"]"
-				"{"
-				"}"
-				"~"
-				"@"
-			] @parenthesis
-			
-			[
-			  "as"
-			  "assert"
-			  "async"
-			  "await"
-			  "break"
-			  "class"
-			  "continue"
-			  "def"
-			  "del"
-			  "elif"
-			  "else"
-			  "except"
-			  "exec"
-			  "finally"
-			  "for"
-			  "from"
-			  "global"
-			  "if"
-			  "import"
-			  "lambda"
-			  "nonlocal"
-			  "pass"
-			  "print"
-			  "raise"
-			  "return"
-			  "try"
-			  "while"
-			  "with"
-			  "yield"
-			  "match"
-			  "case"
-			] @keyword
-			
-			'''
-			)
-			
-			self.comment_sign = "#"
-			self.multiline_comment_sign = ""
-			self.multiline_comment_sign_end = ""
-
-		elif type == "tex" or type == "bbl":
-			self.keywords = [
-				'chap', 'par', 'begtt', 'endtt', 'hisyntax', 
-			]
-
-			self.logical_keywords = [
-				'sec', 'cite', 'em'
-			]
-
-			self.numerical_keywords = [
-				'secc', 'item', 'bf', 'url'
-			]
-
-			self.comment_sign = "%%"
-			self.multiline_comment_sign = ""
-			self.multiline_comment_sign_end = ""
-
-		self.text_type = type
 		# self.index_extern = False
 		self.index_extern = True
-
-		self.parser = tree_sitter.Parser(self.language)
-		self.parser.set_language(self.language)
 
 		if (self.buffer):
 			self.index_extern = True
@@ -803,19 +764,168 @@ class C_LEXER(LEXER):
 				# self.types, self.modifiers, self.vars, self.functions, self.objs, self.defines, self.indexed_files = ll
 				# print(self.objs, self.functions)
 				f.close()
-	
 
-		# self.stuff = [
-			# ["keywords", [
-				 # '__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
-				 # 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach',
-				 # 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print',
-				 # 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'
-				# ]
-			# ],
-			# [],
-			
-		# ]
+		self.set_language(type)
+
+	def py_handle_expression(self):
+		self.expression_table[self.expr[0]]()
+
+
+	def py_make_func(self, prev_word, word, expr):
+		if (re.search("def", expr)):
+			# expr = re.sub("\s+", " ", expr)
+			# group 1 is the full type
+			# group 3 is the last part of the type
+			# group 4 is the function name
+			# group 5 are parameters
+			expr = expr.strip()
+			# print(expr)
+			m = self.function_regex.match(expr)
+			# m = re.match(r"(([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]+)*([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*[\[\]\*]*[\ \t]+))([a-zA-Z_]+[a-zA-Z_0-9]*[\ \t]*)(\((.*\n*)*\))", expr)
+			# print(m)
+	
+			if (m):
+				x = ('', m.group(4), m.group(5))
+				# print(m.groups())
+				if (m.group(4) not in self.defines):
+					self.defines[m.group(4)] = [m.group(4), ""]
+					# self.functions.append(m.group(4))
+					self.functions[m.group(4)] = self.curr_file
+					
+
+		# elif (prev_word == "class" or prev_word == "import"):
+			# self.objs.append(word)
+
+
+	def py_lex(self, text=None, file="", index=["1.0", "end"]):
+		if (text): self.text = text
+		else: self.text = self.buffer.get(*index)
+		row_index = 1
+		self.row = 1
+		self.column = 0
+		char_index = 0
+
+		in_comment = False
+		
+		brackets = {
+			"(": 0,
+			"[": 0,
+			"{": 0,
+		}
+
+		line = []
+		prev_word = ""
+		word = ""
+		expr = ""
+		in_quote = in_quote_ = False
+
+		for self.index, char in enumerate(self.text, 0):
+			if (in_comment):
+				if (char == "\n"): in_comment = False
+				else: continue 
+
+			elif (in_quote or in_quote_):
+				expr += char
+				self.index += 1
+				if (in_quote and char == "\""):
+					in_quote = False
+					word_count = 0
+					continue
+
+				elif (in_quote_ and char == "'"):
+					in_quote_ = False
+					word_count = 0
+					continue
+
+				else:
+					continue
+
+			if (char == " " or char == "\t"):
+				# self.make_func(prev_word, word, expr)
+				line.append(word)
+				prev_word = word
+				word = ""
+				expr += " "
+				
+			elif (char == "\n"):
+				# self.make_func(prev_word, word, expr)
+				line = []
+				prev_word = ""
+				word = ""
+				expr = ""
+				
+				self.row += 1
+				char_index = 0
+				self.column = 0
+				continue
+
+			elif (char == "\""):
+				in_quote = not in_quote
+				self.index += 1
+				expr += char
+				continue
+
+			elif (char == "'"):
+				in_quote_ = not in_quote_
+				self.index += 1
+				expr += char
+				continue
+
+			elif (char == "#"):
+				in_comment = True
+
+			elif (char in az):
+				word += char
+				expr += char
+
+			elif (word and char in num):
+				word += char
+				expr += char
+
+
+			elif (char in ")]}"):
+				expr += char
+				if (char == ")"):
+					self.make_func(prev_word, word, expr)
+
+				expr = ""
+				prev_word = word
+				word = ""
+
+
+			elif (char in ("(", "[", "{")):
+				# brackets[char] = brackets[char]+1
+				expr += char
+				# if (char == "("):
+					# self.make_func(prev_word, word)
+
+				prev_word = word
+				word = ""
+
+			elif (char == "."):
+				line.append(word)
+				word = ""
+				expr += char
+
+			elif (char == ","):
+				expr += char
+				
+			elif (char == "="):
+				expr += char
+				self.make_var(prev_word, word, expr)
+
+				word = ""
+				prev_word = word
+
+			elif (char == ":"):
+				expr += char
+				if (self.text[self.index+1] == "\n"): self.make_func(prev_word, word, expr)
+				expr = ""
+
+			# elif (char in (")", "]", "}")):
+				# brackets[char] = brackets[char]-1
+
+			char_index += 1
 
 
 	def lex(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
@@ -831,7 +941,7 @@ class C_LEXER(LEXER):
 
 			if (index == ["1.0", "end"]):
 				# self.buffer.parent.unhighlight_chunk_main_thread()
-				self.buffer.highlighter.unhighlight_all()
+				self.unhighlight_all()
 				# TODO: delete all stored information on new lex of whole file
 			else:
 				offset_pos = int(index[0].split(".")[0])
@@ -843,77 +953,6 @@ class C_LEXER(LEXER):
 		else:
 			self.parse_quotes = self.parse_quotes_complex
 			self.handle_word_end = self.handle_word_end_with_highlight
-
-		tree = self.parser.parse(bytes(self.text, 'utf-8'))
-		last = ["1.0" ,"1.0"]
-		results = self.query.captures(tree.root_node)
-
-		for index, i in enumerate(results):
-
-			start = f"{i[0].start_point[0]+offset_pos}.{i[0].start_point[1]}"
-			end = f"{i[0].end_point[0]+offset_pos}.{i[0].end_point[1]}"
-			print(i, i[0].text, start)
-
-			if (i[1] == "keyword"):
-				self.buffer.tag_add("keywords", start, end)
-
-			elif (i[1] == "function"):
-				self.buffer.tag_add("functions", start, end)
-				self.add_function(i[0].text.decode())
-				self.add_define(i[0].text.decode(), ["", i[0].text.decode(), ""])
-
-			elif (i[1] == "operator"):
-				self.buffer.tag_add("operators", start, end)
-
-			elif (i[1] == "string"):
-				self.buffer.tag_add("quotes", start, end)
-
-			elif (i[1] == "constant.builtin"):
-				self.buffer.tag_add("keywords", start, end)
-
-			elif (i[1] == "function.method"):
-				self.buffer.tag_add("functions", start, end)
-
-			elif (i[1] == "number"):
-				self.buffer.tag_add("numbers", start, end)
-
-			elif (i[1] == "comment"):
-				self.buffer.tag_add("comments", start, end)
-
-			elif (i[1] == "parenthesis" or i[1] == "special_chars"):
-				self.buffer.tag_add("special_chars", start, end)
-
-			elif (i[1] == "upcase"):
-				self.buffer.tag_add("upcase", start, end)
-
-			elif (i[1] == "type"):
-				self.buffer.tag_add("keywords", start, end)
-
-			elif (i[1] == "special_keywords"):
-				self.buffer.tag_add("command_keywords", start, end)
-
-			# elif (i[0].type == "identifier"):
-				# if (i[0].text.decode() in self.keywords):
-					# self.buffer.tag_add("keywords", start, end)
-
-			if (i[1] == "property" or i[1] == "delimeter"):
-				self.buffer.tag_add("command_keywords", *last)
-
-
-			## handle struct, class, enum, etc. indexing
-
-			if (i[1] == "definition.class"):
-			    pass	
-
-			if (index < len(results)-1):
-				if (i[0].start_point != results[index+1][0].start_point and i[0].end_point != results[index+1][0].end_point):
-					last = [start, end]
-
-			# if (i[0].start_point == (0, 0)): continue
-			# i[0].start_point = (i[0].start_point[0]+1, i[0].start_point[1])
-			# i[0].end_point = (i[0].end_point[0]+1, i[0].end_point[1])
-			# self.buffer.tag_add("keywords", f"{i[0].start_point[0]+1}.{i[0].start_point[1]}", f"{i[0].end_point[0]+1}.{i[0].end_point[1]}")
-		return
 		
 		self.in_comment = False
 		self.in_multiline_comment = False
@@ -2231,11 +2270,16 @@ class C_LEXER(LEXER):
 
 
 if __name__ == "__main__":
-	l = C_LEXER(None, None)
-	f = open("lexer_test/gui.c", "r")
-	text = f.read()
-	f.close()
-	l.lex(text=text, start_file="gui.c", should_highlight=False)
-	l.print_res()
+	l = LEXER(None, None)
+	print("\n-----------------------------------------------------------------------------------\n                #################  TESTING LEXER  ####################\n-----------------------------------------------------------------------------------\n")
+	try:
+		f = open("lexer_test/gui.c", "r")
+		text = f.read()
+		f.close()
+		l.lex(text=text, start_file="gui.c", should_highlight=False)
+		l.print_res()
+	except Exception as e:
+		print(e)
+
 
 

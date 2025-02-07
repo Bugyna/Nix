@@ -639,7 +639,7 @@ class WIN(tkinter.Tk):
 				
 			# self.buffer_frame.pack(side="left", expand=1, fill="x")
 			hhh = self.winfo_height() - (fs)*2
-			hhh = hhh-(hhh%self.buffer.font.metrics("linespace"))
+			if (self.conf["show_line_numbers"]): hhh = hhh-(hhh%self.buffer.font.metrics("linespace"))
 			# print(self.winfo_height() - (fs)*2, hhh, hhh%self.buffer.font.metrics("linespace"))
 			self.buffer_frame.place(x=0, y=(fs)*2, width=self.winfo_width(), height=hhh, anchor="nw")
 
@@ -770,7 +770,8 @@ class WIN(tkinter.Tk):
 			# buffer.tkraise()
 
 	def get_line_numbers_width(self):
-		return int(math.log10(self.buffer.total_lines)+3)*self.buffer.get_character_width()
+		if (self.conf["show_line_numbers"]): return int(math.log10(self.buffer.total_lines)+3)*self.buffer.get_character_width()
+		else: return 0
 
 	# def get_line_numbers_y_offset(self):
 		# c = self.buffer.dlineinfo(self.buffer.index('@0,0 linestart'))
