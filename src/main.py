@@ -1,0 +1,1475 @@
+import tkinter
+from tkinter import ttk
+from tkinter import font
+from tkinter import filedialog
+
+import math
+
+import re
+import json
+
+import subprocess
+
+import requests
+try: from bs4 import BeautifulSoup # usually don't get imported when running as root
+except Exception: pass
+	
+import random
+import threading
+import sys
+import pytz
+import magic
+import signal
+from importlib import reload as importlib_reload
+
+try: import psutil # usually don't get imported when running as root
+except Exception: pass
+
+from highlighter import *
+from command_parser import *
+from util import *
+# from discord_rich_presence import *
+
+from inspect import isclass
+
+CRLF="\r\n"
+LF="\n"
+
+class WIN(tkinter.Tk):
+	def __init__(self, file=None, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+		self.conf = {
+			"theme": "spacey",
+			"tab_size": 4,
+			"orientate": "down",
+			"backup_files": 0,
+			"underline_pairs": 0,
+			"font_size": 12,
+			"smaller_font_size": 11,
+			"command_entry_font_size": 11,
+			"find_entry_font_size": 12,
+			"command_out_font_size": 11,
+			"suggest_widget_font_size": 11,
+			"start_width": 80,
+			"start_height": 32,
+			"show_buffer_tab": 1,
+			"line_end": LF,
+			"suggest": 1,
+			"font": "Consolas",
+			"default_find_mode": "?",
+			"username": "",
+			"default_split_mode": "vertical",
+			"keybinds_file": "keybinds_conf.json",
+			"themes_file": "theme_conf.json",
+			"show_speed": False,
+			"show_temperature": True,
+			"show_time": True,
+			"show_line_no": True,
+			"show_fps": True,
+			"show_keypress": True,
+			"show_code_location": True,
+			"show_buffer_name": True,
+			"show_line_numbers": True,
+			"highlight_line": False,
+			"cursor_style": 2,
+			"cursor_blink_time": 0,
+			"cursor_border_width": 0,
+			"selection_border_width": 0,
+			"allow_external_modules": 1,
+			"allow_notifications": 1,
+			"alpha": 100,
+			"percentage_pos_func": self.get_abs_percentage_pos,
+			"line_numbers_expand": 0,
+			"buffer_border_style": "ridge",
+			"command_entry_border_style": "ridge",
+			"command_out_border_style": "ridge",
+			"find_border_style": "ridge",
+			"suggest_widget_border_style" : "ridge",
+			"buffer_tab_border_style": "ridge",
+			"line_numbers_border_style": "ridge",
+			"supress_keybind_warning": 1,
+			"find_on_key": 1,
+			"timezone": "GMT-8",
+			"show_info": 1,
+			"highlighting": 1,
+			"alert_unsaved_quit": 1,
+			"change_line_no": self.change_line_no_number,
+			"time_pos": "up",
+			"temperature_pos": "up",
+			"line_no_pos": "up",
+			
+		}
+
+		self.split_mode_options = {
+			"nosplit": self.nosplit,
+			"v": self.split_vertical,
+			"vertical": self.split_vertical,
+			"h": self.split_horizontal,
+			"horizontal": self.split_horizontal,
+		}
+
+		self.buffer_render_list = []
+		self.buffer_render_index = 0
+
+		self.buffer_tab_render_list = []
+		# self.file_handler.buffer_tab.buffer_index or self.buffer.buffer_index is the index for this
+
+		self.theme_options = load_themes(f'{SOURCE_PATH}/{self.conf["themes_file"]}')
+		self.theme_name = self.conf["theme"]
+
+		self.load_conf(theme_load=False)
+
+		self.widgets = []
+
+		self.found = []
+		self.found_index = 0
+
+		self.fullscreen = False
+		self.split_mode = "nosplit"
+
+		self.subprocesses = []
+
+		self.command_history = []
+		
+		self.run = True
+		self.font_loaded = False
+
+		self.font_set(theme_load=False)
+
+		#configuring main window
+		# self.wm_attributes("-type", "splash")
+		self.resizable(True,True)
+		# self.geometry(f"{self.font.measure(' ')*self.conf['start_width']}x{self.font.metrics('linespace')*self.conf['start_height']}")
+		self.wm_minsize(20, 0)
+		self.geometry("1080x720")
+		self.update_win()
+
+		# self.geometry(f"{self.winfo_width()}x{self.winfo_height()}+{self.winfo_x()+self.winfo_width()//2}+{(self.winfo_screenheight()-self.winfo_height())//2}") #CENTERING MAGIC #PROLLY DOESN'T WORK THOUGH
+
+		# try: self.iconbitmap("icon.ico")
+		# except Exception as e: print(e)
+		try: self.tk.call('wm', 'iconphoto', self._w, tkinter.PhotoImage(file=f"{os.path.dirname(os.path.abspath(__file__))}/icon.png"))
+		except Exception as e: print(e)
+
+		self.canvas = tkinter.Canvas()
+		self.info_frame = tkinter.Frame(self)
+		self.buffer_tab_frame = tkinter.Frame(self)
+		# self.buffer_frame = tkinter.Canvas(self)
+		self.buffer_frame = tkinter.LabelFrame(self)
+		self.line_numbers = tkinter.Label(self.buffer_frame, text="\n".join("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"))
+
+
+		self.parser = PARSER(self)
+
+		self.file_handler = FILE_HANDLER(self)
+		# self.video_handler = VIDEO_HANDLER(self)
+		# self.music_player = MUSIC_PLAYER(self)
+		self.update_win()
+
+		self.l = tkinter.Text(font=self.font, spacing1=0)
+		for i in range(1000):
+			self.l.insert("insert", f"{i}\n")
+		self.l.place(x=-1, y=20, w=0, h=1000)
+		self.time_label = tkinter.Label(self.info_frame)
+		self.time_label_value = tkinter.StringVar()
+		self.time_label_value.set("-44:44:44")
+		self.temperature_label = tkinter.Label(self.info_frame, text=self.get_rand_temperature())
+		
+		self.line_no = tkinter.Label(self.info_frame)
+		self.fps_label = tkinter.Label(self.info_frame)
+		self.key_label = tkinter.Label(self.info_frame)
+		self.code_location_label = tkinter.Label(self.info_frame)
+		self.buffer_name_label = tkinter.Label(self.info_frame)
+		# self.line_numbers = tkinter.Label(self.buffer_frame, text="1\n2\n3")
+
+
+		self.buffer = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
+		self.load_modules()
+		self.file_handler.init(".scratch") #see handlers.py/FILE_HANDLER
+
+		# self.curs = tkinter.Label(self.buffer, bg=self.theme["window"]["fg"])
+		# self.buffer is only meant to be a pointer to the focused text buffer
+		# this pointer points to buffer_render_list which is a list of pointers pointing to
+		# text buffers stored in the file_handler.buffer_list
+
+		# self.test_label = tkinter.Label(text="test")
+		# self.buffer.window_create("1.0", window=self.test_label, stretch=1)
+		# print(self.buffer.dlineinfo("1.0"))
+
+		# see widgets.py
+		self.find_entry = FIND_ENTRY(self)
+		self.command_entry = COMMAND_ENTRY(self)
+		self.command_out = COMMAND_OUT(self)
+		self.suggest_widget = SUGGEST_WIDGET(self)
+		self.alert = PROMPT(self)
+		self.prompt = PROMPT(self)
+		# self.helper_widget = tkinter.Label(self, text="aa")
+		self.helper_widget = COMMAND_OUT(self)
+
+		self.canvas.configure(bd=0, highlightthickness=0)
+		
+		self.info_frame.configure(relief="flat", borderwidth=0, highlightthickness=0)
+		self.buffer_tab_frame.configure(relief="ridge", borderwidth=2, highlightthickness=0)
+		self.buffer_frame.configure(relief="flat", borderwidth=2, highlightthickness=0)
+
+		self.time_label.configure(fill=None, anchor="w", justify="left")
+		self.temperature_label.configure(fill=None, anchor="w")
+		self.line_no.configure(fill=None, anchor="w", justify="left")
+		self.fps_label.configure(fill=None, anchor="w", justify="left")
+		self.key_label.configure(fill=None, anchor="w", justify="left")
+		self.code_location_label.configure(fill=None, anchor="w", justify="left")
+		self.buffer_name_label.configure(fill=None, anchor="w", justify="left")
+
+		# self.helper_widget.configure(fill=None, anchor="ne", justify="left")
+
+		self.suggest_widget.configure_self()
+		self.command_entry.configure_self()
+		self.find_entry.configure_self()
+		self.command_out.configure_self()
+		self.alpha_set(self.conf["alpha"])
+
+		bind_keys_from_conf(self)
+		
+
+		self.reposition_widgets()
+		self.theme_load()
+		self.update_buffer()
+		self.update_win()
+
+		self.buffer.tkraise()
+		
+		
+		# self.command_out.unplace() # weird fucking bug making the output widget appear for basically no reason
+
+		orig_path = os.getcwd()
+		if (len(sys.argv) > 1):
+			# [self.file_handler.load_file(filename=os.path.abspath(arg)) for arg in sys.argv[1:]]
+			for arg in sys.argv[1:]:
+				self.file_handler.load_file(filename=os.path.abspath(arg))
+				os.chdir(orig_path)
+			self.file_handler.load_buffer(buffer_index=1)
+
+	def load_conf(self, theme_load=True):
+		# this is gross, but it works
+		try: file = open(f"{SOURCE_PATH}/conf", "r"); conf = file.read(); file.close()
+		except Exception: return
+
+		for index, line in enumerate(conf.split("\n"), 1):
+			if (line and line[0] != "#"): # checks if line isn't empty and if doesn't start with "#" signifying a comment
+				line = line.split("=") # split the line into two sections
+				line[0] = line[0].strip() # strip the spaces
+				line[1] = line[1].strip()
+				
+				try: self.conf[line[0]] = globals()[line[1]]; continue # try if the second section is a global object
+				except KeyError: pass
+				
+				try: self.conf[line[0]] = getattr(self, line[1]); continue # try if the second section is a object in this class
+				except Exception: pass
+				
+				try:
+					if (line[1][0] != "\""): self.conf[line[0]] = int(line[1]) # checks if the second section starts with a double quote (a string) and if it doesn't it signifies an integer
+					else: self.conf[line[0]] = line[1].strip("\"") # otherwise it's a string (so we strip the excessive double quotes)
+				except Exception as e: print(f"Error while loading conf file line: {index} \nErorr: {e}")
+
+		self.theme = self.theme_options[self.conf["theme"]] # sets the theme
+		self.alpha_set(self.conf["alpha"]) # sets the alpha
+		self.conf["timezone"] = pytz.timezone("Etc/"+self.conf["timezone"])
+		# self.font_set()
+
+		if (theme_load):
+			try: self.theme_load() # HACK: tries to load the theme, but the theme_load function errors at startup because the needed object aren't completely initialized
+			except Exception: pass
+
+	
+	def get_conf(self, key=None):
+		if (key and key in self.conf):
+			return self.conf[key]
+		
+		return self.conf
+
+		
+	def add_module(self, name, _class):
+		_class = _class(self)
+		# print("not checked: ", _class)
+		if (hasattr(_class, "importable") and getattr(_class, "importable")):
+			if (hasattr(_class, "add_self")):
+				_class.add_self()
+			# print("importable: ", _class)
+			setattr(self, name, _class)
+			if (hasattr(_class, "type") and _class.type == "widget"):
+				self.widgets.append(_class)
+
+		else:
+			del _class
+
+	def load_modules(self, dir=None, reload=False):
+		# who the fuck made python modules so stupid
+		# java levels of abstraction
+		if (not self.conf["allow_external_modules"]): return
+		if (not dir): dir = f"{SOURCE_PATH}/modules" # if the dir is not specified we want to take the path of the source file
+		else: dir = os.path.dirname(dir) if (not os.path.isdir(dir)) else dir # if the dir is specified we want to check if it's an actual directory and if it's a file we just use the path to the file
+		# print("Loading modules from: ", dir, os.path.basename(dir))
+		if (not os.path.isdir(dir)): print("no modules directory", dir); return
+
+		for file in os.listdir(dir): # iterate through the files in the modules directory
+			# print(f"file: {dir}/{file}", os.path.isdir(f"{dir}/{file}"))
+			if (os.path.isdir(f"{dir}/{file}") and file != "__pycache__"): # recursively loads modules from subdirectories in the modules directory
+				# print("recursion", os.path.abspath(f"{dir}/{file}/"))
+				self.load_modules(dir=os.path.abspath(f"{dir}/{file}/"))
+				
+			if (file[-3:] == ".py"):
+				# print(f"importing {file}")
+				file = file[:-3] # take the (.py) extension out of the file name
+				if (os.path.basename(dir) != "modules"): # magic in subdirectories
+					# print(f"modules.{os.path.basename(dir)}.{file}")
+					modules = __import__(f"modules.{os.path.basename(dir)}.{file}")
+					modules = modules.__dict__[file]
+				else:
+					modules = __import__(f"modules.{file}") # import the "module" from the modules directory
+
+
+				module = modules.__dict__[file] # get the exact file we're looking for
+				if (reload): importlib_reload(module) # reload the module
+
+				for attr in module.__dict__.keys(): # iterate through the attributes of the imported file
+					c = getattr(module, attr) # get the attribute from the file
+					if (isclass(c)): # check if there's a class declared in the file
+						self.add_module(attr, c) # if it's a class we add it to self under the filename
+
+				del modules # delete the reduntant stuff
+
+	def reload_modules(self, dir=None):
+		self.load_modules(dir, reload=True)
+
+		
+	def theme_make(self):
+		for buffer in self.buffer_render_list: # because fuck effieciency, right?
+			# self.buffer.highlighter.unhighlight_all()
+			# buffer.tag_bind("functions", "<Button-3>", lambda arg: self.notify("what"))
+			# buffer.tag_configure("sel", bgstipple="gray75")
+			if (type(buffer) != TEXT): return # if the buffer isn't a text buffer we don't want to set these
+			for item in self.theme["highlighter"].items(): # iterate through the theme
+				if (type(item[1]) == str):
+					if (item[0][-2:] == "bg"): # if the name ends with bg we want to create a tag that uses the color specified as a background color
+						buffer.tag_configure(item[0], background=item[1], foreground=self.theme["window"]["bg"], font=buffer.font)
+						buffer.tag_configure(item[0][:-3], foreground=item[1], font=buffer.font) # but we create a tag with the specified color as the foreground color
+						
+						self.command_out.tag_configure(item[0], background=item[1], foreground=self.theme["window"]["bg"], font=self.command_out.font) # do the same for the other text widgets
+						self.command_out.tag_configure(item[0][:-3], foreground=item[1], font=self.command_out.font)
+						self.suggest_widget.tag_configure(item[0][:-3], foreground=item[1], font=self.suggest_widget.font)
+						
+					elif (item[0][-2:] == "_b"): # bold
+						buffer.tag_configure(item[0][:-2], foreground=item[1], font=buffer.font_bold)
+						self.command_out.tag_configure(item[0][:-2], foreground=item[1], font=self.command_out.font_bold)
+						self.suggest_widget.tag_configure(item[0][:-2], foreground=item[1], font=self.suggest_widget.font_bold)
+						
+					else: # normal tag
+					 	# , borderwidth=2, relief="groove", bgstipple="gray75, underline=False
+						
+						buffer.tag_configure(item[0], background="", bgstipple="gray50", selectbackground=item[1], selectforeground=self.theme["window"]["bg"], foreground=item[1], font=buffer.font, fgstipple="hourglass", underline=False)
+					
+						
+						
+						self.command_out.tag_configure(item[0], bgstipple="gray50", selectbackground=item[1], selectforeground=self.theme["window"]["bg"], foreground=item[1], font=self.command_out.font) # , borderwidth=2, relief="groove", bgstipple="gray75"
+						# self.command_out.tag_configure(item[0], underline=True, underlinefg=item[1], foreground=item[1], font=self.command_out.font)
+						self.suggest_widget.tag_configure(item[0], foreground=item[1], font=self.suggest_widget.font)
+
+				else:
+					item[1]["font"] = buffer.font
+					if ("background" not in item[1]):
+						item[1]["background"] = ""
+					if ("bold" in item[1]):
+						item[1]["font"] = buffer.font_bold
+						item[1].pop("bold")
+
+					if ("underline" not in item[1]):
+						item[1]["underline"] = False
+						 
+					buffer.tag_configure(item[0], **item[1])
+					item[1].pop("font")
+					self.command_out.tag_configure(item[0], **item[1], font=self.command_out.font)
+					self.suggest_widget.tag_configure(item[0], **item[1], font=self.suggest_widget.font)
+
+
+		if (type(self.theme["highlighter"]["command_keywords"]) == str):
+			self.command_entry.tag_configure("command_keywords", background="", foreground=self.theme["highlighter"]["command_keywords"])
+		else:
+			c = self.theme["highlighter"]["command_keywords"]
+			c["font"] = self.command_entry.font
+			if ("bold" in c):
+				c["font"] = self.command_entry.font_bold
+				c.pop("bold")
+
+			if ("background" not in c):
+					c["background"] = ""
+
+			if ("underline" not in c):
+					c["underline"] = False
+
+			self.command_entry.tag_configure("command_keywords", **c)
+			
+		try:
+			self.buffer.tag_raise("keywords")
+			self.buffer.tag_lower("cursor")
+			self.buffer.tag_raise("sel")
+		except Exception as e:
+			print(e)
+
+	def theme_set(self, theme=None):
+		if (type(theme) == list): theme = theme[-1] #failsave switch when selecting multiple themes through the command_out widget
+		self.theme_name = theme
+		self.theme = self.theme_options[theme]
+		self.theme_load() # load the theme
+		# self.highlight_chunk() # highlight with new theme
+		# self.buffer.lex()
+
+	def theme_load(self):
+		self.theme_make() # create the tags used in text buffers
+
+		# configure a whole lot of widgets
+		self.configure(bg=self.theme["window"]["bg"], cursor=None)
+
+		self.canvas.configure(bg=self.theme["window"]["bg"])
+
+		self.info_frame.configure(bg=self.theme["window"]["bg"])
+		self.buffer_tab_frame.configure(bg=self.theme["window"]["bg"], relief=self.conf["buffer_tab_border_style"], borderwidth=2 if self.conf["buffer_tab_border_style"] != "flat" else 0, highlightthickness=0)
+		self.buffer_frame.configure(bg=self.theme["window"]["bg"], borderwidth=0, highlightthickness=0)
+		# self.buffer_frame.configure(bg=self.theme["window"]["bg"], labelanchor="s", labelwidget=self.info_frame)
+		# self.buffer_frame.configure(bg=self.theme["window"]["bg"], labelanchor="n", labelwidget=self.buffer_tab_frame)
+		# self.line_numbers.configure_self()
+		# self.line_numbers.configure(bg=self.theme["window"]["fg"], fg=self.theme["window"]["bg"], font=self.buffer.font, insertbackground="#FFF")
+		self.line_numbers.configure(
+			fg=self.theme["window"]["line_numbers"], bg=self.theme["window"]["bg"],
+			justify="right", borderwidth=2 if self.conf["line_numbers_border_style"] != "flat" else 0, relief=self.conf["line_numbers_border_style"], padx=3, anchor="n"
+		)
+		
+		# self.line_numbers["state"] = "disabled"
+
+		self.time_label.configure(font=self.widget_font, textvariable=self.time_label_value, bg = self.theme["window"]["bg"], fg=self.theme["window"]["widget_fg"])
+		self.temperature_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.line_no.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.fps_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.key_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.code_location_label.configure(font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.buffer_name_label.configure(text=self.buffer.name, font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+
+
+		# self.helper_widget.configure(fill=None, anchor="ne", justify="left", text="aa", font=self.widget_font, bg = self.theme["window"]["bg"],fg=self.theme["window"]["widget_fg"])
+		self.helper_widget.configure_self()
+
+		self.command_entry.configure_self()
+		self.find_entry.configure_self()
+		self.command_out.configure_self()
+		self.suggest_widget.configure_self()
+		self.prompt.configure_self()
+		self.alert.configure_self()
+
+		for buffer in self.buffer_render_list:
+			buffer.configure_self()
+
+		if (self.conf["show_buffer_tab"]):
+			[buffer_tab.configure_self() for buffer_tab in self.file_handler.buffer_tab_list]
+				
+	
+			if (self.file_handler.buffer_tab): self.file_handler.buffer_tab.focus_highlight()
+
+		for widget in self.widgets:
+			widget.configure_self()
+		
+		self.update_win()
+
+	def font_set(self, arg=None, family=None, theme_load=True):
+		if (not family): family=self.conf["font"]
+		self.font_family = [family, "normal", "bold", "roman"]
+
+		
+		f = font.Font(family=self.font_family[0], size=self.conf["font_size"])
+		self.font = font.Font(family=self.font_family[0], size=self.conf["font_size"])
+		self.font_bold = font.Font(family=self.font_family[0], size=self.conf["font_size"], weight="bold", slant=self.font_family[3]) 
+		self.smaller_font = font.Font(family=self.font_family[0],size=self.conf["smaller_font_size"], weight=self.font_family[1])
+		self.smaller_font_bold = font.Font(family=self.font_family[0],size=self.conf["smaller_font_size"], weight="bold")
+		self.widget_font = font.Font(family=self.font_family[0], size=self.conf["smaller_font_size"], weight=self.font_family[2])
+
+		if (self.font_loaded):
+			self.command_entry.font_size_set()
+			self.file_handler.buffer_tab.font = self.widget_font
+			self.file_handler.buffer_tab.configure_self()
+			self.prompt.font = self.widget_font
+			self.prompt.configure_self()
+			
+			for b in self.file_handler.buffer_list:
+				b[1].font = self.widget_font
+				b[0].font_size_set()
+	
+			self.line_numbers.font = self.buffer.font
+	
+			for b in self.file_handler.buffer_tab_list:
+				b.font = self.widget_font
+	
+			for widget in self.widgets:
+				widget.font = self.widget_font
+				widget.font_size = self.conf["smaller_font_size"]
+				widget.configure_self()
+
+		self.font_loaded=True
+
+
+		#lazy workaround
+		if (theme_load):
+			print("theme load in font set")
+			try: self.theme_load() # fails on startup
+			except Exception as e:
+				print("\n\n######################################################################################################################################")
+				print("######> ", e)
+				print("######################################################################################################################################\n\n")
+
+
+	def font_set_all(self, arg=None, size=None):
+		if (size):
+			self.conf["font_size"] = size
+			self.conf["smaller_font_size"] = size - 2
+		else:
+			size = self.conf["font_size"]
+
+		self.font_set()
+		self.command_out.font_size = size
+		self.command_out.smaller_font_size = size - 2
+		self.command_out.font_size_set()
+
+		self.find_entry.font_size = size
+		self.find_entry.smaller_font_size = size - 2
+		self.find_entry.font_size_set()
+		
+		self.command_entry.font_size = size
+		self.command_entry.smaller_font_size = size - 2
+		self.command_entry.font_size_set()
+		self.file_handler.buffer_tab.font = self.widget_font
+		self.file_handler.buffer_tab.configure_self()
+		self.prompt.font_size = size
+		self.prompt.font = self.widget_font
+		self.prompt.configure_self()
+		
+		for b in self.file_handler.buffer_list:
+			b[1].font = self.widget_font
+
+			b[0].font_size = size
+			b[0].smaller_font_size = size - 2
+			b[0].font_size_set()
+
+		self.line_numbers.font = self.buffer.font
+
+		for b in self.file_handler.buffer_tab_list:
+			b.font = self.widget_font
+
+		for widget in self.widgets:
+			widget.font = self.widget_font
+			widget.font_size = self.conf["smaller_font_size"]
+			widget.configure_self()
+
+		try: self.theme_load()
+		except Exception: pass
+
+	def get_color_from_theme(self, color, arg="foreground"):
+		""" """
+		res = None
+		theme=self.theme["highlighter"]
+		try:
+			if (type(theme[color]) == dict):
+				if (type(arg) == str):
+					res = theme[color][arg]
+					
+				elif (type(arg) == list):
+					for a in arg:
+						res.append(theme[color][a])
+						
+			elif (type(theme[color]) == str):
+				res = theme[color]
+						
+		except KeyError as e: print("error in get_color_from_theme: ", e); self.error(f"{e}")
+
+		return res
+
+	def alpha_set(self, arg=None):
+		self.wm_attributes("-alpha", arg/100)
+
+	def reposition_widgets(self, arg=None):
+		if (arg and (arg.widget != self)):
+			return
+
+		self.update()
+		self.update_idletasks()
+		# print("arg: ", arg, dir(arg), arg.widget)
+
+		buffer_tab_frame_border = self.buffer_tab_frame["borderwidth"] # border width
+		fs = self.widget_font.metrics("linespace") # font height
+		buffer_tab_y = fs//1.5+4
+		txt_y = fs*2
+		win_width = self.winfo_width()
+		win_height = self.winfo_height()
+
+		self.info_frame.place(x=0, y=0, relwidth=1, height=fs, anchor="nw")
+		buffer_frame_width = self.buffer_frame.winfo_width()
+		# print("y: ", buffer_tab_y+buffer_tab_frame_border)
+
+		buffer_tabs_overflow = self.file_handler.buffer_tab_list[-1].winfo_x() >= self.buffer_frame.winfo_width()
+
+		if (self.conf["show_buffer_tab"] and len(self.file_handler.buffer_list) > 0): # checks if we can show the buffer tabs in the config and if there are any buffers opened except the scratch buffer
+			x = self.file_handler.buffer_tab.winfo_x()
+			w = self.file_handler.buffer_tab.winfo_width()
+
+			
+			if (x+w >= buffer_frame_width):
+				# self.buffer_tab_frame.place(x=-x//2-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, width=x+buffer_frame_width*2, height=fs+buffer_tab_frame_border*2, anchor="nw")
+				self.buffer_tab_frame.place(x=-x-buffer_tab_frame_border, y=fs+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
+				# print(self.buffer_tab_frame.winfo_x(), self.buffer_tab_frame.winfo_width())
+			# else: self.buffer_tab_frame.place(x=0-buffer_tab_frame_border, y=buffer_tab_y+buffer_tab_frame_border, width=buffer_frame_width+buffer_tab_frame_border*2, height=fs+buffer_tab_frame_border*2, anchor="nw")
+			else: self.buffer_tab_frame.place(x=0-buffer_tab_frame_border, y=fs+buffer_tab_frame_border, relwidth=1.1, height=fs+buffer_tab_frame_border*2, anchor="nw")
+
+			
+			for buffer_tab in self.file_handler.buffer_tab_list:
+				buffer_tab.reposition()
+				# if (x >= win_width or x + w >= win_width):
+					# if (buffer_tab.buffer_index >= self.buffer.buffer_index):
+						# buffer_tab.reposition()
+					# else:
+						# buffer_tab.unplace()
+				# else:
+					# buffer_tab.reposition()
+				
+			# self.buffer_frame.pack(side="left", expand=1, fill="x")
+			hhh = self.winfo_height() - (fs)*2
+			hhh = hhh-(hhh%self.buffer.font.metrics("linespace"))
+			# print(self.winfo_height() - (fs)*2, hhh, hhh%self.buffer.font.metrics("linespace"))
+			self.buffer_frame.place(x=0, y=(fs)*2, width=self.winfo_width(), height=hhh, anchor="nw")
+
+			self.update()
+			self.update_idletasks()
+
+		if (self.conf["show_line_numbers"]):
+			self.line_numbers.place(x=0, y=0, width=self.get_line_numbers_width(), height=hhh-(hhh%self.font.metrics("linespace")), anchor="nw")
+			self.line_numbers.tkraise()
+			# self.line_numbers.pack(side="left", fill="y")
+			# self.line_numbers.tkraise()
+			
+		# else:
+			# self.buffer_frame.place(x=0, y=buffer_tab_y, relwidth=1, height=win_height-buffer_tab_y, anchor="nw")	
+
+		if (self.conf["show_info"]):
+			# if (self.conf["show_time"]):
+				# if (self.conf["time_pos"] == "up"): self.time_label.place(x=self.temperature_label.winfo_x(), y=0, height=buffer_tab_y, anchor="ne")
+				# elif (self.conf["time_pos"] == "down"): self.time_label.place(x=self.temperature_label.winfo_x(), y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
+			# if (self.conf["show_temperature"]):
+				# if (self.conf["temperature_pos"] == "up"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=0, height=buffer_tab_y, anchor="ne")
+				# elif (self.conf["temperature_pos"] == "down"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
+			# # if (self.conf["show_line_no"]): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=buffer_tab_y, anchor="nw")
+			# if (self.conf["show_line_no"]):
+				# if (self.conf["line_no_pos"] == "up"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=0, height=buffer_tab_y, anchor="nw")
+				# elif (self.conf["line_no_pos"] == "down"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="nw")
+
+			if (self.conf["show_keypress"]): self.key_label.pack(side="left")
+			if (self.conf["show_code_location"]): self.code_location_label.pack(side="left", padx=10)
+
+			
+			if (self.conf["show_line_no"]):
+				if (self.conf["line_no_pos"] == "up"): self.line_no.pack(side="right", padx=20)
+				# elif (self.conf["line_no_pos"] == "down"): self.line_no.place(x=self.winfo_width()-self.line_no.winfo_width()-10, y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="nw")
+
+			
+			if (self.conf["show_temperature"]):
+				if (self.conf["temperature_pos"] == "up"): self.temperature_label.pack(side="right")
+				# elif (self.conf["temperature_pos"] == "down"): self.temperature_label.place(x=self.line_no.winfo_x()-10, y=win_height-buffer_tab_y,height=buffer_tab_y, anchor="ne")
+
+
+			if (self.conf["show_time"]):
+				if (self.conf["time_pos"] == "up"): self.time_label.pack(side="right")
+				# elif (self.conf["time_pos"] == "down"): self.time_label.place(x=self.temperature_label.winfo_x(), y=win_height-buffer_tab_y, height=buffer_tab_y, anchor="ne")
+
+			# self.buffer_name_label.pack(side="top", expand=1, anchor="center")
+			# if (self.conf["show_speed"]): self.fps_label.place(x=self.time_label.winfo_x()-10, y=0, height=buffer_tab_y, anchor="ne")
+			# if (self.conf["show_keypress"]): self.key_label.place(x=0, y=0, height=buffer_tab_y, anchor="nw")
+			# if (self.conf["show_code_location"]): self.code_location_label.place(x=self.key_label.winfo_x(), y=0, height=buffer_tab_y, anchor="nw")
+			if (self.conf["show_buffer_name"]): self.buffer_name_label.place(x=self.info_frame.winfo_width()//2+self.buffer_name_label.winfo_width()//2, y=0, anchor="ne")
+
+			self.fps_label.pack(side="right", padx=10)
+
+		# else:
+			# self.buffer_frame.place(x=0, y=0, relwidth=1, height=win_height, anchor="nw")	
+			# self.buffer_frame.pack(side="left", expand=1, fill="x")
+	
+		if (self.command_entry.winfo_viewable()): self.command_entry_place()
+		# if (self.command_out.winfo_viewable()): self.command_out_set(resize=True)
+		if (self.command_out.winfo_viewable()): self.command_out.place_self()
+		if (self.find_entry.winfo_viewable()): self.find_place(resize=True)
+		# if (self.suggest_widget.winfo_viewable()): self.suggest(resize=True)
+		if (self.prompt.winfo_viewable()): self.prompt.place_self()
+
+
+		for widget in self.widgets:
+			widget.place_self()
+
+		self.split_mode_options[self.split_mode]()
+
+		# self.helper_widget.tkraise(self.buffer)
+		# self.helper_widget.place(relx=1, y=40, width=200, height=200, anchor="ne")
+		# self.helper_widget.stdout("aaaaaa")
+
+	def ring_bell(self, arg=None):
+		self.bell()
+
+	def split(self, arg=None, buffer=None):
+		self.split_mode = self.conf["default_split_mode"]
+		print(self.buffer_render_index)
+		if (self.buffer_render_index+1 >= len(self.file_handler.buffer_list)):
+			return
+		
+		try:
+			self.buffer_render_index += 1
+			if (not buffer):
+				self.file_handler.load_buffer(buffer_index=self.buffer.buffer_index+1)
+			else:
+				self.file_handler.load_buffer(buffer_name=buffer.full_name)
+			self.reposition_widgets()
+
+		except IndexError as e:
+			print(e)
+			self.buffer_render_index -= 1
+			self.reposition_widgets()
+
+
+		return "break"
+
+	def nosplit(self, arg=None):
+		hhh = self.buffer_frame.winfo_height()
+		if (hhh == 1):
+			hhh = self.winfo_height() - (self.widget_font.metrics("linespace"))*2 - self.buffer["bd"] - self.buffer_tab_frame["bd"]
+			hhh = hhh-(hhh%self.buffer.font.metrics("linespace"))+self.buffer.font.metrics("linespace")
+			
+		# self.buffer.place(x=self.get_line_numbers_width(), y=0, width=self.winfo_width()-self.get_line_numbers_width(), height=hhh, anchor="nw")
+		self.buffer_render_list[self.buffer_render_index].place(x=self.get_line_numbers_width(), y=0, width=self.winfo_width()-self.get_line_numbers_width(), height=hhh, anchor="nw")
+		# self.buffer.pack(expand=1, fill="both", side="left")
+		# self.buffer.tkraise()
+
+	def split_vertical(self, arg=None):
+		# w = round(1/len(self.buffer_render_list), 3)
+		x = self.get_line_numbers_width()
+		w = self.buffer_frame.winfo_width()-x
+		w /= len(self.buffer_render_list)
+		for i, buffer in enumerate(self.buffer_render_list, 0):
+			# buffer.place(relx=w*i, y=0, relwidth=w, relheight=1)
+			buffer.place(x=x, y=0, width=w, relheight=1)
+			x += w
+			# buffer.pack(expand=1, fill="y", side="left")
+			# buffer.tkraise()
+
+	def split_horizontal(self, arg=None):
+		h = round(1/len(self.buffer_render_list), 3)
+		for i, buffer in enumerate(self.buffer_render_list, 0):
+			buffer.place(x=self.get_line_numbers_width(), rely=h*i, relwidth=1, relheight=h)
+			# buffer.pack(expand=1, fill="both", side="top")
+			# buffer.tkraise()
+
+	def get_line_numbers_width(self):
+		return int(math.log10(self.buffer.total_lines)+3)*self.buffer.get_character_width()
+
+	# def get_line_numbers_y_offset(self):
+		# c = self.buffer.dlineinfo(self.buffer.index('@0,0 linestart'))
+		# d = self.buffer.dlineinfo(self.buffer.index('@0,0 +1l linestart'))
+		# return d[1]+c[1] if d and c[1] < 0 else -2
+		# if d: return d[1]-d[4]
+		# if d:
+			# return d[1]-d[4]-4 if d and c[1] < 0 else d[4]-d[1]-2
+		# else: return -2
+
+		# return 0
+		# return c[1]
+		# if d:
+			# x = c[1]+d[1]
+			# print("d: ", x, d[4], d[4]+x, x + (d[4] + x))
+			# if (d[4]+x > d[4]):
+				# return d[4] - x
+			# return x + (d[4] + x)
+		# else: return c[1]
+		# return d-2 if d < 0 else 2
+
+	def win_destroy(self, arg=None) -> str:
+		# self.file_handler.closing_sequence()
+		self.run = False
+		# self.protocol("WM_DELETE_WINDOW", self.destroy())
+		self.quit()
+		self.destroy()
+		return "break"
+
+
+	def win_close(self, arg=None):
+		# self.file_handler.closing_sequence()
+		if (self.conf["alert_unsaved_quit"]):
+			saved = True
+			for buffer, buffer_tab in self.file_handler.buffer_list: # ignore scratch buffer
+				print(buffer.state, "*" in buffer.state)
+				if ("*" in buffer.state):
+					saved = False
+					break
+	
+			if (saved):
+				self.win_destroy()
+	
+			else:
+				self.close_prompt()
+		
+		else:
+			self.win_destroy()
+			
+		return "break"
+
+
+	def set_fullscreen(self, arg=None):
+		""" set the window to be fullscreen F11 """
+		self.fullscreen = not self.fullscreen
+		self.attributes("-fullscreen", self.fullscreen)
+
+		return "break"
+
+	def win_minimize(self, arg=None):
+		self.wm_state("iconic")
+
+		return "break"
+
+	def set_dimensions(self, arg=None, expand=True): # I do understand that this is a terrible, hideous thing but I couldn't come up with a better solution
+		""" changes window size accordingly to keys pressed Alt-Curses """
+		key = arg.keysym
+		x, y = self.winfo_x(), self.winfo_y()
+		if (expand):
+			margin = 20
+			if (key == "Right"):
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{x}+{y-WINDOW_MARGIN}")
+			elif (key == "Left"):
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{x-margin}+{y-WINDOW_MARGIN}")
+			elif (key == "Up"):
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{x}+{y-WINDOW_MARGIN-margin}")
+			elif (key == "Down"):
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{x}+{y-WINDOW_MARGIN}")
+
+		elif (not expand):
+			margin = -20
+			if (key == "Right"):
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{x-margin}+{y-WINDOW_MARGIN}")
+			if (key == "Left"):
+				self.geometry(f"{self.winfo_width()+margin}x{self.winfo_height()}+{x}+{y-WINDOW_MARGIN}")
+			if (key == "Up"):
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{x}+{y-WINDOW_MARGIN}")
+			if (key == "Down"):
+				self.geometry(f"{self.winfo_width()}x{self.winfo_height()+margin}+{x}+{y-margin-WINDOW_MARGIN}")
+		
+		return "break"	
+
+	def win_expand(self, arg=None):
+		self.set_dimensions(arg)
+		return "break"
+
+	def win_shrink(self, arg=None):
+		self.set_dimensions(arg, expand=False)
+		return "break"
+
+
+	def close_prompt(self, arg=None):
+		self.prompt.set_title("close?")
+		self.prompt.option_add("yes", self.win_destroy)
+		self.prompt.option_add("no", self.prompt.unplace_option_remove_all)
+		# self.prompt.option_add("maybe", lambda arg: self.win_destroy() if random.randint(0, 1) == 1 else self.prompt.unplace_option_remove_all())
+		self.prompt.place_self()
+
+	def alert_prompt(self, arg=None):
+		self.alert.set_title("ok")
+		self.alert.option_add("ok", self.alert.unplace_option_remove_all)
+		self.alert.place_self()
+
+	def suggest(self, arg=None, resize=False):
+		self.buffer.get_current_token()
+		token = self.buffer.current_token.strip()
+
+		if (not resize):
+			if (re.match(r"[a-zA-Z_][a-zA-Z_0-9]*", token)):
+				self.suggest_widget.delete("1.0", "end")
+				
+				longest_line = 0
+				ret = ""
+
+				for m in list(self.buffer.lexer.vars.keys()):
+					if (re.search(token, m)):
+						self.suggest_widget.insert("insert", m+"\n")
+						if (len(m) > longest_line): longest_line = len(m)
+						
+				for m in list(self.buffer.lexer.functions.keys()):
+					if (re.match(token, m)):
+						x = self.buffer.lexer.defines[m]
+						m = f"{x[1]}{x[2]}\n"
+						self.suggest_widget.insert("insert", m)
+						self.suggest_widget.tag_add("functions", "insert -1l linestart", "insert -1l lineend")
+						if (len(m) > longest_line): longest_line = len(m)
+
+				for m in list(self.buffer.lexer.objs.keys()):
+					if (re.match(token, m)):
+						x = self.buffer.lexer.defines[m]
+						# self.helper_widget.stdout(f'{x}\n')
+						# print("x:::::::::", m)
+						# m = f"{x[0]}{x[1]}\n"
+						self.suggest_widget.insert("insert", m+"\n")
+						self.suggest_widget.tag_add("upcase", "insert -1l linestart", "insert -1l lineend")
+						if (len(m) > longest_line): longest_line = len(m)
+
+	
+				for m in self.buffer.lexer.keywords + self.buffer.lexer.logical_keywords + self.buffer.lexer.numerical_keywords:
+					if (re.match(token, m)):
+						self.suggest_widget.insert("insert", m+"\n")
+						self.suggest_widget.tag_add("keywords", "insert -1l linestart", "insert -1l lineend")
+						if (len(m) > longest_line): longest_line = len(m)
+
+				self.suggest_widget.delete("end-1c")
+				self.suggest_widget.mark_set("insert", "1.0")
+				c = list(self.buffer.bbox("insert"))
+				out_len = len(self.suggest_widget.get("1.0", "end").split("\n"))
+				
+				if (out_len <= 1 or not self.suggest_widget.get("1.0", "end-1c")):
+					self.suggest_widget.unplace()
+					self.buffer.mode_set(mode="normal", force=True)
+					self.buffer.focus_set()
+					return "break"
+				
+				self.buffer.mode_set(mode="suggest", force=True)
+				self.suggest_widget.tkraise()
+			
+				if (out_len >= 15):
+					h = 15*self.buffer.font.metrics("linespace")
+				else:
+					h = out_len*self.buffer.font.metrics("linespace")
+	
+				if (c[1]+h > self.winfo_height()): c[1] = self.winfo_height() - h - 100
+				self.suggest_widget.place(x=c[0]+30, y=c[1], width=longest_line*self.buffer.font_size, height=h, anchor="nw")
+
+			elif (len(self.suggest_widget.get("1.0", "end-2c").split("\n")) > 1):
+				c = list(self.buffer.bbox("insert"))
+				self.suggest_widget.place(x=c[0]+30, y=c[1])
+
+		self.buffer.focus_set()
+		return "break"
+
+	def helper(self, arg=None):
+		if (not self.helper_widget.winfo_viewable()):
+			self.helper_widget.place(relx=0.9, rely=0.1, relwidth=0.2, anchor="ne")
+			self.helper_widget.tkraise()
+		else:
+			self.helper_widget.place_forget()
+
+	def execute_command(self, arg, command):
+		self.cmmand(command=command.split())
+	
+
+	def nt_place(self, arg=None): # why nt???
+		self.command_out.change_ex(self.command_out.file_explorer)
+		arg, tags = self.file_handler.highlight_ls()
+		self.command_out_set(arg=arg, tags=tags, append_history=False)
+
+
+	def popup(self, arg=None):
+		""" gets x, y position of mouse click and places a menu accordingly """
+		self.right_click_menu.tk_popup(arg.x_root+5, arg.y_root)
+
+
+	def kill_last_subproc(self, arg=-1):
+		if (type(arg) == tkinter.Event): arg=-1
+		elif (type(arg) != int):
+			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
+
+		if (len(self.subprocesses) >= 1):
+			self.subprocesses[arg].kill(signal.SIGKILL)
+			self.subprocesses.pop(arg)
+
+		return "break"
+
+
+	def command_entry_place(self, arg=None):
+		""" Shows command entry widget """
+		h = self.command_entry.font.metrics("linespace") + (self.command_entry["pady"]+self.command_entry["bd"])*2
+		y = self.buffer_frame.winfo_height()
+			
+		# if (self.command_entry["relief"] == "flat"): x = self.buffer["bd"]; w = self.buffer["bd"]; y -= self.buffer["bd"]
+		# else: x = 0; w = 0
+		# if (self.command_entry["relief"] == "flat"): y -= self.buffer["bd"]
+		x = 0; w = 0
+		
+		if (self.conf["orientate"] == "down"): self.command_entry.place(x=x, y=y-h, width=self.buffer_frame.winfo_width()-w*2, height=h, anchor="nw")
+		elif (self.conf["orientate"] == "up"): self.command_entry.place(x=-1, y=0, width=self.buffer_frame.winfo_width()-w, height=h, anchor="nw")
+		
+		self.command_out.place_forget()
+		self.command_entry.tkraise(); self.command_entry.focus_set()
+		
+		return "break"
+
+
+	def find_place(self, arg=None, text=None, resize=False):
+		if (not resize):
+			self.find_entry.start_index = self.buffer.index("insert")
+			self.find_entry.find_mode_set(text=text)
+			self.find_entry.tkraise(); self.find_entry.focus_set()
+
+		h = self.find_entry.font.metrics("linespace") + (self.find_entry["pady"]+self.find_entry["bd"])*2
+		
+		# if (self.find_entry["relief"] == "flat"): x = self.buffer["bd"]; w = self.buffer["bd"]
+		# else: x = 0; w = 0
+		x = 0; w = 0
+		
+		self.find_entry.place(x=x, y=self.buffer_frame.winfo_height()-h-40, width=self.buffer_frame.winfo_width()-w*2, height=h, anchor="nw")
+
+		return "break"
+
+	def find_place_with_token(self, arg=None):
+		self.buffer.get_current_token()
+		self.find_place(text=self.buffer.current_token)
+
+		return "break"
+
+	def command_out_set(self, arg=None, tags=None, resize=False, focus=False, justify="left", append_history=True, move_end=False, lines=None):
+		# honestly this is a really shitty function, but it works somehow, so you shouldn't question it, if you poke around with it it's most probably going to break
+		""" sets the text in command output """
+		if (resize and self.command_out.out == None):
+			return
+			
+		elif (not resize):
+			if (focus):
+				if (self.focus_get() == self.buffer): self.buffer.focus_set()
+				elif (self.focus_get() == self.find_entry): pass
+			else:
+				self.command_out.focus_set()
+				# if (append_history and arg): self.command_out.append_history(arg)
+
+			self.command_out.stdout(arg=arg, tags=tags, justify=justify, append_history=append_history)
+
+		self.command_out.place_self(lines=lines if lines else None)
+ 
+		if (move_end):
+			self.command_out.mark_set("insert", "end")
+			self.command_out.see("insert")
+
+		print(self.focus_get())
+		return "break"
+
+	def notify(self, arg=None, tags=None, justify="left"):
+		# one hack after another
+		# self.command_out["state"] = "normal"
+		self.command_out_set(arg=arg, tags=tags, focus=True, justify=justify, append_history=False)
+		# if (not self.conf["allow_notifications"]): self.command_out.unplace() # HACK
+		# self.command_out["state"] = "disabled"
+
+	def error(self, arg=None, tags=None, justify="left"):
+		tags = [["1.0", "1.6", "error"], tags] if tags else [["1.0", "1.6", "error"]]
+		self.notify("Error: "+arg, tags, justify)
+
+	def show_last_output(self, arg=None): 
+		self.command_out_set()
+		# self.command_out.place_self()
+		return "break"
+
+	def cmmand(self, arg=None, command=None):
+		# gets input from the command_entry widget, checks if there's any actual input or if it's an empty string
+		# if it's not an empty string it sends it to the parser class and if it's a valid command defined in the "commands" dictionary
+		# and if it's defined it runs the function related to that name
+		
+		if (not command): command  = self.command_entry.get("1.0", "end-1c") #turns command into a list of arguments
+		if (not command): self.command_entry.unplace(); return #if no input/argument were provided hide the command entry widget and break function
+		if (command != self.command_entry.input_history[-1]): self.command_entry.input_history.append(command)
+		in_quote = False
+		delimeter_start = 0
+
+		command = command.split()
+		
+		for i in range(len(command)): # wonky path correction
+			if (re.search(r"\\", command[i])):
+				command[i] = command[i].replace("\\", " ")
+
+			elif (len(re.findall(r"\"|'", command[i])) % 2 != 0):
+				in_quote = not in_quote
+				if (in_quote): delimeter_start = i
+				else:
+					sub = command[delimeter_start:i+1]
+					del command[delimeter_start:i+1]
+					command.insert(delimeter_start, " ".join(sub))
+					command[delimeter_start] = command[delimeter_start].strip("\"'")
+
+		#sets focus back to text widget
+		self.buffer.see("insert")
+		self.command_entry.delete("1.0", "end") #deletes command line input
+
+		#set command history to newest index
+		self.command_entry.input_history_index = 0
+		self.command_entry.unplace()
+		self.parser.parse_argument(list(command)) # fucking pointers
+
+	def buffer_unplace(self, arg=None):
+		""" I have no idea why this is a separate function """
+		try:
+			for buffer in self.buffer_render_list:
+				buffer.unplace()
+		except Exception: pass
+
+	def unplace_all_except_buffer(self, arg=None):
+		self.command_entry.unplace()
+		self.find_entry.unplace()
+		self.command_out.unplace()
+
+	def get_rand_temperature(self):
+		""" generates a random temperature depending on the current month """
+		month = datetime.datetime.now().date().month
+		temperature = 0
+		if (month == 12 or month <= 2):
+			temperature = random.randint(-17, 14)
+		elif (month > 2 and month <= 5):
+			temperature = random.randint(14, 28)
+		elif (month > 5 and month <= 8):
+			temperature = random.randint(20, 35)
+		elif (month > 8 and month <= 11):
+			temperature = random.randint(3, 20)
+
+		return f"({temperature}°C)"
+
+
+	def get_temperature(self):
+		self.temperature_label.configure(text=self.get_rand_temperature())
+		# """ scrapes the current temperature of Stockholm """
+		# def temp():
+			# try:
+				# url = "https://www.bbc.com/weather/2673730" #link to Stockholm's weather data
+				# html = requests.get(url).content #gets the html of the url
+				# x = "("+BeautifulSoup(html, features="html.parser").find("span", class_="wr-value--temperature--c").text+"C)" # looks for the temperature value and puts it in a string "([value and degree sign]C)"
+				# self.temperature_label.configure(text=x)
+			# except Exception: #dunno if it won't crash the app if there's no internet connection
+				# self.temperature_label.configure(text=self.get_rand_temperature())
+
+		# threading.Thread(target=temp, daemon=True).start()
+
+	def get_time(self):
+		""" gets time and parses to make it look the way I want it to """
+
+		# d_time = datetime.datetime.now().time()
+		# curr_time = time.localtime()
+
+		if (self.conf["show_fps"]):
+			# self.fps_label.configure(text=f"{random.randbytes()%random.randint(1, 1800)}##")
+			self.fps_label.configure(text=f"<{random.getrandbits(10)}.{random.getrandbits(6)}KHz>")
+
+		time = datetime.datetime.now(self.conf["timezone"])
+		d_time = time.strftime("%H:%M:%S")
+		if (self.time_label_value.get().split(":")[2] == time.second): return # checks if it's still the same second as the last time the function was executed, not very efficient, but still more efficient than running a bunch of string formatting every few miliseconds
+	
+		if (time.minute == "00" and time.second == "10"): #checks if it's time for updating the temperature
+			self.get_temperature()
+
+		self.time_label_value.set(d_time)# return time #updates the time label/widget to show current time
+		self.after(1000, self.get_time)
+
+	def get_abs_percentage_pos(self):
+		return math.ceil(self.buffer.current_char_abs_pos*100/self.buffer.total_chars) # m(a)eth
+
+	def get_line_relative_percentage_pos(self):
+		return math.ceil(int(self.buffer.cursor_index[0])*100/self.buffer.total_lines) # this gotta be slow as shit
+
+	def change_line_no(self):
+		self.line_no.configure(text=f"[{self.buffer.index('insert')}] {self.conf['percentage_pos_func']()}%") #updates the line&column widget to show current cursor index/position
+
+	def change_line_no_number(self):
+		if (self.buffer.tag_ranges("sel")):
+		# if (self.buffer.sel_start): # show selection index on the top of the window if a selection is active
+			# self.line_no.configure(text=f"[{self.buffer.index('sel.first')}][{self.buffer.index('sel.last')}] {self.conf['percentage_pos_func']()}%")
+			self.line_no.configure(text=f"[{self.buffer.index('sel.first')}][{self.buffer.index('sel.last')}]")
+		else:
+			self.line_no.configure(text=f"[{self.buffer.index('insert')}]") #updates the line&column widget to show current cursor index/position
+
+	def change_line_no_text(self):
+		if (self.buffer.tag_ranges("sel")):
+			tmp = self.buffer.index("sel.first").split(".")
+			tmp1 = self.buffer.index("sel.last").split(".")
+			# if (tmp[1] == self.buffer.cursor_index[1]):
+				# tmp = self.buffer.index("sel.first").split(".")
+			self.line_no.configure(text=f"line: {tmp[0]}+{tmp1[0]} column: {tmp[1]}+{tmp1[1]}") #updates the line&column widget to show current cursor index/position
+		else:
+			self.line_no.configure(text=f"line: {self.buffer.cursor_index[0]} column: {self.buffer.cursor_index[1]}") #updates the line&column widget to show current cursor index/position
+
+
+	def update_line_numbers(self, arg=None):
+		# return
+		# self.buffer.update()
+		# self.buffer.update_idletasks()
+		try:
+			self.tk.call('winfo', 'height', self._w)
+		except Exception as e:
+			self.notify(f"{e}")
+			print(e)
+			return
+
+		self.update()
+		self.update_idletasks()
+		
+		t = ""
+		y = 0
+		h = self.buffer_frame.winfo_height() - (self.buffer_frame.winfo_height() % self.buffer.font.metrics("linespace"))
+		index = self.buffer.index("@0,0 linestart")
+		# print(self.buffer.dlineinfo(self.buffer.index('@0,0 linestart')), self.buffer.dlineinfo(self.buffer.index('@0,0 +1l linestart')), self.line_numbers.winfo_y(), self.buffer.font_size, self.buffer.font.metrics("linespace"))
+		while y < h:
+			line_start, line_end = self.buffer.dlineinfo(self.buffer.index(index + ' linestart')), self.buffer.dlineinfo(self.buffer.index(index + ' lineend'))
+			if (not line_start or not line_end):
+				y += self.buffer.font_size
+				t += ";;\n"
+				continue
+			if (line_start != line_end):
+				t += index[:-2]+"\n"*math.ceil((line_end[1]-line_start[1]) / line_start[4])
+				
+			else:
+				t += index[:-2]+"\n"
+			# print(line_start, line_end)
+
+			y = line_end[1] + self.font.metrics("linespace")
+			index = self.buffer.index(index + " +1l")
+
+		self.line_numbers["text"] = t[:-1]
+		self.line_numbers.place(x=0, y=0, height=h, width=self.get_line_numbers_width())
+		
+
+	def update_index(self, arg=None):
+		# called upon every keypress
+		# if (self.buffer.index("insert") == self.buffer.sel_start): self.buffer.sel_start = None
+
+		self.buffer.cursor_index = self.buffer.index("insert").split(".") # gets the cursor's position and makes it into a list [line, column]
+		# self.buffer.current_char_abs_pos = len(self.buffer.get("1.0", "insert"))
+		
+		# p = self.get_line_relative_percentage_pos()
+		# p = self.get_abs_percentage_pos()
+		# self.line_no.configure(text=f"[{self.buffer.index('insert')}] {self.conf['percentage_pos_func']()}%") #updates the line&column widget to show current cursor index/position
+		# self.line_no.configure(text=f"line: {self.buffer.cursor_index[0]} column: {self.buffer.cursor_index[1]}") #updates the line&column widget to show current cursor index/position
+		self.conf["change_line_no"]()
+
+		# self.buffer.highlighter.bracket_pair_make()
+
+		# self.buffer.current_line = self.buffer.get(f"insert linestart", f"insert lineend+1c") #+1c so the line includes the newline character
+		# self.buffer.current_token = self.buffer.get("insert wordstart", "insert wordend")
+		
+		# if (re.match(r"^\s+", self.buffer.current_token) and len(self.buffer.current_token) <= 1):
+			# self.buffer.current_token = self.buffer.get("insert wordstart -1c wordstart", "insert wordstart -1c wordend")
+			
+		# elif (self.buffer.current_token[0] == "\n"):
+			# self.buffer.current_token = self.buffer.get("insert wordstart +1c", "insert wordend")
+
+		self.buffer.see("insert")
+		if (self.conf["show_line_numbers"]): self.update_line_numbers()
+
+
+		# mark_name = self.buffer.mark_names()[-1]
+		# if (mark_name[:2] == "tk"):
+			# coords = self.buffer.bbox(mark_name)
+			# print(coords)
+			
+		# custom cursor thingy
+		# coords = self.buffer.bbox("insert")
+			# a = tkinter.Label(self.buffer)
+			# a.place(x=coords[0], y=coords[1]-2, w=1, h=self.buffer.font.metrics("linespace"))
+		# self.curs.place(x=coords[0]-2, y=coords[1]-2, w=1, h=self.buffer.font.metrics("linespace"))
+		# self.curs.place(x=coords[0]-2, y=coords[1]+self.buffer.font.metrics("linespace")-2, w=self.buffer.font_size-3, h=1)
+		# threading.Thread(target=t, args=(self.buffer.cursor_index[0],), deamon=True).start()
+		# self.l.see(float(self.buffer.cursor_index[0])+20)
+		if (arg): return "break"
+
+	def update_buffer(self, arg=None):
+		""" updates some of the widgets when a key is released """
+		self.buffer.lexer.update_code_location()
+		
+		# called upon every keyrelease
+		if (arg): # shows the characters that were released (eg. Control: D), but it can't handle more than one character (eg. Control: b-w)
+			if (re.match("Control|Alt|Shift", arg.keysym)): return # ignore keyrelease of Control Alt Shift etc.
+			self.key_label["text"] = f"[{arg.state}|{arg.keysym}]"
+			if (arg.keysym in ("Up", "Down", "Left", "Right")): return # ends function if it was triggered by arrow keys (as they have different functions to handle them)
+		
+		# self.after(1, self.update_index)
+		# if (self.buffer.total_chars != len(self.buffer.get("1.0", "end"))): # checks if any changes have been made to the text
+		if (self.buffer.edit_modified()):
+			self.buffer.edit_modified(False)
+
+			self.buffer.state_set(add="*")
+			if (self.buffer.type != "temp" and self.buffer.file_start_time != os.stat(self.buffer.full_name).st_mtime):
+				self.buffer.state_set(add="!")
+			else:
+				self.buffer.state_set(pop="!")
+			
+			# self.buffer.total_chars = self.buffer.current_char_abs_pos+len(self.buffer.get("insert", "end"))
+			# self.buffer.lexer.lex() # lex text for variables, functions, structures and class etc.
+			self.buffer.lexer.lex(index=[self.buffer.index("insert linestart"), self.buffer.index("insert lineend +1c")])
+			self.buffer.typing_index_set() # Alt-Shift-M: sets your cursor to the position you were last typing in
+			# if (self.conf["highlighting"]): self.buffer.highlighter.highlight(self.buffer.cursor_index[0]) # highlight current line
+			# if (self.conf["highlighting"]): self.after(1, self.buffer.highlighter.highlight) # highlight current line
+
+			# if the following widgets are not focused they are hidden
+			# if (self.focus_displayof() != self.command_entry):
+				# self.command_entry.place_forget()
+			# if (self.focus_displayof() != self.command_out):
+				# self.command_out.place_forget()
+
+			# if (self.conf["suggest"]): self.buffer.highlighter.suggest(self.buffer.cursor_index[0], self.buffer.current_line)
+		
+		# self.update_win()
+
+
+	def update_win(self):
+		""" updates the window whole window (all of it's widgets) """
+		self.update()
+		self.update_idletasks()
+
+
+	# def main(self):
+		# """ reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
+		# self.buffer.focus_set()
+		# t0 = time.time(); self.c = 0
+		# counter = 0
+		# while (self.run):
+			# update_discord_presence(f"{self.buffer.name}: {self.buffer.state}", self.line_no["text"])
+			# time.sleep(1)
+			# self.get_time()
+			# counter += 1
+			# if (counter == 1650):
+				# self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+			# elif (counter == 3600):
+				# self.notify("You've been programming for an hour now. Consider taking a break")
+				# counter = 0
+
+	def main(self):
+		""" reconfigures(updates) some of the widgets to have specific values and highlights the current_line"""
+		pass
+		
+		
+		# self.buffer.focus_set()
+		# t0 = time.time(); self.c = 0
+		# counter = 0
+		# def a(counter=0): # some annoying notifications
+			# while (self.run):
+				# # self.update()
+				# # self.update_idletasks()
+				# # time.sleep(1)
+				# self.after(1, self.get_time)
+				# # counter += 1
+				# # if (counter == 1650):
+					# # self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+				# # elif (counter == 3600):
+					# # self.notify("You've been programming for an hour now. Consider taking a break")
+					# # counter = 0
+
+		# threading.Thread(target=a, daemon=True).start()
+		
+			# time.sleep(1650)
+			# try:
+			# self.notify("POSTURE CHECK! You've been programming for half an hour now. Consider stretching for a bit")
+				# notify2.init("Nix")
+				# notify2.Notification("POSTURE CHECK", "You've been programming for half an hour now. Consider stretching for a bit").show()
+			# except Exception:
+			# 	self.commmand_out_set("Consider downloading the notify2 module"); return
+			# time.sleep(1650)
+			# try:
+			# self.notify("You've been programming for an hour now. Consider taking a break")
+			# 	notify2.init("Nix")
+			# 	notify2.Notification("BREAK TIME", "You've been programming for an hour now. Consider taking a break").show()
+			# except Exception:
+			# 	self.commmand_out_set("Consider downloading the notify2 module"); return
+			# a()
+			# self.after(0, self.get_time())
+
+		# def b():
+			# while (self.run):
+				# time.sleep(1)
+				# self.get_time()
+				# self.fps_label.configure(text=f"<{round(self.c/1000, 2)}KHz>")
+				# self.c = 0
+
+		# threading.Thread(target=b, daemon=True).start()
+		
+		# while (self.run):
+			# self.update()
+			# # self.update_idletasks()
+			# self.get_time()
+
+
+	def highlight_chunk_main_thread(self, arg=None, start_index=None, stop_index=None):
+		if (not self.conf["highlighting"]): return
+		for buffer in self.buffer_render_list:
+			if (not start_index): start_index = 1
+			if (not stop_index): stop_index = buffer.get_line_count()
+			buffer.convert_line_index("int", start_index)
+			buffer.convert_line_index("int", stop_index)
+			for i in range(start_index, stop_index+1):
+				pass
+				# buffer.highlighter.highlight(i)
+				# buffer.highlighter.lex_line(i)
+
+	def highlight_chunk(self, arg=None, start_index=None, stop_index=None):
+		if (not self.conf["highlighting"]): return
+		for buffer in self.buffer_render_list:
+			if (not start_index): start_index = 1
+			if (not stop_index): stop_index = buffer.get_line_count()
+			buffer.convert_line_index("int", start_index)
+			buffer.convert_line_index("int", stop_index)
+			def highlight(buffer):
+				pass
+				# for i in range(start_index, stop_index+1):
+					# buffer.lexer.lex_line(i)
+			t = threading.Thread(target=highlight, args=(buffer, ), daemon=True)
+			t.start()
+			return t
+		
+	def unhighlight_chunk(self, arg=None, start_index=None, stop_index=None):
+		if (not self.conf["highlighting"]): return
+		for buffer in self.buffer_render_list:
+			if (not start_index): start_index = 1
+			if (not stop_index): stop_index = buffer.get_line_count()
+			buffer.convert_line_index("int", start_index)
+			buffer.convert_line_index("int", stop_index)
+			def unhighlight(buffer):
+				[buffer.lexer.unhighlight(i) for i in range(start_index, stop_index+1)]
+			t = threading.Thread(target=unhighlight, args=(buffer, ), daemon=True)
+			t.start()
+			return t
+
+
+	def unhighlight_chunk_main_thread(self, arg=None, start_index=None, stop_index=None):
+		if (not self.conf["highlighting"]): return
+		for buffer in self.buffer_render_list:
+			if (not start_index): start_index = 1
+			if (not stop_index): stop_index = buffer.get_line_count()
+			buffer.convert_line_index("int", start_index)
+			buffer.convert_line_index("int", stop_index)
+			[buffer.lexer.unhighlight(i) for i in range(start_index, stop_index+1)]
+
+			
+
+# WINDOW_MARGIN = 0
+if __name__ == "__main__":
+	# tkinter.Tcl().eval('set tcl_platform(threaded)')
+	win = WIN(className="Nix")
+	# print(win.tk.eval('info vars'))
+	# print(win.tk.eval('info globals'))
+	# print(win.buffer.tk.eval('parray auto_index'))
+
+	# print(win.Tcl().eval(r"fontchooser"))
+	if (platform == "Windows"):
+		import ctypes
+		ctypes.windll.shcore.SetProcessDpiAwareness(True)
+	# elif (platform == "Linux"):
+		# win.tk.call('tk', 'scaling', 4.0)
+		# WINDOW_MARGIN = 24 # weird GTK fuckery
+	
+	# win.after(0, win.main)
+	win.after(1, win.get_time)
+	win.buffer.focus_set()
+	win.mainloop()
+	
+	print("thank you for using Nix")
+
+
+
+
+
+
