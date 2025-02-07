@@ -1,6 +1,3 @@
-# For quick usage go see (keybinds)[keybinds.md]
-
-
 # Thoughts
 
 - If there's a philosophy behind this it's being lazy and pressing as little keys as possible for shortcuts
@@ -25,8 +22,10 @@ This much you can configure with some scripting configure(if you open up an expl
 - There's also not really any sort of proper api and docs of what you could do
 
 ### Error reporting
+- no such thing here
 
 ### Formatting
+- no such thing here
 
 ### Autocompletion
 - There is a rudimentary form of autocompletion, but it's definitely not smart(although work's being done to improve that)
@@ -34,13 +33,19 @@ This much you can configure with some scripting configure(if you open up an expl
 
 ## Showcase
 
-[COMMAND_OUT as file explorer](vid/command_out_as_file_explorer.mkv)
-[search and replace](vid/search_and_replace.mp4)
-[COMMAND_OUT filtering](vid/command_out_filtering.mp4)
-[autocomplete](vid/autocomplete.mp4)
-[COMMAND_ENTRY as cli](vid/command_entry_as_cli.mp4)
-[Buffer splitview, font size, commands, meta-execution](vid/splitview_commands_meta_execution.mp4)
-[themes](vid/themes.mp4)
+![COMMAND_OUT as file explorer](vid/command_out_as_file_explorer.mkv)
+
+![search and replace](vid/search_and_replace.mp4)
+
+![COMMAND_OUT filtering](vid/command_out_filtering.mp4)
+
+![autocomplete](vid/autocomplete.mp4)
+
+![COMMAND_ENTRY as cli](vid/command_entry_as_cli.mp4)
+
+![Buffer splitview, font size, commands, meta-execution](vid/splitview_commands_meta_execution.mp4)
+
+![themes](vid/themes.mp4)
 
 
 ## Screenshots
