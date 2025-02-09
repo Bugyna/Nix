@@ -71,6 +71,11 @@
 	- background color is the default window `bg` color
 
 
+## SUGGEST_WIDGET
+- inherits `DEFAULT_TEXT_BUFFER`
+- defines a simple widget which receives a bunch of words to choose from, display each on a separate line, and writes it out once you press `enter`(or whatever you bind it to) into the `TEXT` buffer in which you are currently editing
+
+
 ## COMMAND_ENTRY
 
 - inherits `DEFAULT_TEXT_BUFFER`

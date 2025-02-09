@@ -211,6 +211,7 @@ class FILE_HANDLER(object):
 			self.parent.command_out.change_ex(self.parent.command_out.buffer_load)
 		if (not result): result = "<None>"
 		self.parent.command_out_set(result)
+		self.parent.command_out.focus_set()
 
 		return "break"
 

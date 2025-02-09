@@ -250,6 +250,7 @@ class WIN(tkinter.Tk):
 				os.chdir(orig_path)
 			self.file_handler.load_buffer(buffer_index=1)
 
+
 	def load_conf(self, theme_load=True):
 		# this is gross, but it works
 		try: file = open(f"{SOURCE_PATH}/conf", "r"); conf = file.read(); file.close()
@@ -288,7 +289,7 @@ class WIN(tkinter.Tk):
 		
 		return self.conf
 
-		
+
 	def add_module(self, name, _class):
 		_class = _class(self)
 		# print("not checked: ", _class)
@@ -302,6 +303,7 @@ class WIN(tkinter.Tk):
 
 		else:
 			del _class
+
 
 	def load_modules(self, dir=None, reload=False):
 		# who the fuck made python modules so stupid
@@ -338,6 +340,7 @@ class WIN(tkinter.Tk):
 						self.add_module(attr, c) # if it's a class we add it to self under the filename
 
 				del modules # delete the reduntant stuff
+
 
 	def reload_modules(self, dir=None):
 		self.load_modules(dir, reload=True)
@@ -416,6 +419,7 @@ class WIN(tkinter.Tk):
 		except Exception as e:
 			print(e)
 
+
 	def theme_set(self, theme=None):
 		if (type(theme) == list): theme = theme[-1] #failsave switch when selecting multiple themes through the command_out widget
 		self.theme_name = theme
@@ -423,6 +427,7 @@ class WIN(tkinter.Tk):
 		self.theme_load() # load the theme
 		# self.highlight_chunk() # highlight with new theme
 		# self.buffer.lex()
+
 
 	def theme_load(self):
 		self.theme_make() # create the tags used in text buffers
@@ -478,6 +483,7 @@ class WIN(tkinter.Tk):
 			widget.configure_self()
 		
 		self.update_win()
+
 
 	def font_set(self, arg=None, family=None, theme_load=True):
 		if (not family): family=self.conf["font"]
@@ -970,6 +976,7 @@ class WIN(tkinter.Tk):
 		self.command_out.change_ex(self.command_out.file_explorer)
 		arg, tags = self.file_handler.highlight_ls()
 		self.command_out_set(arg=arg, tags=tags, append_history=False)
+		self.command_out.focus_set()
 
 
 	def popup(self, arg=None):
@@ -1071,6 +1078,7 @@ class WIN(tkinter.Tk):
 		# self.command_out.place_self()
 		return "break"
 
+
 	def cmmand(self, arg=None, command=None):
 		# gets input from the command_entry widget, checks if there's any actual input or if it's an empty string
 		# if it's not an empty string it sends it to the parser class and if it's a valid command defined in the "commands" dictionary
@@ -1106,6 +1114,7 @@ class WIN(tkinter.Tk):
 		self.command_entry.unplace()
 		self.parser.parse_argument(list(command)) # fucking pointers
 
+
 	def buffer_unplace(self, arg=None):
 		""" I have no idea why this is a separate function """
 		try:
@@ -1113,10 +1122,12 @@ class WIN(tkinter.Tk):
 				buffer.unplace()
 		except Exception: pass
 
+
 	def unplace_all_except_buffer(self, arg=None):
 		self.command_entry.unplace()
 		self.find_entry.unplace()
 		self.command_out.unplace()
+
 
 	def get_rand_temperature(self):
 		""" generates a random temperature depending on the current month """
