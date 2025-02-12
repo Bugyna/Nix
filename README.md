@@ -70,6 +70,6 @@ You will need to understand (tk)inter first, so read the docs for that first(the
 
 [Language support](docs/highlighting.md) also see [lexer.py](src/lexer.py) and [tree sitter queries](src/ts_queries)
 
-[Custom widgets](docs/widget.md) also see [widgets.py](src/widgets.py)
+[Custom widgets](docs/widgets.md) also see [widgets.py](src/widgets.py)
 
 [Non widgets](docs/arch.md)

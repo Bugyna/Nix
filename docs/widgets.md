@@ -1,40 +1,155 @@
+# WIN, tkinter
+
+`WIN` located in `src/main.py` is the main application class and inherits the `tkinter.Tk` application class
+which basically means it's the main window of the application in which everything happens. It contains all of the application logic as well as a hierarchical layout for how it manages it's components called `widget`s, if these widgets have the `WIN` as their parent, they are WIN's children from the point of WIN. It doesn't mean they inherit anything, but that they are hierarchically contained inside the WIN.
+
+We shall call this hierarchy the 'tkinter hierarchy', because we have a slightly different logical hierarchy for how the custom widgets communicate.
+
+overview:
+```
+                      ┌──────────────────┐                  
+                      │                  │                  
+                      │       WIN        │                  
+           ┌──────────┤                  ├─────────┐        
+           │          └───────┬──────────┘         │        
+           │                  │                    │        
+           │                  │                    │        
+           │                  │                    │        
+           │                  │                    │        
+┌──────────┴─────┐   ┌────────┴───────┐   ┌────────┴───────┐
+│                │   │                │   │                │
+│     child0     │   │     child1     │   │     child2     │
+│                │   │                │   │                │
+└────────────────┘   └────────────────┘   └────────────────┘
+```
+
+Each widget can also be a parent of ofther widgets, some widgets in tkinter are defined exactly to be a simple container for other widgets and do not really have other behaviour defined(except for the standard behaviour defined in the base widget class)
+
+example:
+```
+                               ┌──────────────────┐                  
+                               │                  │                  
+                               │  tkinter.Frame   │                           
+                    ┌──────────┤                  ├─────────┐        
+                    │          │                  │         │        
+                    │          └───────┬──────────┘         │        
+                    │                  │                    │        
+                    │                  │                    │        
+                    │                  │                    │        
+                    │                  │                    │        
+         ┌──────────┴─────┐   ┌────────┴───────┐   ┌────────┴───────┐
+         │                │   │                │   │                │
+         │ tkinter.Canvas │   │  tkinter.Label │   │  tkinter.Text  │
+         │                │   │                │   │                │
+         └──┬────────┬────┘   └────────────────┘   └────────────────┘
+            │        │                                               
+            │        │                                               
+            │        │                                               
+┌───────────┴─┐   ┌──┴──────────┐                                    
+│tkinter.Label│   │tkinter.Label│                                                    
+│             │   │             │                                                                        
+└─────────────┘   └─────────────┘                                    
+```
+
+##### If one widget is a child of some parent, it cannot be displayed(placed/shown) inside any other parent of the same level. 
+
+example:
+```
+                               ┌──────────────────┐                  
+                               │                  │                  
+                               │  tkinter.Frame   │                           
+                    ┌──────────┤                  ├─────────┐        
+                    │          │                  │         │        
+                    │          └───────┬──────────┘         │        
+                    │                  │                    │        
+                    │                  │                    │        
+                    │                  │                    │        
+                    │                  │                    │        
+         ┌──────────┴─────┐   ┌────────┴───────┐   ┌────────┴───────┐
+         │                │   │                │   │                │
+         │ tkinter.Frame  │   │  tkinter.Frame │   │  tkinter.Text  │
+         │       D        │   │        F       │   │                │
+         └──┬────────┬────┘   └────────────────┘   └────────────────┘
+            │        │                                               
+            │        │                                               
+            │        │                                               
+┌───────────┴─┐   ┌──┴──────────┐                                    
+│tkinter.Label│   │tkinter.Label│                                                    
+│      A      │   │      B      │                                                                        
+└─────────────┘   └─────────────┘                                    
+```
+
+in this example you cannot place any of D's children inside F.
+
+
+
 # widgets.py
 
-## BUFFER_FRAME
+In this file we define custom widgets that are more specialized for their respective purposes, for example the `TEXT` class is built on top of `tkinter.Text` to provide more text editing options you'd normally want from a text editor for programmers.
 
+They have their respective hierarchies(which widgets are shown in which containers) which can be seen on the diagrams below.
+
+WIN and it's base containers in which basically all other widgets should go.
+```
+                 ┌─────────────────┐                      
+                 │                 │                      
+                 │       WIN       │                      
+        ┌────────┤                 ├────────┐             
+        │        │                 │        │             
+        │        └────────┬────────┘        │             
+        │                 │                 │             
+        │                 │                 │             
+        │                 │                 │             
+┌───────┴───────┐  ┌──────┴──────┐  ┌───────┴────────────┐
+│               │  │             │  │                    │
+│ .buffer_frame │  │ .info_frame │  │ .buffer_tab_frame  │
+│               │  │             │  │                    │
+└───────────────┘  └─────────────┘  └────────────────────┘
+```
+
+`WIN.info_frame` is a base `tkinter.Frame` object in which other basic tkinter objects go. It's used for showing arbitrary text information, for example line and column number of where you are currently in an opened buffer, information about current time, which key(s) were pressed last etc.
+
+
+`WIN.buffer_frame` is a base `tkinter.Frame` object in which most of our custom widgets go, it's mostly meant, as the name suggests, for buffers, which mostly means objects where you edit text, but other specialized BUFFERs can exist as long as they define the base behaviour which every specialized buffer in `WIN.buffer_frame` should have(which is defined in `widgets.BUFFER` so you can just inherit it)
+
+`WIN.buffer_tab_frame` is a base `tkinter.Frame` object in which we store the custom widgets `BUFFER_TAB`, the BUFFER_TAB is for coupled with opened buffers to show it's name and status(`*` for modified and not saved, `!` when the file is modified outside of the editor)
+
+
+## WIN.info_frame
+
+- the part on the top of the window where time, temperature, and line number is shown
 - it is a simple `tkinter.Frame`
-- children are `BUFFER`s (and it's subclasses `TEXT`s etc.) from `widgets.py`
+- children are various widgets(labels) mostly showing information like time, position in opened text buffer, etc.
 
+## WIN.buffer_tab_frame
 
-## BUFFER_TAB_FRAME
-
+- the part on the top of the window where individual buffer/file names are shown (under the info_frame)
 - it is a simple `tkinter.Frame`
 - children are BUFFER_TAB from `widgets.py`
 - can be hidden
 	- add `show_buffer_tab=0` to the `conf` file
 
-## INFO_FRAME
+## WIN.buffer_frame
 
 - it is a simple `tkinter.Frame`
-- children are various widgets(labels) mostly showing information like time, position in opened text buffer, etc.
+- children are `BUFFER`s (and it's subclasses `TEXT`s etc.) from `widgets.py`
 
 
 
-### theme configurations
 
-- [refer to BUFFER_TAB section](##BUFFER_TAB)
 
 
 ### general info for custom extension of tkinter widgets below
+
 - each class defintion which is an extension of tkinter widgets need to have a method called `configure_self`, which is responsible for configuring the visuals according to the loaded theme as well as setting correct fonts etc.
 - refer to `configure` methods in tkinter widgets
-- each class defintion needs to have `self.parent` configured to be the instance of the `WIN` application class, however when calling super().__init__ you can pass a different tkinter parent so you can set the tkinter hierarchy to be whatever you want, but each widget should have the `WIN` instance easily available
+- each class defintion needs to have `self.parent` configured to be the instance of the `WIN` application class, however when calling super().__init__ you can pass a different tkinter parent so you can set the tkinter hierarchy to be whatever you want, but each widget should have the `WIN` instance easily available, for easy inter-widget communication.
 - generally many classes also have a place_self, unplace_self methods which are responsible for proper positioning(usually pertains to widgets that are placed in the same tkinter container/`Frame`. So things like `BUFFER_TAB`s and `BUFFER`s (and it's subclasses)
+
 
 ## BUFFER_TAB
 
 - extension of `tkinter.Label`
-- a part on the top of the window where individual buffer/file names are shown
 - can be hidden
 	- add `show_buffer_tab=0` to the `conf` file
 
@@ -50,9 +165,10 @@
 
 ## BUFFER
 
-- base class for all BUFFERs that can be opened(defines base operations like switching between opened buffers etc.) that are necessary in every BUFFER
+- base class for all (file) buffers that can be opened(defines base operations like switching between opened buffers etc.) that are necessary in every BUFFER
 - is an extension of `tkinter.Frame`
-
+- `BUFFER` is a sort of default custom widget
+- `BUFFER`s should be placed in the `WIN.buffer_frame`
 
 
 ## DEFAULT_TEXT_BUFFER
@@ -108,3 +224,4 @@
 - basically the main thing you will use
 - is the text buffer in which you edit opened files
 - defines all methods which are specific to coding and useful for editing text while coding(so things like commenting lines and many other)
+

@@ -94,7 +94,8 @@ class EMPTY_LEXER:
 			self.objs[name] = self.curr_file
 
 	def add_define(self, key, val):
-		self.defines[key] = val
+		if (key not in self.defines):
+			self.defines[key] = val
 
 	def add_function(self, name):
 		if (name and name not in self.functions):
@@ -572,7 +573,7 @@ class LEXER(EMPTY_LEXER):
 					self.buffer.tag_add("keywords", start, end)
 
 
-	def lex(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True):
+	def lex(self, text=None, start_file="", index=["1.0", "end"], should_highlight=True, allow_lexing=True):
 		if (not self.language): return
 
 		self.text_index = self.buffer.index("insert-1c")
@@ -651,8 +652,10 @@ class LEXER(EMPTY_LEXER):
 
 				elif (catch_type == "function"):
 					self.buffer.tag_add("functions", start, end)
-					self.add_function(node.text.decode())
-					self.add_define(node.text.decode(), ["", node.text.decode(), ""])
+
+					if (allow_lexing):
+						self.add_function(node.text.decode())
+						self.add_define(node.text.decode(), ["", node.text.decode(), ""])
 					
 					self.current_scope[node.text.decode()] = {}
 					self.current_scope = self.current_scope[node.text.decode()]
@@ -707,7 +710,7 @@ class LEXER(EMPTY_LEXER):
 					# if (node.text.decode() in self.keywords):
 						# self.buffer.tag_add("keywords", start, end)
 
-				if (catch_type == "variable"):
+				if (catch_type == "variable" and allow_lexing):
 					self.add_var(node.text.decode())
 					self.add_define(node.text.decode(), ["", node.text.decode(), ""])
 					
@@ -730,7 +733,8 @@ class LEXER(EMPTY_LEXER):
 					# self.block[node.text.decode()
 
 				elif (catch_type == "function_declarator"):
-					self.handle_function_definition(node)
+					if (allow_lexing):
+						self.handle_function_definition(node)
 					self.current_scope[name] = {}
 					self.current_scope = self.current_scope[name]
 

@@ -475,8 +475,6 @@ class WIN(tkinter.Tk):
 
 		if (self.conf["show_buffer_tab"]):
 			[buffer_tab.configure_self() for buffer_tab in self.file_handler.buffer_tab_list]
-				
-	
 			if (self.file_handler.buffer_tab): self.file_handler.buffer_tab.focus_highlight()
 
 		for widget in self.widgets:
@@ -890,6 +888,7 @@ class WIN(tkinter.Tk):
 		self.alert.set_title("ok")
 		self.alert.option_add("ok", self.alert.unplace_option_remove_all)
 		self.alert.place_self()
+		self.alert.focus_set()
 
 	def suggest(self, arg=None, resize=False):
 		self.buffer.get_current_token()
@@ -1312,7 +1311,7 @@ class WIN(tkinter.Tk):
 			
 			# self.buffer.total_chars = self.buffer.current_char_abs_pos+len(self.buffer.get("insert", "end"))
 			# self.buffer.lexer.lex() # lex text for variables, functions, structures and class etc.
-			self.buffer.lexer.lex(index=[self.buffer.index("insert linestart"), self.buffer.index("insert lineend +1c")])
+			self.buffer.lexer.lex(index=[self.buffer.index("insert linestart"), self.buffer.index("insert lineend +1c")], allow_lexing=False)
 			self.buffer.typing_index_set() # Alt-Shift-M: sets your cursor to the position you were last typing in
 			# if (self.conf["highlighting"]): self.buffer.highlighter.highlight(self.buffer.cursor_index[0]) # highlight current line
 			# if (self.conf["highlighting"]): self.after(1, self.buffer.highlighter.highlight) # highlight current line
