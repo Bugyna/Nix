@@ -2,7 +2,7 @@ import tkinter
 
 class TASK_WIDGET(tkinter.Label):
 	def __init__(self, parent):
-		super().__init__(parent.info_frame)
+		super().__init__(parent)
 		self.type = "widget"
 		self.importable = True
 		self.parent = parent
@@ -16,7 +16,7 @@ class TASK_WIDGET(tkinter.Label):
 			"task_del(ete)*" : self.task_delete,
 		}
 
-		# self.add_self()
+		self.add_self()
 
 	def add_self(self):
 		if (self.importable): self.parent.parser.commands.update(self.commands)
@@ -31,14 +31,12 @@ class TASK_WIDGET(tkinter.Label):
 					
 		self.task = " ".join(arg[1:])
 		self.configure_self()
-		self.place_self()
 
 	def task_delete(self, arg=None):
 		self.task = ""
 
 	def place_self(self):
-		self.place(x=50, y=0, width=self.font.measure(self.task), height=self.font.metrics("linespace")//1.5+4, anchor="nw")
-		self.tkraise()
+		self.place(x=self.parent.key_label.winfo_width()+20, y=0, width=self.font.measure(self.task), height=self.font.metrics("linespace")//1.5+4, anchor="nw")
 
 	def configure_self(self):
 		self.configure(bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"], text=self.task, font=self.font)

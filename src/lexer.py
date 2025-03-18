@@ -66,8 +66,8 @@ class EMPTY_LEXER:
 
 
 		self.comment_sign = "#"
-		self.multiline_sign = ""
-		self.multiline_sign_end = ""
+		self.multiline_comment_sign = ""
+		self.multiline_comment_sign_end = ""
 		# self.multiline_sign = "/*"
 		# self.multiline_sign_end = "*/"
 
@@ -217,6 +217,10 @@ class LEXER(EMPTY_LEXER):
 
 		self.query = None
 		self.language = None
+
+		self.comment_sign = "//"
+		self.multiline_comment_sign = "/*"
+		self.multiline_comment_sign_end = "*/"
 
 		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh"]):
 			lang_type = "c"
