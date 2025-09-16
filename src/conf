@@ -1,4 +1,4 @@
-theme="elf"
+theme="become"
 tab_size=3
 # CRLF or LF
 line_end=LF
@@ -35,9 +35,9 @@ show_buffer_name=0
 
 # font = "Fira Code"
 
-# font="fixedsys"
+font="fixedsys"
 
-font="unifont"
+# font="unifont"
 
 font_size=14
 smaller_font_size=12
