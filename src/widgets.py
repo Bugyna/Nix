@@ -30,6 +30,20 @@ from util import *
 from highlighter import *
 
 
+def handle_edits_as_one_operation(fn):
+	def f(self, *args, **kwargs):
+		self.edit_separator()
+		self.config(autoseparator=False)
+		ret = fn(self, *args, **kwargs)
+		self.config(autoseparator=True)
+		self.edit_separator()
+
+		return ret
+
+	return f
+
+
+
 class BUFFER_TAB(tkinter.Label):
 	def __init__(self, name: str, parent, render=True):
 		super().__init__(parent.buffer_tab_frame)
@@ -611,6 +625,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.font_weight = "normal"
 		self.font = self.parent.font
 		self.font_bold = self.parent.font_bold
+		self.cursor_index = ["1", "0"]
 		
 		self.tag_configure("cursor")
 		self.cursor_mode_set()
@@ -799,6 +814,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 			
 	def del_selection(self):
 		self.sel_start = None
+		print(self.mark_names())
 		self.mark_unset(self.mark_names()[-1])
 		self.tag_remove("sel", "1.0", "end")
 
@@ -891,6 +907,14 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 
 		else:
 			self.delete("insert wordstart", "insert wordend")
+		if (arg): return "break"
+
+	def delete_start_of_word(self, arg=None):
+		self.delete(f"insert wordstart", f"insert")
+		if (arg): return "break"
+
+	def delete_rest_of_word(self, arg=None):
+		self.delete(f"insert", f"insert wordend")
 		if (arg): return "break"
 
 	def delete_line(self, arg=None):
@@ -1155,6 +1179,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 
 		if (len(self.found[self.parent.buffer.full_name]) == 0):
 			return "break"
+
 		self.scroll_through_found()
 		return "break"
 
@@ -1281,8 +1306,9 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 			self.found[self.parent.buffer.full_name][self.found_index][0],
 			self.found[self.parent.buffer.full_name][self.found_index][1]	
 		)
-		
-		self.parent.buffer.mark_unset(self.parent.buffer.mark_names()[-1])
+
+		# print(self.parent.buffer.mark_names())
+		# self.parent.buffer.mark_unset(self.parent.buffer.mark_names()[-1])
 
 	def select_match(self, offset=0):
 		if (self.parent.buffer.full_name not in self.found): return
@@ -1939,7 +1965,6 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.sel_end = None
 		# self.moving_index = "1.0" # I should be using the inbuilt tkinter text marks, but that would've probably fucked up other things I am too lazy to fix
 		# self.typing_index = "1.0"
-		self.cursor_index = ["1", "0"]
 		self.queue = []
 		self.current_line = ""
 		self.current_token = ""
@@ -1954,6 +1979,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 		self.mark_set("moving", "1.0")
 		self.mark_set("typing", "1.0")
+		self.mark_set("finding", "1.0")
 
 		# I should be using the inbuilt tkinter text marks, but that would've probably fucked up other things I am too lazy to fix
 		# self.marks = {
@@ -2149,6 +2175,21 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.move(arg, ["control", "shift"], key=key)
 		return "break"
 
+
+	@handle_edits_as_one_operation
+	def prepend_new_line(self, arg=None) -> str:
+		self.mark_set("insert", "insert -1l lineend")
+		# self.insert("insert", "\n")
+		self.keep_indent()
+		return "break"
+
+	@handle_edits_as_one_operation
+	def append_new_line(self, arg=None) -> str:
+		self.mark_set("insert", "insert lineend")
+		# self.insert("insert", "\n")
+		self.keep_indent()
+		return "break"
+
 	# def move_page_up(self, arg=None):
 		# self.
 
@@ -2319,6 +2360,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 		return "break"
 
+	@handle_edits_as_one_operation
 	def move_line(self, arg=None, up=True, line_offset=1):
 		# l = self.dump("insert linestart", "insert lineend+1c", tag="tag")
 		# print(l)
@@ -2380,6 +2422,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		return self.move_line(arg, up=True)
 
 	# @add_command_to_history
+	@handle_edits_as_one_operation
 	def comment_line(self, arg=None) -> str:
 		""" I wish I knew what the fuck is going on in here I am depressed """
 		
@@ -2398,7 +2441,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 						self.delete(f"{line_no}.{i}", f"{line_no}.{i+comment_len}")
 					break
 
-				elif (not re.match("\s", current_char)):
+				elif (not re.match(r"\s", current_char)):
 					self.insert(f"{line_no}.{i}", self.lexer.comment_sign+" ")
 					break
 
@@ -2408,6 +2451,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		return "break" # returning "break" prevents system/tkinter to call default bindings
 
 
+	@handle_edits_as_one_operation
 	def comment_line_force(self, arg=None) -> str:
 		start_index, stop_index = self.queue_get()
 
@@ -2416,7 +2460,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		for line_no in range(start_index, stop_index):
 			current_line = self.get(float(line_no), f"{line_no}.0 lineend+1c")
 			for i, current_char in enumerate(current_line, 0):
-				if (not re.match("\s", current_char)):
+				if (not re.match(r"\s", current_char)):
 					self.insert(f"{line_no}.{i}", self.lexer.comment_sign+" ")
 					break
 
@@ -2425,6 +2469,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		# self.parent.highlight_chunk(start_index=start_index, stop_index=stop_index)
 		return "break"
 
+	@handle_edits_as_one_operation
 	def comment_line_uncommented(self, arg=None) -> str:
 		start_index, stop_index = self.queue_get()
 
@@ -2436,7 +2481,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 				if (self.lexer.commment_sign == current_char+current_line[i+1:i+1+comment_len]):
 					break
 					
-				elif (not re.match("\s", current_char)):
+				elif (not re.match(r"\s", current_char)):
 					self.insert(f"{line_no}.{i}", self.lexer.comment_sign+" ")
 					break
 
@@ -2447,6 +2492,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		return "break"
 
 
+	@handle_edits_as_one_operation
 	def uncomment_line(self, arg=None) -> str:
 		start_index, stop_index = self.queue_get()
 
@@ -2469,6 +2515,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		return "break"
 
 
+	@handle_edits_as_one_operation
 	def indent(self, arg=None):
 		""" Tab """
 		start_index, stop_index = self.queue_get()
@@ -2479,7 +2526,8 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			self.insert(f"{line_no}.{index}", "\t")
 
 		return "break"
-		
+
+	@handle_edits_as_one_operation
 	def unindent(self, arg=None):
 		""" Checks if the first character in line is \t (tab) and deletes it accordingly """
 		start_index, stop_index = self.queue_get()
@@ -2513,7 +2561,9 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 	def scroll_fast(self, arg=None):
 		self.scroll(arg, 3)
 
+
 	# @moving
+	@handle_edits_as_one_operation
 	def keep_indent(self, arg=None):
 		""" gets the amount of tabs in the last line and puts them at the start of a new one """
 		#this functions gets called everytime Enter/Return has been pressed
@@ -2574,6 +2624,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		
 		return "break"
 
+
 	def get_line_count(self, arg=None):
 		""" returns total amount of lines in opened text """
 		# return sum(1 for line in self.get("1.0", "end").split("\n"))
@@ -2593,6 +2644,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.full_name = name
 		self.name = os.path.basename(name)
 
+
 	def delete_selection_start_index(self, arg=None) -> None:
 		""" This has to be a function and I hate it """
 		self.sel_start = None
@@ -2603,6 +2655,8 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		day_name = datetime.date.today().strftime("%A")
 		return f"{self.lexer.comment_sign} ~\t[ {day_name} ] [ {self.parent.time_label_value.get()} ] [ {date} ] "
 
+
+	@handle_edits_as_one_operation
 	def replace_x_with_y(self, x, y, arg=None, regexp=False) -> None: #replace spaces with tabs for example
 		self.mark_set("match_end", "1.0")
 		
@@ -2615,6 +2669,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			self.delete(index, "match_end")
 			self.insert(index, y)
 		self.mark_unset("match_end")
+
 
 	def buffer_clipboard_set(self, arg=None, text=None):
 		if (arg and not text):
@@ -2657,7 +2712,11 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.mark_set("typing", self.index(index))
 		# index = self.index(index)
 		# self.typing_index = index
-		if (arg): return "break"
+		return "break"
+
+	def finding_index_set(self, arg=None, index="insert"):
+		self.mark_set("finding", self.index(index))
+		return "break"
 
 	def jump_to_moving_index(self, arg=None):
 		tmp_index = self.index("insert")
@@ -2679,9 +2738,13 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 		self.mark_set("insert", "typing")
 		self.see("typing")
-		self.mark_set("typing", tmp_index)
+		# self.mark_set("typing", tmp_index)
 		
 		if (arg): return "break"
+
+	def jump_to_finding_index(self, arg=None):
+		self.mark_set("insert", "finding")
+		self.see("insert")
 
 	def jump_to_scope_start(self, arg=None):
 		if (arg): return "break"

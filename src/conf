@@ -1,4 +1,4 @@
-theme="become"
+theme="custom2"
 tab_size=3
 # CRLF or LF
 line_end=LF
@@ -29,13 +29,13 @@ show_buffer_name=0
 # font="BigBlue TerminalPlus"
 # font="MxPlus IBM BIOS-2x"
 
-# font="Terminus (TTF)"
+font="Terminus (TTF)"
 
 # font="Mx437 VTech BIOS"
 
 # font = "Fira Code"
 
-font="fixedsys"
+# font="fixedsys"
 
 # font="unifont"
 
