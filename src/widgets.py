@@ -109,7 +109,7 @@ class BUFFER(tkinter.Frame):
 		self.font_bold = self.parent.font_bold
 
 	def configure_self(self, arg=None) -> None:
-		self.configure(bg = self.parent.theme["window"]["bg"], borderwidth=2, relief=self.parent.conf["buffer_border_style"], highlightthickness=0, cursor="xterm")
+		self.configure(bg = self.parent.theme["window"]["bg"], borderwidth=2, relief=self.parent.conf["buffer_border_style"], highlightthickness=0, cursor="")
 
 		if (self["relief"] == "flat"): self["bd"] = 0
 		else: self["bd"] = 2
@@ -965,7 +965,7 @@ class COMMAND_ENTRY(DEFAULT_TEXT_BUFFER):
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
 		 selectborderwidth=0, borderwidth=2, relief=self.parent.conf["command_entry_border_style"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap="char", exportselection=True,
-		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
+		 blockcursor=self.block_cursor, highlightthickness=0, cursor="")
 
 		if (self["relief"] == "flat"): self["bd"] = 0
 		else: self["bd"] = 2
@@ -1030,7 +1030,7 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
 		 selectborderwidth=0, borderwidth=2, relief=self.parent.conf["find_border_style"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap="none", exportselection=True,
-		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm")
+		 blockcursor=self.block_cursor, highlightthickness=0, cursor="heart")
 
 		if (self["relief"] == "flat"): self["bd"] = 0
 		else: self["bd"] = 2
@@ -1361,6 +1361,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.font_size = self.parent.conf["command_out_font_size"]
 		self.font_weight = "bold"
 
+		self.mode = "!!!"
+
 		self.out = ""
 		self.modified_arg = ""
 
@@ -1379,6 +1381,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.last_line = ""
 
 		self.edits_since_last_input = []
+
+		self.mode_label = tkinter.Label(self, text=self.mode)
 		
 		bind_keys_from_conf(self)
 
@@ -1391,14 +1395,20 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"),
 		 selectborderwidth=0, exportselection=True, blockcursor=self.block_cursor,
-		 spacing3=0, cursor="left_ptr", relief=self.parent.conf["command_out_border_style"], borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
+		 spacing3=0, cursor="heart", relief=self.parent.conf["command_out_border_style"], borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
 
 		if (self["relief"] == "flat"): self["bd"] = 0
 		else: self["bd"] = 2
 		
 		self.input_label.configure(font=font.Font(family=self.parent.font_family[0], size=self.font_size,
 		 weight=self.font_weight), bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["select_widget"],
-		 cursor="left_ptr", relief="flat", borderwidth=0, highlightthickness=0)
+		 cursor="heart", relief="flat", borderwidth=0, highlightthickness=0)
+
+		self.mode_label.configure(font=font.Font(family=self.parent.font_family[0], size=self.font_size,
+		 weight=self.font_weight), bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
+		 cursor="heart", relief="flat", borderwidth=0, highlightthickness=0)
+
+		self.mode_label["text"] = self.mode
 
 
 	def place_self(self, arg=None, lines=None, x=0, y=None, w=None, max_w=None, justify=None):
@@ -1434,6 +1444,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		elif (self.parent.conf["orientate"] == "up"):
 			if (not y): y = 0
 			self.place(x=x, y=0, width=w, height=h, anchor="nw")
+
+		self.mode_label.place(relx=0.9)
 
 
 
@@ -1757,7 +1769,8 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			# else: [self.tag_add("keywords", tag[0], tag[1]) for tag in tags]
 
 
-	def change_ex(self, new_ex):
+	def change_ex(self, new_ex, mode_name="!!!"):
+		self.mode = mode_name
 		self.execute = new_ex
 
 	def add_selection(self, arg=None):
@@ -1821,6 +1834,11 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.parent.file_handler.load_buffer(buffer_name=arg)
 		self.unplace()
 
+	def subproc_comm(self, arg=None):
+		arg=arg[-1]
+		print(arg)
+		return "break"
+
 
 	def save_as_buffer(self, arg=None):
 		"""Save current output in a temporary read-only buffer"""
@@ -1871,7 +1889,7 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
 		 selectborderwidth=0, exportselection=True, blockcursor=self.block_cursor,
-		 spacing3=0, cursor="left_ptr", relief=self.parent.conf["suggest_widget_border_style"], borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
+		 spacing3=0, cursor="heart", relief=self.parent.conf["suggest_widget_border_style"], borderwidth=2, highlightthickness=0, wrap="word") # cursor="trek"
 
 	def move(self, arg=None, up=None):
 		if (up):
@@ -1970,7 +1988,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
 		 selectbackground=self.parent.theme["window"]["selectbg"], selectforeground=self.parent.theme["window"]["selectfg"],
 		 selectborderwidth=self.parent.conf["selection_border_width"], borderwidth=2, relief=self.parent.conf["buffer_border_style"], tabs=(f"{self.font.measure(' ' * self.parent.conf['tab_size'])}"), wrap=self["wrap"], exportselection=True,
-		 blockcursor=self.block_cursor, highlightthickness=0, cursor="xterm"
+		 blockcursor=self.block_cursor, highlightthickness=0, cursor=""
 		)
 
 		if (self["relief"] == "flat"): self["bd"] = 0
@@ -2805,6 +2823,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.run_subprocess(argv)
 		return "break"
 
+
 	def run_subprocess(self, argv=None, make=False) -> str:
 		if (make):
 			argv = self.lexer.build_argv
@@ -2812,28 +2831,27 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 
 
 		def run(argv):
+			subproc_name = ' '.join(argv)
 			try:
 				start_time = time.time()
-				process = pexpect.spawn(" ".join(argv))
+				process = pexpect.spawn(subproc_name)
 				
-				self.parent.subprocesses.append(process)
-				index = len(self.parent.subprocesses)-1
-				out = ""
+				self.parent.subprocs[subproc_name] = self.parent.subproc_create(subproc_name=subproc_name)
+				subproc = self.parent.subprocs[process]
+				subproc['process'] = process
 				self.parent.command_out_set("")
-				
-				
-				line = "something"
-	
+
+				line = ""
+
 				while (1):
 					res = process.readline().decode("utf-8")
-					
-					print(res, end="")
+					# print(res, end="")
 	
 					line = re.sub(cc_pattern_text+r"|\r", '', res)
 					replacing = 1
 					pos = 0
 					offset = 0
-					tags = []
+					tags = subproc['new_tags']
 					while replacing:
 						# print(pos)
 						if (pos >= len(res)-1): replacing = 0; break
@@ -2842,7 +2860,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 						if (first is None): replacing = 0; break
 						color = None
 						color = cc_num_pattern.search(first[0], 0)
-						print("frist: ", first, color)
+						# print("frist: ", first, color)
 						
 						offset += len(first[0])
 						first = first.span()[1]
@@ -2865,7 +2883,9 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 						# print("second: ", color)
 						tags.append([f"insert -1l linestart +{first-offset}c", f"insert -1l linestart +{second-offset}c", color])
 							
-					self.parent.command_out.add_stdout(line, tags)
+					# self.parent.command_out.add_stdout(line, tags)
+					subproc['new_out'] += line
+
 
 					# process.expect(pexpect.EOF)
 					if not line or not res:
@@ -2876,7 +2896,6 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 						self.parent.command_out.add_stdout(f"[RETURN CODE {status}]", tags=[["insert linestart", "insert lineend", "logical_keywords"], ["insert linestart +13c", "insert lineend-1c", "functions"]])
 						break
 
-			# self.parent.subprocesses.pop(index)
 			# self.parent.kill_last_subproc()
 		
 			except Exception as e:

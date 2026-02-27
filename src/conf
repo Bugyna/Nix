@@ -36,8 +36,18 @@ show_buffer_name=0
 # font = "Fira Code"
 
 font="fixedsys"
-
 # font="unifont"
+
+# font="Px437 IBM BIOS-2X"
+# font="Px437 IBM BIOS-2y"
+# font="Px437 IBM BIOS"
+# font="Px437 IBM CGAthin"
+# font="Px437 DOS/V re.JPN12"
+# font="Px437 DOS/V re.JPN16"
+# font="Px437 DOS/V re.JPN19"
+# font="Px437 DOS/V re.JPN24"
+# font="Px437 DOS/V re.JPN30"
+font="Px437 IBM EGA 8x8"
 
 font_size=14
 smaller_font_size=12

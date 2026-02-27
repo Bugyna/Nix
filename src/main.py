@@ -22,6 +22,9 @@ import magic
 import signal
 from importlib import reload as importlib_reload
 
+
+from collections import OrderedDict
+
 try: import psutil # usually don't get imported when running as root
 except Exception: pass
 
@@ -128,7 +131,16 @@ class WIN(tkinter.Tk):
 		self.fullscreen = False
 		self.split_mode = "nosplit"
 
-		self.subprocesses = []
+		# proc_name : {
+			# 'process'          : None,
+			# 'state'            : 'RUN',
+			# 'seen_output'      : '',
+			# 'new_output'       : '',
+			# 'seen_tags'        : [],
+			# 'new_tags'         : [],
+		# }
+
+		self.subprocs = OrderedDict()
 
 		self.command_history = []
 		
@@ -972,9 +984,16 @@ class WIN(tkinter.Tk):
 	
 
 	def nt_place(self, arg=None): # why nt???
-		self.command_out.change_ex(self.command_out.file_explorer)
+		self.command_out.change_ex(self.command_out.file_explorer, "!FE")
 		arg, tags = self.file_handler.highlight_ls()
 		self.command_out_set(arg=arg, tags=tags, append_history=False)
+		self.command_out.focus_set()
+
+
+	def list_subproc(self, arg=None):
+		self.command_out.change_ex(self.command_out.subproc_comm, "!SE")
+		arg = "\n".join(self.subprocs.keys())
+		self.command_out_set(arg=arg, append_history=False)
 		self.command_out.focus_set()
 
 
@@ -983,16 +1002,58 @@ class WIN(tkinter.Tk):
 		self.right_click_menu.tk_popup(arg.x_root+5, arg.y_root)
 
 
-	def kill_last_subproc(self, arg=-1):
-		if (type(arg) == tkinter.Event): arg=-1
-		elif (type(arg) != int):
+	def kill_last_subproc(self, arg=None):
+		if (type(arg) == tkinter.Event): arg=None
+		elif (type(arg) != str):
 			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
 
-		if (len(self.subprocesses) >= 1):
-			self.subprocesses[arg].kill(signal.SIGKILL)
-			self.subprocesses.pop(arg)
+		self.subproc_kill(subproc_name=arg)
 
 		return "break"
+
+
+	def subproc_create(self, arg=None, subproc_name=""):
+		if not subproc_name:
+			self.notify(f"ERROR[subproc_create]: no subproc_name(={subproc_name}) provided\n")
+			return {}
+
+		return {
+			'process'          : None,
+			'state'            : 'RUN',
+			'seen_output'      : '',
+			'new_output'       : '',
+			'seen_tags'        : [],
+			'new_tags'         : [],
+		}
+
+
+	def subproc_kill(self, arg=None, subproc_name=""):
+		if subproc_name:
+			s = self.subprocs[subproc_name]
+			s["state"] = "KILL"
+			s['process'].kill(signal.SIGKILL)
+
+		else:
+			s = next(reversed(self.subprocs))
+			s["state"] = "KILL"
+			s['process'].kill(signal.SIGKILL)
+
+		return "break"
+
+
+	def subproc_delete(self, arg=None, subproc_name=""):
+		if subproc_name:
+			s = self.subprocs.pop(subproc_name)
+			s["state"] = "KILL"
+			s['process'].kill(signal.SIGKILL)
+
+		else:
+			s = self.subprocs.popitem()
+			s["state"] = "KILL"
+			s['process'].kill(signal.SIGKILL)
+
+		return "break"
+
 
 
 	def command_entry_place(self, arg=None):
