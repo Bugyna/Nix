@@ -81,7 +81,7 @@ class PARSER:
 			'rmdir|rm_dir(ectory)' : [self.delete_directory, 'deletes directory | usage: rmdir [directory name]'],
 			'theme' : [self.theme, 'changes theme interactively or to the specified one | usage: theme (interactive) | theme [theme name]'],
 			'tab_size|set_tab|set_tab_size' : [self.tab_size_set, 'sets tab size | usage: tab_size: [number]'],
-			'replace_space(s*)' : [self.replace_spaces, 'replaces all indentaion(spaces) with tabs'],
+			'replace_space(s*)|retab' : [self.replace_spaces, 'replaces all indentaion(spaces) with tabs'],
 			'replace_tab(s*)' : [self.replace_tabs, 'replaces all tabs with spaces'],
 			'init' : [self.initialize_file, 'initializes file with standard code for current filetype by extension'],
 			'lex' : [self.lex, 'use lexer'],
@@ -116,6 +116,7 @@ class PARSER:
 			'lex_line_test': [self.lex_line_test, 'test lexer'],
 			'hi(gh)?li(ght)?(er)?' : [self.highlighter_set, 'set language highlighting'],
 			'lex_debug': [self.lex_debug, 'debug lexer'],
+			'lex_curr_node': [self.lex_print_curr_node, 'print info about the tree sitter node under cursor']
 			# 'stdin' : [self.write_to_stdin, 'communicate with last opened process'],
 		}
 
@@ -589,6 +590,9 @@ class PARSER:
 
 	def lex_debug(self, arg=None):
 		self.parent.buffer.lexer.debug(*arg)
+
+	def lex_print_curr_node(self, arg=None):
+		self.parent.buffer.lexer.print_node_under_cursor()
 
 	def command_not_found(self, arg=None):
 		res = ""

@@ -28,8 +28,6 @@
 	{
 		"<Control-N>" : "parent.file_handler.new_file",
 		"<Control-n>" : "parent.file_handler.new_file",
-		"<Control-O>" : "parent.file_handler.load_file",
-		"<Control-o>" : "parent.file_handler.load_file",
 		"<Control-B>L" : "parent.file_handler.load_file",
 		"<Control-b>l" : "parent.file_handler.load_file",
 		
@@ -94,10 +92,10 @@
 		"<Control-Delete>" : "delete_next_word",
 		"<Control-Shift-BackSpace>" : "delete_line_before_cursor_tab_sensitive",
 		"<Control-Shift-Delete>" : "delete_line_after_cursor",
-		"<Control-d>" : "delete_next_word",
-		"<Control-D>" : "delete_next_word",
-		"<Control-Shift-d>" : "delete_prev_word",
-		"<Control-Shift-D>" : "delete_prev_word",
+		"<Control-d>" : "delete_rest_of_word",
+		"<Control-D>" : "delete_rest_of_word",
+		"<Control-Shift-d>" : "delete_start_of_word",
+		"<Control-Shift-D>" : "delete_start_of_word",
 		"<Alt-d>" : "delete_line",
 		"<Alt-D>" : "delete_line",
 
@@ -218,8 +216,6 @@
 		"<Control-s>" : "parent.file_handler.save_file",
 		"<Control-N>" : "parent.file_handler.new_file",
 		"<Control-n>" : "parent.file_handler.new_file",
-		"<Control-O>" : "parent.file_handler.load_file",
-		"<Control-o>" : "parent.file_handler.load_file",
 		"<Control-B>L" : "parent.file_handler.load_file",
 		"<Control-b>l" : "parent.file_handler.load_file",
 		
@@ -284,6 +280,11 @@
 		"<Control-Shift-L>" : "select_line",
 		"<Control-Shift-l>" : "select_line",
 		
+
+		"<Control-Shift-O>" : "prepend_new_line",
+		"<Control-Shift-o>" : "prepend_new_line",
+		"<Control-O>" : "append_new_line",
+		"<Control-o>" : "append_new_line",
 		
 		"<Shift-Return>" : "run_make",
 		
@@ -350,6 +351,8 @@
 		"<Alt-n>" : "jump_to_typing_index",
 		"<Alt-B>" : "jump_to_scope_start",
 		"<Alt-b>" : "jump_to_scope_start",
+		"<Alt-F>" : "jump_to_finding_index",
+		"<Alt-f>" : "jump_to_finding_index",
 		"<Alt-Shift-B>" : "jump_to_scope_end",
 		"<Alt-Shift-b>" : "jump_to_scope_end",
 		"<Alt-O>" : "set_vim_mode",

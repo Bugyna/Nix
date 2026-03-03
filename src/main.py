@@ -196,7 +196,6 @@ class WIN(tkinter.Tk):
 		# self.line_numbers = tkinter.Label(self.buffer_frame, text="1\n2\n3")
 
 
-		self.buffer = None #file_handler.init functions uses this txt variable so if it's not declared before running the function it's going to break 
 		self.load_modules()
 		self.file_handler.init(".scratch") #see handlers.py/FILE_HANDLER
 
@@ -1076,6 +1075,7 @@ class WIN(tkinter.Tk):
 
 
 	def find_place(self, arg=None, text=None, resize=False):
+		self.buffer.finding_index_set()
 		if (not resize):
 			self.find_entry.start_index = self.buffer.index("insert")
 			self.find_entry.find_mode_set(text=text)

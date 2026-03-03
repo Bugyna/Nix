@@ -11,6 +11,7 @@ import tree_sitter_c as tsc
 import tree_sitter_rust as tsrust
 import tree_sitter_html as tshtml
 import tree_sitter_php as tsphp
+import tree_sitter_javascript as tsjs
 
 from util import *
 
@@ -19,6 +20,7 @@ PHP_LANGUAGE = tree_sitter.Language(tsphp.language_php())
 HTML_LANGUAGE = tree_sitter.Language(tshtml.language())
 RUST_LANGUAGE = tree_sitter.Language(tsrust.language())
 PYTHON_LANGUAGE = tree_sitter.Language(tspython.language())
+JS_LANGUAGE = tree_sitter.Language(tsjs.language())
 
 class EMPTY_LEXER:
 	def __init__(self, parent, buffer_widget, type="c"):
@@ -171,7 +173,7 @@ class LEXER(EMPTY_LEXER):
 		if (type(lang_type) == list): lang_type = lang_type[0]
 		query, language = None, None
 
-		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh", "ino"] and "C_LANGUAGE" in globals()):
+		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh", "ino", "cs"] and "C_LANGUAGE" in globals()):
 			lang_type = "c"
 			language = C_LANGUAGE
 			with open(f"{SOURCE_PATH}/ts_queries/c.scm", "r") as file:
@@ -197,7 +199,13 @@ class LEXER(EMPTY_LEXER):
 			with open(f"{SOURCE_PATH}/ts_queries/rust.scm", "r") as file:
 				query = language.query(file.read())
 
-		elif (lang_type == "lb"):
+
+		elif (lang_type in ["js", "typ"]):
+			language = JS_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/js.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type in ["lb"]):
 			language = tree_sitter.Language(tslisp.language(), 'Common Lisp')
 			with open(f"{SOURCE_PATH}/ts_queries/lisp.scm", "r") as file:
 				query = language.query(file.read())
@@ -218,10 +226,7 @@ class LEXER(EMPTY_LEXER):
 		self.query = None
 		self.language = None
 
-		self.comment_sign = "//"
-		self.multiline_comment_sign = "/*"
-		self.multiline_comment_sign_end = "*/"
-
+		
 		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh"]):
 			lang_type = "c"
 			self.keywords = [
@@ -246,6 +251,9 @@ class LEXER(EMPTY_LEXER):
 
 			self.build_argv = ["make"]
 			self.run_argv = ["./main"]
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
 
 
 		elif (lang_type == "(cpp|hpp|cc|hh)$"):
@@ -272,6 +280,20 @@ class LEXER(EMPTY_LEXER):
 			self.special_keywords = [
 				"asm", "__attribute__", "const", "extern", "volatile", "internal", "private", "public"
 			]
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
+
+
+
+
+		elif (lang_type == "typ"):
+			self.comment_sign = ""
+			self.multiline_comment_sign = ""
+			self.multiline_comment_sign_end = ""
+
+			self.build_argv = ["typst", "compile", self.buffer.name]
+			self.run_argv = ["xdg-open", self.buffer.name[:-4]+".pdf"]
 
 
 
@@ -297,6 +319,9 @@ class LEXER(EMPTY_LEXER):
 
 			self.build_argv = ["cargo", "build"]
 			self.run_argv = ["cargo", "run"]
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
 			
 
 
@@ -324,14 +349,12 @@ class LEXER(EMPTY_LEXER):
 			# p.set_language(l)
 			self.active_lexers['html'] = [p, q, l]
 			
-			# self.keywords = [
-				 # '__halt_compiler', 'abstract', 'and', 'array', 'as', 'break', 'callable', 'case', 'catch', 'class', 'clone', 'const', 'continue', 'declare', 'default',
-				 # 'die', 'do', 'echo', 'else', 'elseif', 'empty', 'enddeclare', 'endfor', 'endforeach', 'endif', 'endswitch', 'endwhile', 'eval', 'exit', 'extends', 'final', 'for', 'foreach',
-				 # 'function', 'global', 'goto', 'if', 'implements', 'include', 'include_once', 'instanceof', 'insteadof', 'interface', 'isset', 'list', 'namespace', 'new', 'or', 'print',
-				 # 'private', 'protected', 'public', 'require', 'require_once', 'return', 'static', 'switch', 'throw', 'trait', 'try', 'unset', 'use', 'var', 'while', 'xor'
-			# ]
+
 			self.build_argv = []
 			self.run_argv = []
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
 
 
 
@@ -365,6 +388,24 @@ class LEXER(EMPTY_LEXER):
 				'this', 'void', 'volatile', 'yield', 'new', 'private', 'protected', 'public', 'class', 'extends'
 			]
 
+			self.build_argv = []
+			self.run_argv = []
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
+
+		elif lang_type == "cs":
+			self.keywords = []
+			self.numerical_keywords = []
+			self.logical_keywords = []
+			self.special_keywords = []
+			
+			self.build_argv = ["dotnet", "build"]
+			self.run_argv = ["dotnet", "run"]
+			self.comment_sign = "//"
+			self.multiline_comment_sign = "/*"
+			self.multiline_comment_sign_end = "*/"
+
 
 
 		elif lang_type == "lb":
@@ -396,24 +437,6 @@ class LEXER(EMPTY_LEXER):
 			self.comment_sign = "#"
 			self.multiline_comment_sign = ""
 			self.multiline_comment_sign_end = ""
-
-		# elif lang_type == "tex" or type == "bbl":
-			# self.keywords = [
-				# 'chap', 'par', 'begtt', 'endtt', 'hisyntax', 
-			# ]
-
-			# self.logical_keywords = [
-				# 'sec', 'cite', 'em'
-			# ]
-
-			# self.numerical_keywords = [
-				# 'secc', 'item', 'bf', 'url'
-			# ]
-
-			# self.comment_sign = "%%"
-			# self.multiline_comment_sign = ""
-			# self.multiline_comment_sign_end = ""
-
 
 		self.comment_regex = re.compile(fr"{self.comment_sign}")
 		self.language, self.query = self.construct_lang_and_query(lang_type)
@@ -467,11 +490,14 @@ class LEXER(EMPTY_LEXER):
 		scope_list = []
 
 		s = ""
-		for index, (node, catch_type) in enumerate(self.results):
-			start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
-			end = f"{node.end_point[0]+offset_pos}.{node.end_point[1]}"
-			print(node, catch_type, node.text)
-			s += f"{node} {catch_type} {node.text}\n"
+
+
+		for catch_type in self.results.keys():
+			for index, node in enumerate(self.results[catch_type]):
+				start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
+				end = f"{node.end_point[0]+offset_pos}.{node.end_point[1]}"
+				print(node, catch_type, node.text)
+				s += f"{node} {catch_type} {node.text}\n"
 
 		self.parent.command_out_set(s)
 
@@ -512,9 +538,10 @@ class LEXER(EMPTY_LEXER):
 		# for index, (node, catch_type) in enumerate(results):
 		for catch_type in self.results.keys():
 			for index, node in enumerate(self.results[catch_type]):
-				# parent = node.parent
-				# if (parent and parent != tree.root_node):
-					# print("parent: ", parent, parent.text, node.text)
+
+				parent = node.parent
+				if (parent and parent != tree.root_node):
+					print("parent: ", parent, parent.text, node.text)
 				# print(i, node.parent)
 	
 				start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
@@ -632,8 +659,10 @@ class LEXER(EMPTY_LEXER):
 		
 		#return
 		# print("_--------START--------_")
+
 		for catch_type in self.results.keys():
 			for index, node in enumerate(self.results[catch_type]):
+				# print(":: ", node, node.end_point)
 				# parent = node.parent
 				# if (parent and parent != tree.root_node):
 					# print("parent: ", parent, parent.text, node.text)
@@ -765,7 +794,8 @@ class LEXER(EMPTY_LEXER):
 		# print(self.scopes)
 		# print(dir(self.tree), self.tree.included_ranges)
 
-	def print_res(self):
+
+	def print_res(self, arg=None):
 		s = "VARS:"
 		for var in self.vars.items():
 			s += "\t{var}"
@@ -774,6 +804,12 @@ class LEXER(EMPTY_LEXER):
 		print(self.scopes)
 
 		self.parent.command_out_set(s)
+
+
+
+	def print_node_under_cursor(self, arg=None):
+		cur = self.tree.walk()
+		cur.goto_first_child_for_point((int(self.buffer.cursor_index[0]), int(self.buffer.cursor_index[1])-1))
 
 	
 	def walk_scopes(self, node):

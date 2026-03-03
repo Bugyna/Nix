@@ -832,7 +832,7 @@ class LEXER(__LEXER):
 			# self.objs.append(word)
 
 
-	def py_lex(self, text=None, file="", index=["1.0", "end"]):
+	def py_lex(self, text=None, file="", index=["1.0", "end"], allow_lexing=False):
 		if (text): self.text = text
 		else: self.text = self.buffer.get(*index)
 		row_index = 1
