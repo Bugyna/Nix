@@ -12,6 +12,7 @@ import tree_sitter_rust as tsrust
 import tree_sitter_html as tshtml
 import tree_sitter_php as tsphp
 import tree_sitter_javascript as tsjs
+import tree_sitter_c_sharp as tscs
 
 from util import *
 
@@ -21,6 +22,7 @@ HTML_LANGUAGE = tree_sitter.Language(tshtml.language())
 RUST_LANGUAGE = tree_sitter.Language(tsrust.language())
 PYTHON_LANGUAGE = tree_sitter.Language(tspython.language())
 JS_LANGUAGE = tree_sitter.Language(tsjs.language())
+CS_LANGUAGE = tree_sitter.Language(tscs.language())
 
 class EMPTY_LEXER:
 	def __init__(self, parent, buffer_widget, type="c"):
@@ -48,6 +50,9 @@ class EMPTY_LEXER:
 		self.tree = None
 		self.results = []
 		self.full_results = []
+		self.errors = {
+			
+		}
 
 		self.force_multiline_comment = False
 
@@ -136,6 +141,7 @@ class EMPTY_LEXER:
 		self.buffer.tag_remove(["upcase"], last_separator, line_end_index)
 		self.buffer.tag_remove(["separator"], last_separator, line_end_index)
 		self.buffer.tag_remove(["command_keywords"], last_separator, line_end_index)
+		self.buffer.tag_remove(["error"], last_separator, line_end_index)
 
 	def unhighlight_all(self):
 		self.buffer.tag_remove(["quotes"], "1.0", "end")
@@ -150,6 +156,7 @@ class EMPTY_LEXER:
 		self.buffer.tag_remove(["upcase"], "1.0", "end")
 		self.buffer.tag_remove(["separator"], "1.0", "end")
 		self.buffer.tag_remove(["command_keywords"], "1.0", "end")
+		self.buffer.tag_remove(["error"], "1.0", "end")
 
 
 
@@ -173,7 +180,7 @@ class LEXER(EMPTY_LEXER):
 		if (type(lang_type) == list): lang_type = lang_type[0]
 		query, language = None, None
 
-		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh", "ino", "cs"] and "C_LANGUAGE" in globals()):
+		if (lang_type in ["c", "h", "cpp", "hpp", "cc", "hh", "ino"] and "C_LANGUAGE" in globals()):
 			lang_type = "c"
 			language = C_LANGUAGE
 			with open(f"{SOURCE_PATH}/ts_queries/c.scm", "r") as file:
@@ -213,6 +220,12 @@ class LEXER(EMPTY_LEXER):
 		elif (lang_type in ["cpp", "hpp", "cc", "hh"]):
 			language = C_LANGUAGE
 			with open(f"{SOURCE_PATH}/ts_queries/c.scm", "r") as file:
+				query = language.query(file.read())
+
+		elif (lang_type in ["cs"] and "CS_LANGUAGE" in globals()):
+			lang_type = "cs"
+			language = CS_LANGUAGE
+			with open(f"{SOURCE_PATH}/ts_queries/cs.scm", "r") as file:
 				query = language.query(file.read())
 
 
@@ -496,10 +509,21 @@ class LEXER(EMPTY_LEXER):
 			for index, node in enumerate(self.results[catch_type]):
 				start = f"{node.start_point[0]+offset_pos}.{node.start_point[1]}"
 				end = f"{node.end_point[0]+offset_pos}.{node.end_point[1]}"
-				print(node, catch_type, node.text)
-				s += f"{node} {catch_type} {node.text}\n"
+				print(node, catch_type, node.text, start, end, "is error: ", node.is_error, "is missing: ", node.is_missing, "is extra: ", node.is_extra)
+				s += f"{node} {catch_type} {node.text} : ({start} : {end})\n\t[missing?{node.is_missing}, extra?{node.is_extra}, is_error?{node.is_error}, has_error?{node.has_error}]\n\n"
 
 		self.parent.command_out_set(s)
+
+	def debug_errors(self, arg=None):
+		s = "\n"
+
+		for start, error in self.errors.items():
+			print("error: ", error, "at", start)
+			s += f"error: {error} at {start}\n"
+
+		s += "\n"
+		self.parent.command_out_set(s)
+
 
 
 	def highlight(self, text, index, lexer):
@@ -551,6 +575,7 @@ class LEXER(EMPTY_LEXER):
 				# print("##> ", catch_type, index, node, start, end)
 				# print(node, catch_type, node.text)
 				inside = False
+					
 	
 				# if (self.buffer.compare(self.text_index, ">=", start) and self.buffer.compare(self.text_index, "<=", end)):
 					# # print("inside: True, ", start, end, node)
@@ -621,6 +646,7 @@ class LEXER(EMPTY_LEXER):
 			self.indexed_files.append(self.buffer.full_name)
 
 			if (index == ["1.0", "end"]):
+				self.errors = {}
 				# self.buffer.parent.unhighlight_chunk_main_thread()
 				self.unhighlight_all()
 				# TODO: delete all stored information on new lex of whole file
@@ -679,6 +705,13 @@ class LEXER(EMPTY_LEXER):
 					# inside = True
 					# self.parent.notify(self.walk_scopes(node))
 					# self.parent.code_location_label["text"] = self.walk_scopes(node)
+
+				if (node.is_missing or node.is_error):
+					print("node is missing: ", node, start, end)
+					self.buffer.tag_add("error", start)
+					self.errors[start] = node
+					continue
+
 
 				if (catch_type == "keyword"):
 					self.buffer.tag_add("keywords", start, end)

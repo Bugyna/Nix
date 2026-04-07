@@ -116,7 +116,8 @@ class PARSER:
 			'lex_line_test': [self.lex_line_test, 'test lexer'],
 			'hi(gh)?li(ght)?(er)?' : [self.highlighter_set, 'set language highlighting'],
 			'lex_debug': [self.lex_debug, 'debug lexer'],
-			'lex_curr_node': [self.lex_print_curr_node, 'print info about the tree sitter node under cursor']
+			'lex_curr_node': [self.lex_print_curr_node, 'print info about the tree sitter node under cursor'],
+			'lex_error(s)?': [self.lex_print_errors, 'print info about various mistakes in code'],
 			# 'stdin' : [self.write_to_stdin, 'communicate with last opened process'],
 		}
 
@@ -435,6 +436,9 @@ class PARSER:
 		elif (arg[1] in ["var", "vars"]):
 			self.parent.buffer.lexer.print_vars()
 			# self.parent.buffer.lexer.print_vars([arg[2:]])
+
+	def lex_print_errors(self, arg=None):
+		self.parent.buffer.lexer.debug_errors()
 			
 
 	def lexer_switch(self, arg=None): # TEMPORARY UNTIL I COMPLETELY IMPLEMENT LEXERS

@@ -194,10 +194,32 @@
 		"<Control-bar>" : "save_as_buffer",
 		"<Control-backslash>" : "save_as_compilation_buffer",
 
+
+		"!!!" : {
+			"<Return>" : "use_selection",
+			"<KP_Enter>" : "use_selection",
+			"+<Return>": ["open_line", {"arg": "@selected_lines_and_discard"}]
+		},
+
+
+		"!BE": {
+			"<Return>" : "use_selection",
+			"<KP_Enter>" : "use_selection",
+			"+<Return>": ["buffer_load", {"arg": "@selected_lines_and_discard"}]
+		},
+
+		"!FE": {
+			"<Return>" : "use_selection",
+			"<KP_Enter>" : "use_selection",
+			"+<Return>": ["file_explorer", {"arg": "@selected_lines_and_discard"}]
+		},
+
+
 		"!SE": {
-			
+			"<Return>" : "use_selection",
+			"<KP_Enter>" : "use_selection",
+			"+<Return>": ["subproc_comm", {"arg": "@selected_lines_and_discard"}]
 		}
-		
 	},
 
 	"SUGGEST_WIDGET":

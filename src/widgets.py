@@ -614,7 +614,7 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 
 		self.parent = parent
 		self.type = type
-		self.mode = "normal"
+		self._mode = "normal"
 
 		self.full_name = name
 		self.name = os.path.basename(name) if type != "temp" else name
@@ -648,6 +648,18 @@ class DEFAULT_TEXT_BUFFER(tkinter.Text):
 		self.tag_configure("error_bg", background="#990088") # for now it's here
 		
 		bind_keys_from_conf(self)
+
+	
+	@property
+	def mode(self):
+		return self._mode
+
+	@mode.setter
+	def mode(self, val):
+		self._mode = val
+		self.event_generate("<<mode-changed>>")
+
+
 
 	def remove_all_tags(self, index1, index2):
 		self.tag_remove("overstrike", index1, index2)
@@ -1379,15 +1391,16 @@ class FIND_ENTRY(DEFAULT_TEXT_BUFFER):
 
 class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 	#DUNNO who tf wrote this, but they were a complete piece of shit ......................................
-	def __init__(self, parent, name="COMMAND_OUT"):
+	def __init__(self, parent, name="command_out"):
 		super().__init__(parent, name)
-
+		self.name = name
 		self.font_bold = self.parent.font_bold
 		self.font = self.parent.smaller_font_bold
-		self.font_size = self.parent.conf["command_out_font_size"]
+		self.font_size = self.parent.conf[f"{self.name}_font_size"]
 		self.font_weight = "bold"
+		self.execute = lambda: None
 
-		self.mode = "!!!"
+		self._mode = "!!!"
 
 		self.out = ""
 		self.modified_arg = ""
@@ -1405,12 +1418,42 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		self.last_index = ""
 		self.last_line = ""
+		self.mode_label = tkinter.Label(self, text=self.mode)
+
 
 		self.edits_since_last_input = []
 
-		self.mode_label = tkinter.Label(self, text=self.mode)
 		
 		bind_keys_from_conf(self)
+
+	@property
+	def mode(self):
+		return self._mode
+
+	@mode.setter
+	def mode(self, val):
+		self.mode_label['text'] = val
+		self._mode = val
+		self.event_generate("<<mode-changed>>")
+
+
+	@property
+	def selected_line(self):
+		return self.selected_lines[-1] if selected_lines else None
+
+	@property
+	def selected_line(self):
+		return self.selected_lines[-1] if selected_lines else None
+
+	@property
+	def selected_lines_and_discard(self):
+		# bruh
+		self.after(100, self.selected_lines_delete)
+		return self.selected_lines
+
+	def selected_lines_delete(self):
+		del self.selected_lines[:]
+
 
 
 	def configure_self(self, arg=None):
@@ -1797,7 +1840,14 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 	def change_ex(self, new_ex, mode_name="!!!"):
 		self.mode = mode_name
-		self.execute = new_ex
+		# self.execute = new_ex
+		bind_keys_from_conf(self, reset_only_mode_bindings=True)
+
+
+	def mode_change(self, mode_name="!!!"):
+		self.mode = mode_name
+		bind_keys_from_conf(self, reset_only_mode_bindings=True)
+
 
 	def add_selection(self, arg=None):
 		if (arg):
@@ -1811,14 +1861,18 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 		self.selected_lines.append(self.get("insert linestart", "insert lineend"))
 
 		return "break"
-			
-	def use_selection(self, arg=None):
-		if (arg): self.add_selection()
-		self.execute(self.selected_lines)
-		self.show_input()
-		del self.selected_lines[:]
 
-		return "break"
+
+
+	def use_selection(self, arg=None):
+		print("using selection", arg)
+		if (arg): self.add_selection()
+		# self.execute(self.selected_lines)
+		self.show_input()
+		# del self.selected_lines[:]
+
+		# return "break"
+
 
 	def open_line(self, arg=None):
 		num_results = []
@@ -1838,8 +1892,10 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			self.parent.buffer.see("insert")
 		
 		return "break"
-		
+
+
 	def file_explorer(self, arg=None):
+		print("files", arg)
 		for line in arg:
 			if (not os.path.dirname(line)):
 			# print(line, os.path.dirname(line), "not legit")
@@ -1854,11 +1910,13 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 			
 		return "break"
 
+
 	def buffer_load(self, arg=None):
 		arg=arg[-1]
 		print(arg)
 		self.parent.file_handler.load_buffer(buffer_name=arg)
 		self.unplace()
+
 
 	def subproc_comm(self, arg=None):
 		arg=arg[-1]
@@ -1878,6 +1936,7 @@ class COMMAND_OUT(DEFAULT_TEXT_BUFFER):
 
 		self.parent.split(arg, buffer=b)
 		return "break"
+
 
 	def save_as_compilation_buffer(self, arg=None):
 		"""Save current output in a temporary read-only buffer"""
@@ -1903,13 +1962,14 @@ class SUGGEST_WIDGET(DEFAULT_TEXT_BUFFER):
 	def __init__(self, parent, name="SUGGEST_WIDGET"):
 		super().__init__(parent, name)
 		self.insert("1.0", "COMPLETELY ARBITARY TEXT")
-		self.font_bold = self.parent.font_bold
 		self.font = self.parent.smaller_font_bold
+		self.font_bold = self.parent.smaller_font_bold
 		self.font_size = self.parent.conf["suggest_widget_font_size"]
 		bind_keys_from_conf(self)
 
 	def configure_self(self, arg=None):
 		# self.configure(bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"])
+		self.font_size_set()
 		self.configure(font=self.font, bg=self.parent.theme["window"]["bg"], fg=self.parent.theme["window"]["fg"],
 		 insertborderwidth=0, insertofftime=self.insert_offtime, insertontime=self.insert_ontime, insertunfocussed="solid",
 		 insertbackground=self.parent.theme["window"]["insertbg"], inactiveselectbackground=self.parent.theme["window"]["selectbg"],
@@ -1988,6 +2048,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 		self.current_token = ""
 		self.total_lines = 1
 		self.bind("<<Modified>>", self.on_modified)
+		self.tag_bind("error", "<Button-3>", self.parent.helper)
 
 		self.state = []
 
@@ -2897,11 +2958,18 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 			subproc_name = ' '.join(argv)
 			try:
 				start_time = time.time()
+				subproc = self.parent.subprocs[subproc_name] = self.parent.subproc_create_register(subproc_name=subproc_name)
+				if not self.parent.curr_subproc:
+					self.parent.curr_subproc = subproc
+
 				process = pexpect.spawn(subproc_name)
-				
-				self.parent.subprocs[subproc_name] = self.parent.subproc_create(subproc_name=subproc_name)
-				subproc = self.parent.subprocs[process]
 				subproc['process'] = process
+
+				print("Creating process: ", subproc_name)
+
+
+				print("Created proccess: ", subproc)
+
 				self.parent.command_out_set("")
 
 				line = ""
@@ -2909,7 +2977,7 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 				while (1):
 					res = process.readline().decode("utf-8")
 					# print(res, end="")
-	
+
 					line = re.sub(cc_pattern_text+r"|\r", '', res)
 					replacing = 1
 					pos = 0
@@ -2947,28 +3015,33 @@ class TEXT(DEFAULT_TEXT_BUFFER):
 						tags.append([f"insert -1l linestart +{first-offset}c", f"insert -1l linestart +{second-offset}c", color])
 							
 					# self.parent.command_out.add_stdout(line, tags)
-					subproc['new_out'] += line
+					subproc['new_output'] += line
 
 
 					# process.expect(pexpect.EOF)
 					if not line or not res:
 						process.close()
 						print(process.exitstatus)
-						self.parent.command_out.add_stdout(f"\n")
+						
+						# self.parent.command_out.add_stdout(f"\n")
+						subproc['new_output'] += f"\n"
+						
 						status = process.exitstatus if process.exitstatus is not None else f"{process.exitstatus} -> POSSIBLE SEGFAULT"
-						self.parent.command_out.add_stdout(f"[RETURN CODE {status}]", tags=[["insert linestart", "insert lineend", "logical_keywords"], ["insert linestart +13c", "insert lineend-1c", "functions"]])
+						# self.parent.command_out.add_stdout(f"[RETURN CODE {status}]"f"[RETURN CODE {status}]", tags=[["insert linestart", "insert lineend", "logical_keywords"], ["insert linestart +13c", "insert lineend-1c", "functions"]])
+						subproc['new_output'] += f"[RETURN CODE {status}]"
+						subproc['new_tags'] += [["insert linestart", "insert lineend", "logical_keywords"], ["insert linestart +13c", "insert lineend-1c", "functions"]]
+
 						break
 
-			# self.parent.kill_last_subproc()
 		
 			except Exception as e:
-				# self.parent.kill_last_subproc()
 				print("RUNNING SUBPROC ERR:", e)
 
 			# print("end")
 			# print(argv, pexpect.split_command_line(argv))
 			self.parent.command_out.add_stdout("\n")
 			self.parent.kill_last_subproc()
+
 			if (self.parent.file_handler.buffer_exists("*compiled*")):
 				self.parent.command_out.save_as_compilation_buffer()
 			self.parent.command_out.add_stdout(f"[EXECUTED IN {round(time.time()-start_time, 2)}]", tags=[["insert linestart", "insert lineend", "upcase"]])

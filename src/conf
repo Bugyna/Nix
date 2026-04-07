@@ -1,4 +1,4 @@
-theme="custom2"
+theme="tea"
 tab_size=3
 # CRLF or LF
 line_end=LF
@@ -49,8 +49,8 @@ font="Terminus (TTF)"
 # font="Px437 DOS/V re.JPN30"
 font="Px437 IBM EGA 8x8"
 
-font_size=14
-smaller_font_size=12
+font_size=11
+smaller_font_size=9
 
 # font_size=14
 # smaller_font_size=11
@@ -74,6 +74,8 @@ percentage_pos_func = get_abs_percentage_pos
 command_entry_font_size= 13
 find_entry_font_size = 12
 command_out_font_size = 14
+suggest_widget_font_size = 9
+helper_widget_font_size = 9
 show_info = 1
 show_line_numbers=0
 

@@ -53,7 +53,8 @@ class WIN(tkinter.Tk):
 			"command_entry_font_size": 11,
 			"find_entry_font_size": 12,
 			"command_out_font_size": 11,
-			"suggest_widget_font_size": 11,
+			"suggest_widget_font_size": 10,
+			"helper_widget_font_size": 10,
 			"start_width": 80,
 			"start_height": 32,
 			"show_buffer_tab": 1,
@@ -141,6 +142,7 @@ class WIN(tkinter.Tk):
 		# }
 
 		self.subprocs = OrderedDict()
+		self.curr_subproc = None
 
 		self.command_history = []
 		
@@ -216,7 +218,7 @@ class WIN(tkinter.Tk):
 		self.alert = PROMPT(self)
 		self.prompt = PROMPT(self)
 		# self.helper_widget = tkinter.Label(self, text="aa")
-		self.helper_widget = COMMAND_OUT(self)
+		self.helper_widget = COMMAND_OUT(self, name="helper_widget")
 
 		self.canvas.configure(bd=0, highlightthickness=0)
 		
@@ -427,6 +429,7 @@ class WIN(tkinter.Tk):
 			self.buffer.tag_raise("keywords")
 			self.buffer.tag_lower("cursor")
 			self.buffer.tag_raise("sel")
+			self.buffer.tag_raise("error")
 		except Exception as e:
 			print(e)
 
@@ -971,19 +974,32 @@ class WIN(tkinter.Tk):
 		self.buffer.focus_set()
 		return "break"
 
+
+
 	def helper(self, arg=None):
 		if (not self.helper_widget.winfo_viewable()):
-			self.helper_widget.place(relx=0.9, rely=0.1, relwidth=0.2, anchor="ne")
+			self.helper_widget.place(relx=0.9, rely=0.1, relwidth=0.3, anchor="ne")
 			self.helper_widget.tkraise()
-		else:
+		elif (arg):
 			self.helper_widget.place_forget()
+
+		print(arg)
+		start = self.buffer.tag_prevrange("error", "insert")
+		self.helper_widget.delete("1.0", "end")
+		# self.helper_widget.insert("1.0", str(start))
+
+		for start, error in self.buffer.lexer.errors.items():
+			self.helper_widget.stdout(str(error) + " " + start+"\n")
+
+		# self.helper_widget.place(relx=0.9, rely=0.1, relwidth=0.3, anchor="ne")
 
 	def execute_command(self, arg, command):
 		self.cmmand(command=command.split())
 	
 
 	def nt_place(self, arg=None): # why nt???
-		self.command_out.change_ex(self.command_out.file_explorer, "!FE")
+		# self.command_out.change_ex(self.command_out.file_explorer, "!FE")
+		self.command_out.mode_change("!FE")
 		arg, tags = self.file_handler.highlight_ls()
 		self.command_out_set(arg=arg, tags=tags, append_history=False)
 		self.command_out.focus_set()
@@ -991,9 +1007,15 @@ class WIN(tkinter.Tk):
 
 	def list_subproc(self, arg=None):
 		self.command_out.change_ex(self.command_out.subproc_comm, "!SE")
+
 		arg = "\n".join(self.subprocs.keys())
 		self.command_out_set(arg=arg, append_history=False)
 		self.command_out.focus_set()
+
+
+	def subproc_view(self, arg=None, subproc_name=""):
+		self.curr_subproc = self.subprocs[subproc_name]
+		self.command_out_set(self.curr_subproc['new_output'], self.curr_subproc['new_tags'])
 
 
 	def popup(self, arg=None):
@@ -1003,7 +1025,7 @@ class WIN(tkinter.Tk):
 
 	def kill_last_subproc(self, arg=None):
 		if (type(arg) == tkinter.Event): arg=None
-		elif (type(arg) != str):
+		elif (type(arg) != str and arg != None):
 			self.error(f"wrong arg type [kill_last_subproc] {type(arg)}")
 
 		self.subproc_kill(subproc_name=arg)
@@ -1011,7 +1033,7 @@ class WIN(tkinter.Tk):
 		return "break"
 
 
-	def subproc_create(self, arg=None, subproc_name=""):
+	def subproc_create_register(self, arg=None, subproc_name=""):
 		if not subproc_name:
 			self.notify(f"ERROR[subproc_create]: no subproc_name(={subproc_name}) provided\n")
 			return {}
@@ -1026,16 +1048,15 @@ class WIN(tkinter.Tk):
 		}
 
 
-	def subproc_kill(self, arg=None, subproc_name=""):
-		if subproc_name:
-			s = self.subprocs[subproc_name]
-			s["state"] = "KILL"
-			s['process'].kill(signal.SIGKILL)
 
-		else:
-			s = next(reversed(self.subprocs))
-			s["state"] = "KILL"
-			s['process'].kill(signal.SIGKILL)
+	def subproc_kill(self, arg=None, subproc_name=""):
+		if not subproc_name:
+			subproc_name = next(reversed(self.subprocs))
+		s = self.subprocs[subproc_name]
+		s["state"] = "KILL"
+		s['process'].kill(signal.SIGKILL)
+		
+		self.command_out_set(s['new_output'])
 
 		return "break"
 
@@ -1043,13 +1064,11 @@ class WIN(tkinter.Tk):
 	def subproc_delete(self, arg=None, subproc_name=""):
 		if subproc_name:
 			s = self.subprocs.pop(subproc_name)
-			s["state"] = "KILL"
-			s['process'].kill(signal.SIGKILL)
-
 		else:
 			s = self.subprocs.popitem()
-			s["state"] = "KILL"
-			s['process'].kill(signal.SIGKILL)
+
+		s["state"] = "KILL"
+		s['process'].kill(signal.SIGKILL)
 
 		return "break"
 
@@ -1122,12 +1141,15 @@ class WIN(tkinter.Tk):
 		print(self.focus_get())
 		return "break"
 
-	def notify(self, arg=None, tags=None, justify="left"):
+	def notify(self, arg=None, tags=None, justify="left", text=None):
 		# one hack after another
 		# self.command_out["state"] = "normal"
+		print(arg, text)
+		if (text): arg=text
 		self.command_out_set(arg=arg, tags=tags, focus=True, justify=justify, append_history=False)
 		# if (not self.conf["allow_notifications"]): self.command_out.unplace() # HACK
 		# self.command_out["state"] = "disabled"
+
 
 	def error(self, arg=None, tags=None, justify="left"):
 		tags = [["1.0", "1.6", "error"], tags] if tags else [["1.0", "1.6", "error"]]
@@ -1352,6 +1374,7 @@ class WIN(tkinter.Tk):
 	def update_buffer(self, arg=None):
 		""" updates some of the widgets when a key is released """
 		self.buffer.lexer.update_code_location()
+		if (self.helper_widget.winfo_viewable()): self.helper()
 		
 		# called upon every keyrelease
 		if (arg): # shows the characters that were released (eg. Control: D), but it can't handle more than one character (eg. Control: b-w)

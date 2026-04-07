@@ -208,7 +208,7 @@ class FILE_HANDLER(object):
 		result = ""
 		for val in self.parent.file_handler.buffer_list:
 			result += f"{val[1].full_name}\n"
-			self.parent.command_out.change_ex(self.parent.command_out.buffer_load)
+			self.parent.command_out.mode_change("!BE")
 		if (not result): result = "<None>"
 		self.parent.command_out_set(result)
 		self.parent.command_out.focus_set()
